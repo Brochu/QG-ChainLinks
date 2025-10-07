@@ -20,7 +20,7 @@
 # Compiled Dynamic libraries
 *.so
 *.dylib
-*.dll
+./*.dll
 *.exp
 
 # Fortran module files
@@ -31,10 +31,10 @@
 *.lai
 *.la
 *.a
-*.lib
+./*.lib
 
 # Executables
-*.exe
+./*.exe
 *.out
 *.app
 
@@ -43,3 +43,6 @@
 
 # RES files
 *.res
+
+!libs/*.lib
+!libs/*.exe

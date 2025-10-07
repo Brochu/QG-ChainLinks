@@ -3,7 +3,7 @@
         <ObjDir>obj</ObjDir>
         <LibDir>libs</LibDir>
         <GameLibDir>gamelibs</GameLibDir>
-        <CFlags>-nologo -c -Zi -MD -Fo$(ObjDir)\ -TP</CFlags>
+        <CFlags>-nologo -c -std:c++17 -EHsc -Zi -MD -Fo$(ObjDir)\ -TP</CFlags>
         <LibFlags>-nologo</LibFlags>
         <LinkFlags>-NOLOGO -DEBUG -LIBPATH:$(LibDir)\</LinkFlags>
     </PropertyGroup>
@@ -26,6 +26,14 @@
         <Exec Command="lib $(LibFlags) obj\imgui*.obj obj\rlImGui.obj -out:$(LibDir)\imgui.lib" />
     </Target>
     -->
+    <Target Name="ink-test">
+        <Exec Command="cl $(CFlags) -Iinclude tools\inkle-test\ink-test-main.cpp" />
+        <Exec Command="link $(LinkFlags) obj\ink-test-main.obj ^
+            libs\inkle\inkcpp.lib ^
+            libs\inkle\inkcpp_compiler.lib ^
+            -out:tools\inkle-test\ink-test.exe"
+        />
+    </Target>
 
     <!-- === BLKSM === -->
     <!-- EXAMPLE
