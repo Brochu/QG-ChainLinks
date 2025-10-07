@@ -1,0 +1,3 @@
+-std=c++14
+-I./include/
+-D__cplusplus

@@ -1,0 +1,61 @@
+<Project DefaultTargets="qg" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ObjDir>obj</ObjDir>
+        <LibDir>libs</LibDir>
+        <GameLibDir>gamelibs</GameLibDir>
+        <CFlags>-nologo -c -Zi -MD -Fo$(ObjDir)\ -TP</CFlags>
+        <LibFlags>-nologo</LibFlags>
+        <LinkFlags>-NOLOGO -DEBUG -LIBPATH:$(LibDir)\</LinkFlags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <CleanFiles Include="$(ObjDir)\*.*;$(GameLibDir)\*.*;qg*.*;vc140*.*;" />
+    </ItemGroup>
+
+    <!-- === CLEAN === -->
+    <Target Name="clean">
+        <Delete Files="@(CleanFiles)" ContinueOnError="true" />
+    </Target>
+
+    <!-- === IMGUI === -->
+    <!-- EXAMPLE
+    <Target Name="imgui">
+        <Exec Command="cl $(CFlags) -Iinclude -Iinclude\imgui -Iinclude\raylib ^
+            src\imgui\imgui.cpp src\imgui\imgui_draw.cpp src\imgui\imgui_tables.cpp ^
+            src\imgui\imgui_widgets.cpp src\imgui\imgui_demo.cpp src\imgui\rlImGui.cpp" />
+        <Exec Command="lib $(LibFlags) obj\imgui*.obj obj\rlImGui.obj -out:$(LibDir)\imgui.lib" />
+    </Target>
+    -->
+
+    <!-- === BLKSM === -->
+    <!-- EXAMPLE
+    <Target Name="blksm">
+        <Exec Command="cl $(CFlags) -DTRACY_ENABLE -DTRACY_IMPORTS -Iinclude -Iinclude\raylib -Iinclude\imgui -Iinclude\tracy src\blksm_main.cpp" />
+        <Exec Command="link $(LinkFlags) -DLL obj\blksm_main.obj imgui.lib raylib.lib TracyProfiler.lib -out:$(GameLibDir)\blksm.dll" />
+    </Target>
+    -->
+    <Target Name="chain">
+        <Exec Command="cl $(CFlags) -Iinclude src\chain.cpp" />
+        <Exec Command="link $(LinkFlags) -DLL obj\chain.obj -out:$(GameLibDir)\chain.dll" />
+    </Target>
+
+    <!-- === FORGE MAIN === -->
+    <!-- EXAMPLE
+    <Target Name="forge" DependsOnTargets="blksm;s-blksm">
+        <Exec Command="rc -nologo -v -fo obj\res_main.res src\res_main.rc" />
+        <Exec Command="move gamelibs\blksm.dll blksm.dll" />
+        <Exec Command="move gamelibs\blksm.pdb blksm.pdb" />
+        <Exec Command="move gamelibs\server-blksm.dll server-blksm.dll" />
+        <Exec Command="move gamelibs\server-blksm.pdb server-blksm.pdb" />
+        <Exec Command="cl $(CFlags) -DTRACY_ENABLE -DTRACY_IMPORTS -Iinclude -Iinclude\raylib -Iinclude\imgui -Iinclude\tracy src\forge_main.cpp src\forge_utils.cpp" />
+        <Exec Command="link $(LinkFlags) obj\forge_main.obj obj\forge_utils.obj obj\res_main.res imgui.lib raylib.lib TracyProfiler.lib ws2_32.lib winmm.lib user32.lib gdi32.lib enet.lib -out:forge.exe" />
+        <Exec Command="copy libs\raylib.dll raylib.dll" />
+        <Exec Command="copy libs\TracyProfiler.dll TracyProfiler.dll" />
+    </Target>
+    -->
+    <Target Name="qg" DependsOnTargets="chain">
+        <Exec Command="rc -nologo -v -fo obj\qg_res.res src\qg_res.rc" />
+        <Exec Command="cl $(CFlags) src\qg_main.cpp" />
+        <Exec Command="link $(LinkFlags) obj\qg_main.obj obj\qg_res.res -out:qg.exe" />
+    </Target>
+</Project>
