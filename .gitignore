@@ -46,3 +46,6 @@
 
 !libs/*.lib
 !libs/*.exe
+
+gamelibs/
+qg.exe
