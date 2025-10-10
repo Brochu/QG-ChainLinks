@@ -3,7 +3,7 @@
         <ObjDir>obj</ObjDir>
         <LibDir>libs</LibDir>
         <GameLibDir>gamelibs</GameLibDir>
-        <CFlags>-nologo -c -std:c++17 -EHsc -Zi -MD -Fo$(ObjDir)\ -TP</CFlags>
+        <CFlags>-nologo -c -std:c++17 -EHsc -Zi -MD -Fo$(ObjDir)\ -Iinclude\ -TP</CFlags>
         <LibFlags>-nologo</LibFlags>
         <LinkFlags>-NOLOGO -DEBUG -LIBPATH:$(LibDir)\</LinkFlags>
     </PropertyGroup>
@@ -27,7 +27,7 @@
     </Target>
     -->
     <Target Name="ink-test">
-        <Exec Command="cl $(CFlags) -Iinclude tools\inkle-test\ink-test-main.cpp" />
+        <Exec Command="cl $(CFlags) tools\inkle-test\ink-test-main.cpp" />
         <Exec Command="link $(LinkFlags) obj\ink-test-main.obj ^
             libs\inkle\inkcpp.lib ^
             libs\inkle\inkcpp_compiler.lib ^
@@ -43,7 +43,7 @@
     </Target>
     -->
     <Target Name="chain">
-        <Exec Command="cl $(CFlags) -Iinclude src\chain.cpp" />
+        <Exec Command="cl $(CFlags) src\chain.cpp" />
         <Exec Command="link $(LinkFlags) -DLL obj\chain.obj -out:$(GameLibDir)\chain.dll" />
     </Target>
 
@@ -64,6 +64,6 @@
     <Target Name="qg" DependsOnTargets="chain">
         <Exec Command="rc -nologo -v -fo obj\qg_res.res src\qg_res.rc" />
         <Exec Command="cl $(CFlags) src\qg_main.cpp" />
-        <Exec Command="link $(LinkFlags) obj\qg_main.obj obj\qg_res.res -out:qg.exe" />
+        <Exec Command="link $(LinkFlags) obj\qg_main.obj obj\qg_res.res SDL3.lib -out:qg.exe" />
     </Target>
 </Project>
