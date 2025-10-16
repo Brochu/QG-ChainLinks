@@ -26,14 +26,6 @@
         <Exec Command="lib $(LibFlags) obj\imgui*.obj obj\rlImGui.obj -out:$(LibDir)\imgui.lib" />
     </Target>
     -->
-    <Target Name="ink-test">
-        <Exec Command="cl $(CFlags) tools\inkle-test\ink-test-main.cpp" />
-        <Exec Command="link $(LinkFlags) obj\ink-test-main.obj ^
-            libs\inkle\inkcpp.lib ^
-            libs\inkle\inkcpp_compiler.lib ^
-            -out:tools\inkle-test\ink-test.exe"
-        />
-    </Target>
 
     <!-- === BLKSM === -->
     <!-- EXAMPLE
