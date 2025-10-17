@@ -1,8 +1,17 @@
 #include <cstdio>
 #include <cstdint>
 
+enum class loc_type_t : int32_t {
+    LOCATION_NONE,
+    LOCATION_RESTAURANT,
+    LOCATION_BANK,
+    LOCATION_COUNT,
+};
+
 struct gen_loc_t {
     int64_t id;
+    const char *name;
+    loc_type_t type;
 };
 
 struct gen_traits_t {
@@ -20,7 +29,7 @@ struct gen_char_t {
     gen_traits_t traits;
 };
 
-enum class gen_type_t : int32_t {
+enum class event_type_t : int32_t {
     EVENT_NONE,
     EVENT_CRIME,
     EVENT_SIGHTING,
@@ -33,7 +42,7 @@ struct gen_event_t {
     int64_t next_idx[8] = { 0 };
     size_t num_next = 0;
 
-    gen_type_t type;
+    event_type_t type;
     union {
         struct {
         } crime;
@@ -42,9 +51,11 @@ struct gen_event_t {
     };
 };
 static gen_event_t s_events[1024];
+static size_t s_num_events = 0;
 
 //TODO: Define the steps to generate cases
 int main(int argc, char **argv) {
     printf("[PROC-GEN] Testing history/events generation & simulation\n");
+    s_events[s_num_events++] = { 0 };
     return 0;
 }
