@@ -13,9 +13,11 @@
 // =============================================================
 
 enum city_size : int8_t { SIZE_SMALL, SIZE_MEDIUM, SIZE_LARGE, SIZE_METRO, SIZE_COUNT };
+enum district_type : int8_t { INDUSTRIAL, COMMERCIAL, RESIDENTIAL, NIGHT_LIFE, FINANCIAL, DISTRICT_COUNT };
 
 struct district {
     int64_t id;
+    district_type type;
 };
 static int8_t size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
 
