@@ -21,6 +21,16 @@ struct district {
 };
 static int8_t size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
 
+enum class location_type : int32_t {
+    //TODO: More variety
+    // categorize by district type
+    LOCATION_RESIDENTIAL,
+    LOCATION_HOME = LOCATION_RESIDENTIAL,
+    LOCATION_RESTAURANT,
+    LOCATION_BANK,
+    LOCATION_COUNT,
+};
+
 struct location {
     int64_t id;
     int64_t district;
@@ -39,15 +49,23 @@ struct city_gen {
 void city_gen_next(city_gen *ctx, city_size s, int32_t seed) {
     srand(seed);
     ctx->size = s;
+    ctx->num_locations = 0;
 
     ctx->num_districts = size_to_districts[s];
     for (int i = 0; i < ctx->num_districts; i++) {
         // Districts
-    }
+        printf("[PROC-GEN] Generate a new district\n");
+        district *d = &ctx->districts[i];
+        d->id = i;
+        d->type = district_type::RESIDENTIAL;
 
-    ctx->num_locations = size_to_locations[s];
-    for (int i = 0; i < ctx->num_locations; i++) {
-        // Locations
+        for (int j = 0; j < size_to_locations[s]; j++) {
+            // Locations
+            printf("[PROC-GEN] Generate a new location\n");
+            location *loc = &ctx->locations[ctx->num_locations++];
+            loc->id = ctx->num_locations - 1;
+            loc->district = i;
+        }
     }
 
     // Transit Links
@@ -59,15 +77,6 @@ void city_gen_next(city_gen *ctx, city_size s, int32_t seed) {
 
     srand(time(0));
 }
-
-/*
-enum class location_type : int32_t {
-    LOCATION_NONE,
-    LOCATION_RESTAURANT,
-    LOCATION_BANK,
-    LOCATION_COUNT,
-};
-*/
 
 // =============================================================
 
@@ -92,6 +101,9 @@ int main(int argc, char **argv) {
     for (auto s : names) {
         printf(" - Generated name: %s\n", s.c_str());
     }
+
+    city_gen city_ctx;
+    city_gen_next(&city_ctx, city_size::SIZE_SMALL, 0);
 
     return 0;
 }
