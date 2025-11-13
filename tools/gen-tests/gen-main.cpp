@@ -20,6 +20,7 @@ struct district {
     district_type type;
 };
 static int8_t size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
+static int8_t district_weights[district_type::DISTRICT_COUNT] = { 2, 3, 4, 1, 1 };
 
 enum class location_type : int32_t {
     //TODO: More variety
@@ -89,10 +90,15 @@ void name_generator_next(name_generator *gen, size_t num, std::vector<std::strin
 
 // =============================================================
 
+int rand_weighted_index(int8_t *weights, int num_items);
+
+// =============================================================
+
 int main(int argc, char **argv) {
     srand(time(0));
     printf("[PROC-GEN] Testing history/events generation & simulation\n");
 
+    /*
     name_generator gen;
     name_generator_train(&gen);
 
@@ -104,6 +110,18 @@ int main(int argc, char **argv) {
 
     city_gen city_ctx;
     city_gen_next(&city_ctx, city_size::SIZE_SMALL, 0);
+    */
+
+    int index = rand_weighted_index(district_weights, DISTRICT_COUNT);
+    printf("[PROC-GEN] weighted index = %i\n", index);
+    index = rand_weighted_index(district_weights, DISTRICT_COUNT);
+    printf("[PROC-GEN] weighted index = %i\n", index);
+    index = rand_weighted_index(district_weights, DISTRICT_COUNT);
+    printf("[PROC-GEN] weighted index = %i\n", index);
+    index = rand_weighted_index(district_weights, DISTRICT_COUNT);
+    printf("[PROC-GEN] weighted index = %i\n", index);
+    index = rand_weighted_index(district_weights, DISTRICT_COUNT);
+    printf("[PROC-GEN] weighted index = %i\n", index);
 
     return 0;
 }
@@ -145,6 +163,26 @@ void name_generator_next(name_generator *gen, size_t num, std::vector<std::strin
         }
         out->push_back(name);
     }
+}
+
+// RAND ----------------------------------------------------------------
+
+int rand_weighted_index(int8_t *weights, int num_items) {
+    rand();
+
+    int sum = 0;
+    for (int i = 0; i < num_items; i++) {
+        sum += weights[i];
+    }
+
+    int target = (int)(((float)rand() / RAND_MAX) * sum) + 1;
+
+    int current = 0;
+    while (target > weights[current]) {
+        target -= weights[current];
+        current++;
+    }
+    return current;
 }
 
 // SQLITE ----------------------------------------------------------------
