@@ -43,6 +43,7 @@ struct city_gen {
 
 // --------------------------------------------
 
+//TODO: Find a way to simplify this data structure; remove maps/vectors
 struct name_generator {
     std::vector<std::string> starts;
     std::map<std::string, std::vector<char>> chains;
