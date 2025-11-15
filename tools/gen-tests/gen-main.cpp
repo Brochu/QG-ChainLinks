@@ -6,6 +6,11 @@
 #include <map>
 #include <string>
 #include <vector>
+//TODO: Move this to genneration module in main project, it will be needed at runtime
+// Think about if this should be in game logic or engine
+// Might be better in game logic so it can hot reload?
+// Hot reload might not make much sense for generated content
+// Since it's a one shot run, can also start with partially generated content from SQLite DB
 
 // Generation / Simulation passes definition
 // 1. Fondation pass - City Districts; Landmarks and Locations; Transits between Landmarks
