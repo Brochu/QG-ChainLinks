@@ -3,13 +3,15 @@
         <ObjDir>obj</ObjDir>
         <LibDir>libs</LibDir>
         <GameLibDir>gamelibs</GameLibDir>
-        <CFlags>-nologo -c -std:c++17 -EHsc -Zi -MD -Fo$(ObjDir)\ -Iinclude\ -TP</CFlags>
+        <BuildDir>bin</BuildDir>
+
+        <CFlags>-nologo -c -std:c++17 -EHsc -Zi -MD -Fo$(BuildDir)\$(ObjDir)\ -Iinclude\ -TP</CFlags>
         <LibFlags>-nologo</LibFlags>
         <LinkFlags>-NOLOGO -DEBUG -LIBPATH:$(LibDir)\</LinkFlags>
     </PropertyGroup>
 
     <ItemGroup>
-        <CleanFiles Include="$(ObjDir)\*.*;$(GameLibDir)\*.*;qg*.*;vc140*.*;" />
+        <CleanFiles Include="$(BuildDir)\$(ObjDir)\*.*;$(BuildDir)\$(GameLibDir)\*.*;$(BuildDir)\qg*.*;$(BuildDir)\vc140*.*;" />
     </ItemGroup>
 
     <!-- === CLEAN === -->
@@ -36,7 +38,7 @@
     -->
     <Target Name="chain">
         <Exec Command="cl $(CFlags) src\chain.cpp" />
-        <Exec Command="link $(LinkFlags) -DLL obj\chain.obj -out:$(GameLibDir)\chain.dll" />
+        <Exec Command="link $(LinkFlags) -DLL $(BuildDir)\$(ObjDir)\chain.obj -out:$(BuildDir)\$(GameLibDir)\chain.dll" />
     </Target>
 
     <!-- === FORGE MAIN === -->
@@ -54,8 +56,8 @@
     </Target>
     -->
     <Target Name="qg" DependsOnTargets="chain">
-        <Exec Command="rc -nologo -v -fo obj\qg_res.res src\qg_res.rc" />
-        <Exec Command="cl $(CFlags) src\qg_main.cpp" />
-        <Exec Command="link $(LinkFlags) obj\qg_main.obj obj\qg_res.res SDL3.lib -out:qg.exe" />
+        <Exec Command="rc -nologo -v -fo $(BuildDir)\$(ObjDir)\qg_res.res src\qg_res.rc" />
+        <Exec Command="cl $(CFlags) src\qg_main.cpp src\qg_gen.cpp" />
+        <Exec Command="link $(LinkFlags) $(BuildDir)\$(ObjDir)\qg_main.obj $(BuildDir)\$(ObjDir)\qg_gen.obj $(BuildDir)\$(ObjDir)\qg_res.res SDL3.lib -out:$(BuildDir)\qg.exe" />
     </Target>
 </Project>
