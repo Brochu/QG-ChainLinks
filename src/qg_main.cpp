@@ -32,6 +32,9 @@ int main(int argc, char **argv) {
             if (event.type == SDL_EVENT_QUIT) {
                 qg_running = false;
             }
+            if (event.type == SDL_EVENT_KEY_UP && event.key.key == SDLK_ESCAPE) {
+                qg_running = false;
+            }
         }
 
         // Update State
@@ -52,5 +55,6 @@ int main(int argc, char **argv) {
 
     SDL_DestroyWindow(window);
     SDL_Quit();
+    printf("[QG] quitting SDL3 window!\n");
     return 0;
 }
