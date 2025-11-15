@@ -1,14 +1,10 @@
 #pragma once
 
 #include <cstdint>
+
 #include <map>
 #include <string>
 #include <vector>
-
-#define GEN_API __declspec(dllexport)
-
-extern "C" void GEN_API generator_init();
-extern "C" void GEN_API generator_stop();
 
 enum city_size : int8_t { SIZE_SMALL, SIZE_MEDIUM, SIZE_LARGE, SIZE_METRO, SIZE_COUNT };
 enum district_type : int8_t { INDUSTRIAL, COMMERCIAL, RESIDENTIAL, NIGHT_LIFE, FINANCIAL, DISTRICT_COUNT };
@@ -51,3 +47,11 @@ struct name_generator {
     std::vector<std::string> starts;
     std::map<std::string, std::vector<char>> chains;
 };
+
+void generator_init();
+void generator_stop();
+
+void name_generator_train(name_generator *gen);
+void name_generator_next(name_generator *gen, size_t num, std::vector<std::string> *out);
+
+int rand_weighted_index(int8_t *weights, int num_items);

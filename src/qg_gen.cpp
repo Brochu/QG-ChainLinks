@@ -1,20 +1,15 @@
 #include "generator.hpp"
 
-#include <cstdio>
-#include <cstdint>
-#include <cstdlib>
-#include <ctime>
-
 void generator_init() {
 }
 
 void generator_stop() {
 }
 
-static int8_t size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
-static int8_t district_weights[district_type::DISTRICT_COUNT] = { 2, 3, 4, 1, 1 };
+int8_t size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
+int8_t district_weights[district_type::DISTRICT_COUNT] = { 2, 3, 4, 1, 1 };
 
-static int8_t size_to_locations[city_size::SIZE_COUNT] = { 5, 15, 40, 80 };
+int8_t size_to_locations[city_size::SIZE_COUNT] = { 5, 15, 40, 80 };
 
 void city_gen_next(city_gen *ctx, city_size s, int32_t seed) {
     srand(seed);
@@ -44,8 +39,6 @@ void city_gen_next(city_gen *ctx, city_size s, int32_t seed) {
         }
     }
     // Cut some links
-
-    srand(time(0));
 }
 
 // NAME GENERATOR ----------------------------------------------------------------

@@ -1,7 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <vector>
 
 #include "SDL3/SDL.h"
+#include "generator.hpp"
 
 #define VERSION "ALPHA" //TODO: Export version from the main game DLL
 #define TITLE "QG-ChainLinks"
@@ -12,6 +15,23 @@ bool qg_running = true;
 float pos = 0.f;
 
 int main(int argc, char **argv) {
+    srand(time(NULL));
+    rand();
+
+    for (int i = 0; i < 5; i++) {
+        int idx = rand_weighted_index(district_weights, DISTRICT_COUNT);
+        printf("[GEN] Random weighted ID = %i\n", idx);
+    }
+
+    name_generator gen;
+    name_generator_train(&gen);
+
+    std::vector<std::string> names;
+    name_generator_next(&gen, 15, &names);
+    for (int i = 0; i < names.size(); i++) {
+        printf("[GEN] name = '%s'\n", names[i].c_str());
+    }
+
     if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
         printf("Could not init SDL3\nerror: %s\n", SDL_GetError());
         return EXIT_FAILURE;
