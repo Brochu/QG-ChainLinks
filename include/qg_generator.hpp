@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 
@@ -55,14 +55,10 @@ void case_gen_polish(case_gen *ctx);
 // NAME GENERATOR ====================
 
 //TODO: Find a way to simplify this data structure; remove maps/vectors
-struct name_generator {
+struct name_gen {
     std::vector<std::string> starts;
-    std::map<std::string, std::vector<char>> chains;
+    std::unordered_map<std::string, std::unordered_map<char, int8_t>> counts;
 };
 
-void name_generator_train(name_generator *gen);
-void name_generator_next(name_generator *gen, size_t num, std::vector<std::string> *out);
-
-// UTILS ==============================
-
-int rand_weighted_index(int8_t *weights, int num_items);
+void name_gen_train(name_gen *gen);
+void name_gen_next(name_gen *gen, size_t num, std::vector<std::string> *out);

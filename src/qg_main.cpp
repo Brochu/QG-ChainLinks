@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "SDL3/SDL.h"
-#include "sqlite3.h"
-#include "generator.hpp"
+#include "qg_random.hpp"
+#include "qg_generator.hpp"
 
 #define VERSION "ALPHA" //TODO: Export version from the main game DLL
 #define TITLE "QG-ChainLinks"
@@ -15,24 +15,19 @@
 bool qg_running = true;
 float pos = 0.f;
 
-int debug_callback(void *data, int size, char **var0, char **var1) {
-    return 0;
-}
-
 int main(int argc, char **argv) {
-    srand(time(NULL));
-    rand();
+    rand_seed(time(NULL));
 
-    name_generator gen;
-    name_generator_train(&gen);
+    name_gen ctx;
+    name_gen_train(&ctx);
 
-    std::vector<std::string> names;
-    name_generator_next(&gen, 15, &names);
-    for (int i = 0; i < names.size(); i++) {
-        printf("[GEN] name = '%s'\n", names[i].c_str());
+    std::vector<std::string> out;
+    name_gen_next(&ctx, 25, &out);
+    for (int i = 0; i < out.size(); i++) {
+        printf("[GEN] name: '%s'\n", out[i].c_str());
     }
-
     return 0;
+
     if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
         printf("Could not init SDL3\nerror: %s\n", SDL_GetError());
         return EXIT_FAILURE;

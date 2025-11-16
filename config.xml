@@ -50,7 +50,7 @@
     -->
     <Target Name="qg" DependsOnTargets="chain">
         <Exec Command="rc -nologo -v -Fo $(ObjDir)\qg_res.res src\qg_res.rc" />
-        <Exec Command="cl $(CFlags) src\qg_main.cpp src\qg_gen.cpp" />
-        <Exec Command="link $(LinkFlags) $(ObjDir)\qg_main.obj $(ObjDir)\qg_gen.obj $(ObjDir)\qg_res.res SDL3.lib sqlite3.lib -out:$(BuildDir)\qg.exe" />
+        <Exec Command="cl $(CFlags) src\qg_main.cpp src\qg_gen.cpp src\qg_rand.cpp" />
+        <Exec Command="link $(LinkFlags) $(ObjDir)\qg_main.obj $(ObjDir)\qg_gen.obj $(ObjDir)\qg_rand.obj $(ObjDir)\qg_res.res SDL3.lib sqlite3.lib -out:$(BuildDir)\qg.exe" />
     </Target>
 </Project>
