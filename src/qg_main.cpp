@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "SDL3/SDL.h"
+#include "sqlite3.h"
 #include "generator.hpp"
 
 #define VERSION "ALPHA" //TODO: Export version from the main game DLL
@@ -13,6 +14,10 @@
 
 bool qg_running = true;
 float pos = 0.f;
+
+int debug_callback(void *data, int size, char **var0, char **var1) {
+    return 0;
+}
 
 int main(int argc, char **argv) {
     srand(time(NULL));
@@ -32,6 +37,19 @@ int main(int argc, char **argv) {
         printf("[GEN] name = '%s'\n", names[i].c_str());
     }
 
+    sqlite3 *db;
+    int res = sqlite3_open("./detective.db", &db);
+    printf("[PROC-GEN] Opening Case DB; res = %i\n", res);
+
+    char *err = nullptr;
+    res = sqlite3_exec(db, "SELECT * FROM users;", debug_callback, NULL, &err);
+    printf("[PROC-GEN] EXEC res = %i; err = %s\n", res, err);
+
+    res = sqlite3_close_v2(db);
+    printf("[PROC-GEN] Closing Case DB; res = %i\n", res);
+    printf("[PROC-GEN] Just testing, SQLITE_OK value = %i\n", SQLITE_OK);
+
+    return 0;
     if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
         printf("Could not init SDL3\nerror: %s\n", SDL_GetError());
         return EXIT_FAILURE;

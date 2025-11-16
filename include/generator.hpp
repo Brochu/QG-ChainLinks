@@ -26,19 +26,19 @@ enum class location_type : int32_t {
     LOCATION_COUNT,
 };
 
-struct location {
+struct landmark {
     int64_t id;
     int64_t district;
 };
-extern int8_t size_to_locations[city_size::SIZE_COUNT];
+extern int8_t size_to_landmarks[city_size::SIZE_COUNT];
 
 struct city_gen {
     city_size size;
     int8_t num_districts;
     district districts[16];
 
-    int8_t num_locations;
-    location locations[128];
+    int8_t num_landmarks;
+    landmark landmarks[128];
 };
 
 // --------------------------------------------
@@ -48,9 +48,6 @@ struct name_generator {
     std::vector<std::string> starts;
     std::map<std::string, std::vector<char>> chains;
 };
-
-void generator_init();
-void generator_stop();
 
 void name_generator_train(name_generator *gen);
 void name_generator_next(name_generator *gen, size_t num, std::vector<std::string> *out);
