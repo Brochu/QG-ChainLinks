@@ -23,11 +23,6 @@ int main(int argc, char **argv) {
     srand(time(NULL));
     rand();
 
-    for (int i = 0; i < 5; i++) {
-        int idx = rand_weighted_index(district_weights, DISTRICT_COUNT);
-        printf("[GEN] Random weighted ID = %i\n", idx);
-    }
-
     name_generator gen;
     name_generator_train(&gen);
 
@@ -36,18 +31,6 @@ int main(int argc, char **argv) {
     for (int i = 0; i < names.size(); i++) {
         printf("[GEN] name = '%s'\n", names[i].c_str());
     }
-
-    sqlite3 *db;
-    int res = sqlite3_open("./detective.db", &db);
-    printf("[PROC-GEN] Opening Case DB; res = %i\n", res);
-
-    char *err = nullptr;
-    res = sqlite3_exec(db, "SELECT * FROM users;", debug_callback, NULL, &err);
-    printf("[PROC-GEN] EXEC res = %i; err = %s\n", res, err);
-
-    res = sqlite3_close_v2(db);
-    printf("[PROC-GEN] Closing Case DB; res = %i\n", res);
-    printf("[PROC-GEN] Just testing, SQLITE_OK value = %i\n", SQLITE_OK);
 
     return 0;
     if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {

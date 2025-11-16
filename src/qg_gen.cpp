@@ -33,6 +33,20 @@ void case_gen_fondation(case_gen *ctx, city_size s, int32_t seed) {
         }
     }
     // Cut some links
+
+    /*
+    sqlite3 *db;
+    int res = sqlite3_open("./detective.db", &db);
+    printf("[PROC-GEN] Opening Case DB; res = %i\n", res);
+
+    char *err = nullptr;
+    res = sqlite3_exec(db, "SELECT * FROM users;", debug_callback, NULL, &err);
+    printf("[PROC-GEN] EXEC res = %i; err = %s\n", res, err);
+
+    res = sqlite3_close_v2(db);
+    printf("[PROC-GEN] Closing Case DB; res = %i\n", res);
+    printf("[PROC-GEN] Just testing, SQLITE_OK value = %i\n", SQLITE_OK);
+    */
 }
 
 void case_gen_population(case_gen *ctx) { }
