@@ -51,3 +51,5 @@ gamelibs/
 qg.exe
 
 *.rdi
+
+*.db
