@@ -6,17 +6,11 @@
 #include <string>
 #include <vector>
 
+// CASE GENERATOR ====================
+
 enum city_size : int8_t { SIZE_SMALL, SIZE_MEDIUM, SIZE_LARGE, SIZE_METRO, SIZE_COUNT };
 enum district_type : int8_t { INDUSTRIAL, COMMERCIAL, RESIDENTIAL, NIGHT_LIFE, FINANCIAL, DISTRICT_COUNT };
-
-struct district {
-    int64_t id;
-    district_type type;
-};
-extern int8_t size_to_districts[city_size::SIZE_COUNT];
-extern int8_t district_weights[district_type::DISTRICT_COUNT];
-
-enum class location_type : int32_t {
+enum landmark_type : int8_t {
     //TODO: More variety
     // categorize by district type
     LOCATION_RESIDENTIAL,
@@ -26,13 +20,21 @@ enum class location_type : int32_t {
     LOCATION_COUNT,
 };
 
+extern int8_t size_to_districts[city_size::SIZE_COUNT];
+extern int8_t district_weights[district_type::DISTRICT_COUNT];
+extern int8_t size_to_landmarks[city_size::SIZE_COUNT];
+
+struct district {
+    int64_t id;
+    district_type type;
+};
+
 struct landmark {
     int64_t id;
     int64_t district;
 };
-extern int8_t size_to_landmarks[city_size::SIZE_COUNT];
 
-struct city_gen {
+struct case_gen {
     city_size size;
     int8_t num_districts;
     district districts[16];
@@ -41,7 +43,16 @@ struct city_gen {
     landmark landmarks[128];
 };
 
-// --------------------------------------------
+void case_gen_fondation(case_gen *ctx, city_size s, int32_t seed);
+void case_gen_population(case_gen *ctx);
+void case_gen_motive(case_gen *ctx);
+void case_gen_crime(case_gen *ctx);
+void case_gen_planning(case_gen *ctx);
+void case_gen_exec(case_gen *ctx);
+void case_gen_hook(case_gen *ctx);
+void case_gen_polish(case_gen *ctx);
+
+// NAME GENERATOR ====================
 
 //TODO: Find a way to simplify this data structure; remove maps/vectors
 struct name_generator {
@@ -51,5 +62,7 @@ struct name_generator {
 
 void name_generator_train(name_generator *gen);
 void name_generator_next(name_generator *gen, size_t num, std::vector<std::string> *out);
+
+// UTILS ==============================
 
 int rand_weighted_index(int8_t *weights, int num_items);
