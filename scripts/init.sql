@@ -1,3 +1,7 @@
+DROP TABLE IF EXISTS districts;
+DROP TABLE IF EXISTS landmarks;
+DROP TABLE IF EXISTS transits;
+
 CREATE TABLE districts(
     district_id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
@@ -21,16 +25,16 @@ CREATE TABLE landmarks(
     crime_factor INTEGER NOT NULL -- [0-100]
 );
 
-CREATE TABLE transit (
-    from_landmark_id INTEGER NOT NULL REFERENCES landmark(landmark_id),
-    to_landmark_id   INTEGER NOT NULL REFERENCES landmark(landmark_id),
+CREATE TABLE transits (
+    from_landmark_id INTEGER NOT NULL REFERENCES landmarks(landmark_id),
+    to_landmark_id   INTEGER NOT NULL REFERENCES landmarks(landmark_id),
     mode             INTEGER NOT NULL,
     day_phase        INTEGER NOT NULL,
     minutes          INTEGER NOT NULL,
     PRIMARY KEY (from_landmark_id, to_landmark_id, mode, day_phase)
 ) WITHOUT ROWID;
 
-CREATE INDEX idx_landmark_district   ON landmark(district_id);
-CREATE INDEX idx_landmark_type       ON landmark(type);
-CREATE INDEX idx_transit_from        ON transit(from_landmark_id);
-CREATE INDEX idx_transit_to          ON transit(to_landmark_id);
+CREATE INDEX idx_landmark_district   ON landmarks(district_id);
+CREATE INDEX idx_landmark_type       ON landmarks(type);
+CREATE INDEX idx_transit_from        ON transits(from_landmark_id);
+CREATE INDEX idx_transit_to          ON transits(to_landmark_id);
