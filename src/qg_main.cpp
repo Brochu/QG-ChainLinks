@@ -17,22 +17,24 @@ float pos = 0.f;
 
 int main(int argc, char **argv) {
     rand_seed(time(NULL));
+    if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
+        printf("Could not init SDL3\nerror: %s\n", SDL_GetError());
+        return EXIT_FAILURE;
+    }
+    printf("[QG] SDL3 Correctly init'ed!\n");
 
     name_gen ctx;
-    name_gen_train(&ctx);
+    name_gen_train(&ctx, "../assets/city_names.csv");
 
     std::vector<std::string> out;
     name_gen_next(&ctx, 25, &out);
     for (int i = 0; i < out.size(); i++) {
         printf("[GEN] name: '%s'\n", out[i].c_str());
     }
-    return 0;
 
-    if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
-        printf("Could not init SDL3\nerror: %s\n", SDL_GetError());
-        return EXIT_FAILURE;
-    }
-    printf("[QG] opening SDL3 window!\n");
+    SDL_Quit();
+    printf("[QG] quitting SDL3!\n");
+    return 0;
 
     SDL_Window *window;
     SDL_Renderer *context;
@@ -70,7 +72,5 @@ int main(int argc, char **argv) {
     }
 
     SDL_DestroyWindow(window);
-    SDL_Quit();
-    printf("[QG] quitting SDL3 window!\n");
     return 0;
 }

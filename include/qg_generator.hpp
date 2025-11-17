@@ -21,7 +21,7 @@ enum landmark_type : int8_t {
 };
 
 extern int8_t size_to_districts[city_size::SIZE_COUNT];
-extern int8_t district_weights[district_type::DISTRICT_COUNT];
+extern int32_t district_weights[district_type::DISTRICT_COUNT];
 extern int8_t size_to_landmarks[city_size::SIZE_COUNT];
 
 struct district {
@@ -57,8 +57,8 @@ void case_gen_polish(case_gen *ctx);
 //TODO: Find a way to simplify this data structure; remove maps/vectors
 struct name_gen {
     std::vector<std::string> starts;
-    std::unordered_map<std::string, std::unordered_map<char, int8_t>> counts;
+    std::unordered_map<std::string, std::unordered_map<char, int32_t>> counts;
 };
 
-void name_gen_train(name_gen *gen);
+void name_gen_train(name_gen *gen, const char *file_path);
 void name_gen_next(name_gen *gen, size_t num, std::vector<std::string> *out);

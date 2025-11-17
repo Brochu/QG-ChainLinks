@@ -12,13 +12,13 @@ float rand_float01() {
     return g_rand_dist(g_rand_eng);
 }
 
-int rand_weighted_index(int8_t *weights, int num_items) {
-    int sum = 0;
+int rand_weighted_index(int32_t *weights, int num_items) {
+    int64_t sum = 0;
     for (int i = 0; i < num_items; i++) {
         sum += weights[i];
     }
 
-    int target = (int)(rand_float01() * sum) + 1;
+    int64_t target = (int)(rand_float01() * sum) + 1;
 
     int current = 0;
     while (target > weights[current]) {
