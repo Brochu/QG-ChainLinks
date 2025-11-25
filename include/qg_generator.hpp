@@ -62,3 +62,7 @@ struct name_gen {
 
 void name_gen_train(name_gen *gen, const char *file_path);
 void name_gen_next(name_gen *gen, size_t num, std::vector<std::string> *out);
+
+extern const char *district_prefix[];
+extern const char *district_suffix[];
+void name_gen_district(name_gen *gen, size_t num, std::vector<std::string> *out);

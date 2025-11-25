@@ -2,6 +2,7 @@
 #include "qg_random.hpp"
 
 #include <SDL3/SDL.h>
+#include <sqlite3.h>
 
 int debug_callback(void *data, int size, char **var0, char **var1) {
     return 0;
@@ -41,6 +42,11 @@ void case_gen_fondation(case_gen *ctx, city_size s, int32_t seed) {
     }
     // Cut some links
 
+    sqlite3 *db;
+    int res = sqlite3_open(":memory:", &db);
+    printf("[PROC-GEN] Opening in-memory DB; res = %i\n", res);
+    res = sqlite3_close(db);
+    printf("[PROC-GEN] Closing in-memory DB; res = %i\n", res);
     /*
     sqlite3 *db;
     int res = sqlite3_open("./detective.db", &db);
@@ -116,4 +122,12 @@ void name_gen_next(name_gen *gen, size_t num, std::vector<std::string> *out) {
         }
         out->push_back(name);
     }
+}
+
+const char *district_prefix[] { "Little", "Grand", "Silver", "High", "Low", "Old", "New", "Upper", "Lower", "Greater" };
+const char *district_suffix[] { "Heights", "Park", "Hills", "Grove", "Valley", "District", "Quarter", "Gardens", "Square", "Town", "Village", "Estates", "Side", "End" };
+void name_gen_district(name_gen *gen, size_t num, std::vector<std::string> *out) {
+    //TODO: Make sure to have better odds at rolling a suffix since we have more of them
+    // Also there should be a chance we have none
+    // But no chance to have both, I think it would be too much
 }

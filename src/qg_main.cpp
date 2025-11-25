@@ -32,6 +32,9 @@ int main(int argc, char **argv) {
         printf("[GEN] name: '%s'\n", out[i].c_str());
     }
 
+    case_gen case_ctx {};
+    case_gen_fondation(&case_ctx, city_size::SIZE_SMALL, 0);
+
     SDL_Quit();
     printf("[QG] quitting SDL3!\n");
     return 0;
