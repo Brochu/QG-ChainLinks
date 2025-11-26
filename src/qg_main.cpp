@@ -32,6 +32,12 @@ int main(int argc, char **argv) {
         printf("[GEN] name: '%s'\n", out[i].c_str());
     }
 
+    out.clear();
+    name_gen_district(&ctx, 25, &out);
+    for (int i = 0; i < out.size(); i++) {
+        printf("[GEN] district: '%s'\n", out[i].c_str());
+    }
+
     case_gen case_ctx {};
     case_gen_fondation(&case_ctx, city_size::SIZE_SMALL, 0);
 

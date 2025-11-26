@@ -72,6 +72,11 @@ void case_gen_polish(case_gen *ctx) { }
 
 // ====================
 
+const char *district_prefix[] { "Little", "Grand", "Silver", "High", "Low", "Old", "New", "Upper", "Lower", "Greater" };
+const size_t num_district_prefix = sizeof(district_prefix) / sizeof(district_prefix[0]);
+const char *district_suffix[] { "Heights", "Park", "Hills", "Grove", "Valley", "District", "Quarter", "Gardens", "Square", "Town", "Village", "Estates", "Side", "End" };
+const size_t num_district_suffix = sizeof(district_suffix) / sizeof(district_suffix[0]);
+
 void name_gen_train(name_gen *gen, const char *file_path) {
     size_t len = 0;
     std::string data = (char *)SDL_LoadFile(file_path, &len);
@@ -85,8 +90,6 @@ void name_gen_train(name_gen *gen, const char *file_path) {
 
         s = e + 1;
         e = data.find(',', s);
-
-        gen->starts.push_back(name.substr(0, k));
 
         for (int i = 0; i < name.size() - k; i++) {
             std::string prefix = name.substr(i, k);
@@ -102,8 +105,7 @@ void name_gen_next(name_gen *gen, size_t num, std::vector<std::string> *out) {
     std::vector<int32_t> weights;
 
     for (int i = 0; i < num; i++) {
-        size_t start_idx = (size_t)(rand_float01() * gen->starts.size());
-        std::string name = gen->starts[start_idx];
+        std::string name = "^^^";
 
         char next = '\0';
         while (next != '$') {
@@ -120,14 +122,29 @@ void name_gen_next(name_gen *gen, size_t num, std::vector<std::string> *out) {
             next = options[next_idx];
             name += next;
         }
-        out->push_back(name);
+        out->push_back(name.substr(k, name.size() - (k+1)));
     }
 }
 
-const char *district_prefix[] { "Little", "Grand", "Silver", "High", "Low", "Old", "New", "Upper", "Lower", "Greater" };
-const char *district_suffix[] { "Heights", "Park", "Hills", "Grove", "Valley", "District", "Quarter", "Gardens", "Square", "Town", "Village", "Estates", "Side", "End" };
 void name_gen_district(name_gen *gen, size_t num, std::vector<std::string> *out) {
-    //TODO: Make sure to have better odds at rolling a suffix since we have more of them
-    // Also there should be a chance we have none
-    // But no chance to have both, I think it would be too much
+    name_gen_next(gen, num, out);
+
+    //TODO: Is there a better way
+    int s_weights[15] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 42 };
+    int p_weights[11] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 30 };
+
+    for (std::string &name : *out) {
+        int suffix_idx = rand_weighted_index(s_weights, 15);
+        if (suffix_idx < num_district_suffix) {
+            name.append(" ");
+            name.append(district_suffix[suffix_idx]);
+            continue;
+        }
+
+        int prefix_idx = rand_weighted_index(p_weights, 11);
+        if (prefix_idx < num_district_prefix) {
+            name.insert(0, " ");
+            name.insert(0, district_prefix[prefix_idx]);
+        }
+    }
 }

@@ -55,14 +55,16 @@ void case_gen_polish(case_gen *ctx);
 // NAME GENERATOR ====================
 
 //TODO: Find a way to simplify this data structure; remove maps/vectors
+//TODO: Each name_gen should have it's own memory pool for names
 struct name_gen {
-    std::vector<std::string> starts;
     std::unordered_map<std::string, std::unordered_map<char, int32_t>> counts;
 };
+extern const char *district_prefix[];
+extern const size_t num_district_prefix;
+extern const char *district_suffix[];
+extern const size_t num_district_suffix;
 
 void name_gen_train(name_gen *gen, const char *file_path);
 void name_gen_next(name_gen *gen, size_t num, std::vector<std::string> *out);
 
-extern const char *district_prefix[];
-extern const char *district_suffix[];
 void name_gen_district(name_gen *gen, size_t num, std::vector<std::string> *out);
