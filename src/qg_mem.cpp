@@ -1,6 +1,6 @@
 #include "qg_memory.hpp"
 
-void mem_arena_init(mem_arena *arena, size_t max_size) {
+void mem_arena_init(mem_arena *arena, u64 max_size) {
     arena->gen = 0;
     arena->next = 0;
 
@@ -8,7 +8,7 @@ void mem_arena_init(mem_arena *arena, size_t max_size) {
     arena->cap = max_size;
 }
 
-arena_ptr mem_arena_alloc(mem_arena *arena, size_t size) {
+arena_ptr mem_arena_alloc(mem_arena *arena, u64 size) {
     return {};
 }
 

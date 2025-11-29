@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
+#include "qg_types.hpp"
 
-void rand_seed(int64_t seed);
-float rand_float01();
+void rand_seed(i64 seed);
+f32 rand_float01();
 
-int rand_weighted_index(int32_t *weights, int num_items);
+i32 rand_weighted_index(i32 *weights, i32 num_items);
