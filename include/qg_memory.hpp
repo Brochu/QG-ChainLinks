@@ -2,6 +2,11 @@
 
 #include "qg_types.hpp"
 
+void *qg_malloc(u64 sz);
+void *qg_calloc(u64 count, u64 sz);
+void *qg_realloc(void *ptr, u64 sz);
+void qg_free(void *ptr);
+
 struct mem_arena {
     u8 *base;
     u64 next;
