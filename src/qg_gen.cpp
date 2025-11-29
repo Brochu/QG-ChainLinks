@@ -77,6 +77,17 @@ const size_t num_district_prefix = sizeof(district_prefix) / sizeof(district_pre
 const char *district_suffix[] { "Heights", "Park", "Hills", "Grove", "Valley", "District", "Quarter", "Gardens", "Square", "Town", "Village", "Estates", "Side", "End" };
 const size_t num_district_suffix = sizeof(district_suffix) / sizeof(district_suffix[0]);
 
+bool name_gen_validate(const std::string &name) {
+    size_t f_space = name.find_first_of(' ');
+    size_t l_space = name.find_last_of(' ');
+    if (f_space != l_space) return false; // Make sure we accept only MAX one space in the name
+
+    if (f_space == std::string::npos && (name.size() > 15 || name.size() < 5)) return false; // Prevent single word name over 15 chars or under 5
+    if (f_space != std::string::npos && (f_space > 10 || name.size() - f_space > 10)) return false; // Prevent each word in composed name to be over 10 chars
+
+    return true;
+}
+
 void name_gen_train(name_gen *gen, const char *file_path) {
     size_t len = 0;
     std::string data = (char *)SDL_LoadFile(file_path, &len);
@@ -122,7 +133,14 @@ void name_gen_next(name_gen *gen, size_t num, std::vector<std::string> *out) {
             next = options[next_idx];
             name += next;
         }
-        out->push_back(name.substr(k, name.size() - (k+1)));
+
+        name.erase(0, k);
+        name.resize(name.size() - 1);
+        if (name_gen_validate(name)) {
+            out->push_back(name);
+        } else {
+            i--;
+        }
     }
 }
 

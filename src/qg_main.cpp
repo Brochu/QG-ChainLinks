@@ -26,14 +26,15 @@ int main(int argc, char **argv) {
     name_gen ctx;
     name_gen_train(&ctx, "../assets/city_names.csv");
 
+    static size_t NAME_GEN_LEN = 10;
     std::vector<std::string> out;
-    name_gen_next(&ctx, 25, &out);
+    name_gen_next(&ctx, NAME_GEN_LEN, &out);
     for (int i = 0; i < out.size(); i++) {
         printf("[GEN] name: '%s'\n", out[i].c_str());
     }
 
     out.clear();
-    name_gen_district(&ctx, 25, &out);
+    name_gen_district(&ctx, NAME_GEN_LEN, &out);
     for (int i = 0; i < out.size(); i++) {
         printf("[GEN] district: '%s'\n", out[i].c_str());
     }
