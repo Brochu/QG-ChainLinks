@@ -171,7 +171,6 @@ void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out) {
     }
 }
 
-
 void name_cycle_init(name_cycle *ctx, const char *file_path) {
     static u64 NAME_ARENA_SIZE = 850 * 20;
     mem_arena_init(&ctx->mem, NAME_ARENA_SIZE);
@@ -209,6 +208,8 @@ void name_cycle_init(name_cycle *ctx, const char *file_path) {
 }
 
 void name_cycle_next(name_cycle *ctx, u64 num, std::vector<std::string> *out) {
+    if (!ctx || !out || ctx->list.size() <= 0) return;
+
     for (u64 i = 0; i < num; i++) {
         out->emplace_back(ctx->list[ctx->next]);
         ctx->next = (ctx->next + ctx->step) % ctx->list.size();
