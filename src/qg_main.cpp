@@ -35,6 +35,16 @@ int main(int argc, char **argv) {
     }
     name_cycle_clear(&ctx);
 
+    names.clear();
+
+    name_gen city_gen {};
+    name_gen_train(&city_gen, "../assets/city_names.csv");
+
+    name_gen_district(&city_gen, 10, &names);
+    for (const std::string &n : names) {
+        printf(" -> '%s'\n", n.c_str());
+    }
+
     SDL_Quit();
     printf("[QG] quitting SDL3!\n");
     return 0;

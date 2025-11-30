@@ -60,10 +60,6 @@ void case_gen_polish(case_gen *ctx);
 struct name_gen {
     std::unordered_map<std::string, std::unordered_map<char, i32>> counts;
 };
-extern const char *district_prefix[];
-extern const u64 num_district_prefix;
-extern const char *district_suffix[];
-extern const u64 num_district_suffix;
 
 void name_gen_train(name_gen *gen, const char *file_path);
 void name_gen_next(name_gen *gen, u64 num, std::vector<std::string> *out);

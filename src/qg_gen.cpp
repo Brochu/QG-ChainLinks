@@ -73,10 +73,6 @@ void case_gen_polish(case_gen *ctx) { }
 
 // ====================
 
-const char *district_prefix[] { "Little", "Grand", "Silver", "High", "Low", "Old", "New", "Upper", "Lower", "Greater" };
-const u64 num_district_prefix = sizeof(district_prefix) / sizeof(district_prefix[0]);
-const char *district_suffix[] { "Heights", "Park", "Hills", "Grove", "Valley", "District", "Quarter", "Gardens", "Square", "Town", "Village", "Estates", "Side", "End" };
-const u64 num_district_suffix = sizeof(district_suffix) / sizeof(district_suffix[0]);
 
 bool name_gen_validate(const std::string &name) {
     size_t f_space = name.find_first_of(' ');
@@ -149,12 +145,16 @@ void name_gen_next(name_gen *gen, u64 num, std::vector<std::string> *out) {
 }
 
 void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out) {
-    name_gen_next(gen, num, out);
+    static const char *district_prefix[] { "Little", "Grand", "Silver", "High", "Low", "Old", "New", "Upper", "Lower", "Greater" };
+    static u64 num_district_prefix = sizeof(district_prefix) / sizeof(district_prefix[0]);
+    static const char *district_suffix[] { "Heights", "Park", "Hills", "Grove", "Valley", "District", "Quarter", "Gardens", "Square", "Town", "Village", "Estates", "Side", "End" };
+    static u64 num_district_suffix = sizeof(district_suffix) / sizeof(district_suffix[0]);
 
     //TODO: Is there a better way
     static i32 s_weights[15] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 42 };
     static i32 p_weights[11] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 30 };
 
+    name_gen_next(gen, num, out);
     for (std::string &name : *out) {
         int suffix_idx = rand_weighted_index(s_weights, 15);
         if (suffix_idx < num_district_suffix) {
