@@ -1,3 +1,4 @@
+#include "SDL3/SDL_stdinc.h"
 #include "qg_generator.hpp"
 #include "qg_random.hpp"
 
@@ -90,7 +91,8 @@ bool name_gen_validate(const std::string &name) {
 
 void name_gen_train(name_gen *gen, const char *file_path) {
     u64 len = 0;
-    std::string data = (char *)SDL_LoadFile(file_path, &len);
+    const char *file_contents = (char*)SDL_LoadFile(file_path, &len);
+    std::string data(file_contents);
 
     u64 s = 0;
     u64 e = data.find(',', s);
@@ -108,6 +110,8 @@ void name_gen_train(name_gen *gen, const char *file_path) {
             gen->counts[prefix][next]++;
         }
     }
+
+    SDL_free((void*)file_contents);
 }
 
 void name_gen_next(name_gen *gen, u64 num, std::vector<std::string> *out) {
@@ -148,8 +152,8 @@ void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out) {
     name_gen_next(gen, num, out);
 
     //TODO: Is there a better way
-    int s_weights[15] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 42 };
-    int p_weights[11] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 30 };
+    static i32 s_weights[15] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 42 };
+    static i32 p_weights[11] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 30 };
 
     for (std::string &name : *out) {
         int suffix_idx = rand_weighted_index(s_weights, 15);
@@ -165,4 +169,56 @@ void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out) {
             name.insert(0, district_prefix[prefix_idx]);
         }
     }
+}
+
+
+void name_cycle_init(name_cycle *ctx, const char *file_path) {
+    static u64 NAME_ARENA_SIZE = 850 * 20;
+    mem_arena_init(&ctx->mem, NAME_ARENA_SIZE);
+
+    u64 len = 0;
+    const char *file_contents = (char*)SDL_LoadFile(file_path, &len);
+    std::string data(file_contents);
+
+    u64 s = 0;
+    u64 e = data.find(',', s);
+
+    while (e != std::string::npos) {
+        const u64 len = (e-s)+1;
+        arena_ptr pname = mem_arena_alloc(&ctx->mem, len, 1);
+
+        memcpy_s(pname.p, len, data.data() + s, len-1);
+        pname.p[len-1] = '\0';
+        ctx->list.emplace_back((const char *)pname.p);
+
+        s = e + 1;
+        e = data.find(',', s);
+    }
+
+    SDL_free((void*)file_contents);
+
+    static u32 prime_steps[] { 2, 29, 73, 113, 179, 229, 283, 349, 419, 463, 547, 601 };
+    static u64 num_prime_steps = sizeof(prime_steps) / sizeof(prime_steps[0]);
+    static i32 primes_weights[12] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+
+    ctx->step = prime_steps[rand_weighted_index(primes_weights, num_prime_steps)];
+    while (ctx->step % ctx->list.size() == 0) {
+        ctx->step++;
+    }
+    ctx->next = SDL_rand(ctx->list.size());
+}
+
+void name_cycle_next(name_cycle *ctx, u64 num, std::vector<std::string> *out) {
+    for (u64 i = 0; i < num; i++) {
+        out->emplace_back(ctx->list[ctx->next]);
+        ctx->next = (ctx->next + ctx->step) % ctx->list.size();
+    }
+}
+
+void name_cycle_clear(name_cycle *ctx) {
+    ctx->list.clear();
+    mem_arena_clear(&ctx->mem);
+
+    ctx->step = 0;
+    ctx->next = 0;
 }

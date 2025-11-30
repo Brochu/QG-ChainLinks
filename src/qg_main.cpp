@@ -1,9 +1,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <vector>
 
 #include "SDL3/SDL.h"
-#include "qg_memory.hpp"
+#include "qg_generator.hpp"
 #include "qg_random.hpp"
 
 #define VERSION "ALPHA" //TODO: Export version from the main game DLL
@@ -22,19 +23,17 @@ int main(int argc, char **argv) {
     }
     printf("[QG] SDL3 Correctly init'ed!\n");
 
-    mem_arena arena { 0 };
-    mem_arena_init(&arena, 8);
-    arena_ptr h0 = mem_arena_alloc(&arena, 2, 1);
-    arena_ptr h1 = mem_arena_alloc(&arena, 2, 1);
-    arena_ptr h2 = mem_arena_alloc(&arena, 2, 1);
-    arena_ptr h3 = mem_arena_alloc(&arena, 2, 1);
-    mem_arena_reset(&arena);
+    name_cycle ctx {};
+    name_cycle_init(&ctx, "../assets/m_names.csv");
 
-    h0 = mem_arena_alloc(&arena, 2, 1);
-    h1 = mem_arena_alloc(&arena, 2, 1);
-    h2 = mem_arena_alloc(&arena, 2, 1);
-    h3 = mem_arena_alloc(&arena, 2, 1);
-    mem_arena_clear(&arena);
+    printf("%lld names; pulling 25 names\n", ctx.list.size());
+    std::vector<std::string> names;
+    name_cycle_next(&ctx, 25, &names);
+
+    for (const std::string &n : names) {
+        printf(" - '%s'\n", n.c_str());
+    }
+    name_cycle_clear(&ctx);
 
     SDL_Quit();
     printf("[QG] quitting SDL3!\n");
