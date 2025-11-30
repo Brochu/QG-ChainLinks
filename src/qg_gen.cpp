@@ -204,7 +204,7 @@ void name_cycle_init(name_cycle *ctx, const char *file_path) {
     while (ctx->step % ctx->list.size() == 0) {
         ctx->step++;
     }
-    ctx->next = SDL_rand(ctx->list.size());
+    ctx->next = rand_int(ctx->list.size());
 }
 
 void name_cycle_next(name_cycle *ctx, u64 num, std::vector<std::string> *out) {

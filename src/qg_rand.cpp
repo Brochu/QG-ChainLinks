@@ -12,6 +12,10 @@ f32 rand_float01() {
     return g_rand_dist(g_rand_eng);
 }
 
+i32 rand_int(i32 max_val) {
+    return (i32)(rand_float01() * max_val);
+}
+
 i32 rand_weighted_index(i32 *weights, i32 num_items) {
     i64 sum = 0;
     for (int i = 0; i < num_items; i++) {
