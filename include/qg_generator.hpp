@@ -44,6 +44,8 @@ struct case_gen {
     landmark landmarks[128];
 };
 
+void case_gen_init(case_gen *ctx);
+
 void case_gen_fondation(case_gen *ctx, city_size s, i32 seed);
 void case_gen_population(case_gen *ctx);
 void case_gen_motive(case_gen *ctx);
@@ -52,6 +54,8 @@ void case_gen_planning(case_gen *ctx);
 void case_gen_exec(case_gen *ctx);
 void case_gen_hook(case_gen *ctx);
 void case_gen_polish(case_gen *ctx);
+
+void case_gen_clear(case_gen *ctx);
 
 // NAME GENERATOR ====================
 

@@ -1,9 +1,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include <vector>
 
-#include "SDL3/SDL.h"
+#include "SDL3/SDL_init.h"
+#include "SDL3/SDL_render.h"
+
 #include "qg_generator.hpp"
 #include "qg_random.hpp"
 
@@ -23,27 +24,10 @@ int main(int argc, char **argv) {
     }
     printf("[QG] SDL3 Correctly init'ed!\n");
 
-    name_cycle ctx {};
-    name_cycle_init(&ctx, "../assets/m_names.csv");
-
-    printf("%lld names; pulling 25 names\n", ctx.list.size());
-    std::vector<std::string> names;
-    name_cycle_next(&ctx, 25, &names);
-
-    for (const std::string &n : names) {
-        printf(" - '%s'\n", n.c_str());
-    }
-    name_cycle_clear(&ctx);
-
-    names.clear();
-
-    name_gen city_gen {};
-    name_gen_train(&city_gen, "../assets/city_names.csv");
-
-    name_gen_district(&city_gen, 10, &names);
-    for (const std::string &n : names) {
-        printf(" -> '%s'\n", n.c_str());
-    }
+    case_gen ctx = {};
+    case_gen_init(&ctx);
+    case_gen_fondation(&ctx, city_size::SIZE_SMALL, rand_int(INT_MAX));
+    case_gen_clear(&ctx);
 
     SDL_Quit();
     printf("[QG] quitting SDL3!\n");
