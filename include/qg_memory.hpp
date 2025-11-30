@@ -20,6 +20,6 @@ struct arena_ptr {
 };
 
 void mem_arena_init(mem_arena *arena, u64 max_size);
-arena_ptr mem_arena_alloc(mem_arena *arena, u64 size);
+arena_ptr mem_arena_alloc(mem_arena *arena, u64 size, u64 align = sizeof(void *));
 void mem_arena_reset(mem_arena *arena);
 void mem_arena_clear(mem_arena *arena);

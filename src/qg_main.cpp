@@ -1,11 +1,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include <vector>
 
 #include "SDL3/SDL.h"
+#include "qg_memory.hpp"
 #include "qg_random.hpp"
-#include "qg_generator.hpp"
 
 #define VERSION "ALPHA" //TODO: Export version from the main game DLL
 #define TITLE "QG-ChainLinks"
@@ -23,24 +22,19 @@ int main(int argc, char **argv) {
     }
     printf("[QG] SDL3 Correctly init'ed!\n");
 
-    name_gen ctx;
-    name_gen_train(&ctx, "../assets/city_names.csv");
+    mem_arena arena { 0 };
+    mem_arena_init(&arena, 8);
+    arena_ptr h0 = mem_arena_alloc(&arena, 2, 1);
+    arena_ptr h1 = mem_arena_alloc(&arena, 2, 1);
+    arena_ptr h2 = mem_arena_alloc(&arena, 2, 1);
+    arena_ptr h3 = mem_arena_alloc(&arena, 2, 1);
+    mem_arena_reset(&arena);
 
-    static size_t NAME_GEN_LEN = 10;
-    std::vector<std::string> out;
-    name_gen_next(&ctx, NAME_GEN_LEN, &out);
-    for (int i = 0; i < out.size(); i++) {
-        printf("[GEN] name: '%s'\n", out[i].c_str());
-    }
-
-    out.clear();
-    name_gen_district(&ctx, NAME_GEN_LEN, &out);
-    for (int i = 0; i < out.size(); i++) {
-        printf("[GEN] district: '%s'\n", out[i].c_str());
-    }
-
-    case_gen case_ctx {};
-    case_gen_fondation(&case_ctx, city_size::SIZE_SMALL, 0);
+    h0 = mem_arena_alloc(&arena, 2, 1);
+    h1 = mem_arena_alloc(&arena, 2, 1);
+    h2 = mem_arena_alloc(&arena, 2, 1);
+    h3 = mem_arena_alloc(&arena, 2, 1);
+    mem_arena_clear(&arena);
 
     SDL_Quit();
     printf("[QG] quitting SDL3!\n");
@@ -82,5 +76,7 @@ int main(int argc, char **argv) {
     }
 
     SDL_DestroyWindow(window);
+    SDL_Quit();
+    printf("[QG] quitting SDL3!\n");
     return 0;
 }

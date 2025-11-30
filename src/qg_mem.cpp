@@ -1,4 +1,5 @@
 #include "qg_memory.hpp"
+#include <cassert>
 #include <cstdlib>
 
 //TODO: Add memory tracking w/ profiler? Tracy
@@ -20,18 +21,30 @@ void qg_free(void *ptr) {
 
 // MEMORY ARENA -----------------------------------
 
-void mem_arena_init(mem_arena *arena, u64 max_size) {
-    arena->gen = 0;
-    arena->next = 0;
+static inline u64 align_fwd(u64 ptr, u64 align) {
+    u64 m = align - 1;
+    return (ptr + m) & ~m;
+}
 
-    //TODO: Handle alloc
-    arena->base = nullptr;
+void mem_arena_init(mem_arena *arena, u64 max_size) {
+    arena->base = (u8*)qg_malloc(max_size);
+    if (arena->base == nullptr) {
+        assert(false && "ASSERT: Could not allocate new mem_arena");
+    }
+    arena->next = 0;
     arena->cap = max_size;
 }
 
-arena_ptr mem_arena_alloc(mem_arena *arena, u64 size) {
-    //TODO: Fetch next size bytes create handle to it
-    return { nullptr, arena->gen };
+arena_ptr mem_arena_alloc(mem_arena *arena, u64 size, u64 align) {
+    u64 off = align_fwd(arena->next, align);
+
+    if (off + size > arena->cap) {
+        assert(false && "ASSERT: mem_arena ran out of allocated memory");
+        return { nullptr, arena->gen };
+    }
+    u8 *ptr = arena->base + off;
+    arena->next = off + size;
+    return { ptr, arena->gen };
 }
 
 void mem_arena_reset(mem_arena *arena) {
@@ -40,5 +53,10 @@ void mem_arena_reset(mem_arena *arena) {
 }
 
 void mem_arena_clear(mem_arena *arena) {
-    //TODO: Handle de-alloc
+    qg_free(arena->base);
+    arena->base = nullptr;
+
+    arena->next = 0;
+    arena->cap = 0;
+    arena->gen++;
 }
