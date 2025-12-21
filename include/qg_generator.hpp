@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <sqlite3.h>
+
 #include "qg_types.hpp"
 #include "qg_memory.hpp"
 
@@ -14,34 +16,55 @@ enum district_type : i8 { INDUSTRIAL, COMMERCIAL, RESIDENTIAL, NIGHT_LIFE, FINAN
 enum landmark_type : i8 {
     //TODO: More variety
     // categorize by district type
-    LOCATION_RESIDENTIAL,
-    LOCATION_HOME = LOCATION_RESIDENTIAL,
-    LOCATION_RESTAURANT,
-    LOCATION_BANK,
-    LOCATION_COUNT,
+    LANDMARK_TYPE_RESIDENTIAL,
+    LANDMARK_TYPE_HOME = LANDMARK_TYPE_RESIDENTIAL,
+    LANDMARK_TYPE_RESTAURANT,
+    LANDMARK_TYPE_BANK,
+    LANDMARK_TYPE_COUNT,
+};
+enum landmark_size : i8 {
+    LANDMARK_SIZE_TINY,
+    LANDMARK_SIZE_SMALL,
+    LANDMARK_SIZE_MEDIUM,
+    LANDMARK_SIZE_LARGE,
+    LANDMARK_SIZE_COUNT,
 };
 
 extern i8 size_to_districts[city_size::SIZE_COUNT];
 extern i32 district_weights[district_type::DISTRICT_COUNT];
+
 extern i8 size_to_landmarks[city_size::SIZE_COUNT];
+extern i32 landmark_size_weights[landmark_size::LANDMARK_SIZE_COUNT];
 
 struct district {
     i64 id;
+    const char *name;
     district_type type;
+    i32 wealth;
+    i32 roughness;
+    i32 response_time;
 };
 
 struct landmark {
     i64 id;
-    i64 district;
+    i64 district_id;
+    const char *name;
+    landmark_type type;
+    landmark_size size;
+    i32 open_hour;
+    i32 close_hour;
+    i32 peak_hour;
+    i32 num_staff;
+    bool is_public;
+    i32 crime_factor;
 };
 
 struct case_gen {
+    sqlite3 *db;
+
     city_size size;
     i8 num_districts;
-    district districts[16];
-
     i8 num_landmarks;
-    landmark landmarks[128];
 };
 
 void case_gen_init(case_gen *ctx);

@@ -1,9 +1,11 @@
-#include "SDL3/SDL_stdinc.h"
 #include "qg_generator.hpp"
 #include "qg_random.hpp"
+#include "sqlite3.h"
 
+#include <assert.h>
 #include <SDL3/SDL.h>
-#include <sqlite3.h>
+
+#include "qg_gen_sql.inc" // SQL static command strings
 
 int debug_callback(void *data, int size, char **var0, char **var1) {
     return 0;
@@ -13,32 +15,88 @@ i8 size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
 i32 district_weights[district_type::DISTRICT_COUNT] = { 2, 3, 4, 1, 1 };
 
 i8 size_to_landmarks[city_size::SIZE_COUNT] = { 5, 15, 40, 80 };
+i32 landmark_size_weights[landmark_size::LANDMARK_SIZE_COUNT] = { 1, 3, 4, 2 };
 
 void case_gen_init(case_gen *ctx) {
-    //TODO: Memory init
+    //TODO: Memory arena init
+
+    int res = sqlite3_open(":memory:", &ctx->db);
+    assert(res == 0 && "Could not open in-memory DB");
+    printf("[PROC-GEN] Opening in-memory DB; res = %i\n", res);
+
+    sqlite3_exec(ctx->db, sql_init, debug_callback, NULL, NULL);
 }
 
 void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
-    srand(seed);
-    ctx->size = s;
-    ctx->num_landmarks = 0;
+    rand_seed(seed);
 
+    ctx->size = s;
+    ctx->num_landmarks = size_to_landmarks[s];
     ctx->num_districts = size_to_districts[s];
+
+    sqlite3_stmt *prep;
+    int res = sqlite3_prepare_v3(ctx->db, sql_district, strlen(sql_district), 0, &prep, nullptr);
+    if (res != 0) {
+        printf("[PROC-GEN] Could not compile statement. ERR: %s\n", sqlite3_errmsg(ctx->db));
+        assert(0 && "Could not create new prepared statement");
+    }
     for (int i = 0; i < ctx->num_districts; i++) {
         // Districts
-        printf("[PROC-GEN] Generate a new district\n");
-        district *d = &ctx->districts[i];
-        d->id = i;
-        d->type = district_type::RESIDENTIAL;
+        sqlite3_reset(prep);
 
-        for (int j = 0; j < size_to_landmarks[s]; j++) {
-            // landmarks
-            printf("[PROC-GEN] Generate a new landmark\n");
-            landmark *loc = &ctx->landmarks[ctx->num_landmarks++];
-            loc->id = ctx->num_landmarks - 1;
-            loc->district = i;
-        }
+        district d;
+        d.name = "TOWNVILLE";
+        d.type = district_type::RESIDENTIAL;
+        d.wealth = rand_int(5) + 1;
+        d.roughness = rand_int(5) + 1;
+        d.response_time = 5 + (10 - d.wealth) + rand_int(6);
+
+        //sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, "id"), i);
+        sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":name"), d.name, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":type"), d.type);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":wealth"), d.wealth);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":rough"), d.roughness);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":response_time"), d.response_time);
+        sqlite3_step(prep);
     }
+    res = sqlite3_finalize(prep);
+    assert(res == 0 && "Could not finalize prepared statement");
+
+    res = sqlite3_prepare_v3(ctx->db, sql_landmark, strlen(sql_landmark), 0, &prep, nullptr);
+    if (res != 0) {
+        printf("[PROC-GEN] Could not compile statement. ERR: %s\n", sqlite3_errmsg(ctx->db));
+        assert(0 && "Could not create new prepared statement");
+    }
+    for (int i = 0; i < ctx->num_landmarks; i++) {
+        sqlite3_reset(prep);
+
+        //TODO: Lot of these will depend on district type and landmark type
+        landmark l;
+        l.district_id = rand_int(ctx->num_districts)+1;
+        l.name = "TOWN SQUARE";
+        l.type = landmark_type::LANDMARK_TYPE_HOME;
+        l.size = landmark_size::LANDMARK_SIZE_SMALL;
+        l.open_hour = 0;
+        l.close_hour = 0;
+        l.peak_hour = 0;
+        l.num_staff = 0;
+        l.is_public = 0;
+        l.crime_factor = 0;
+
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":district_id"), l.district_id);
+        sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":name"), l.name, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":type"), l.type);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":size"), l.size);
+        //sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":open_hour"), l.open_hour);
+        //sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":close_hour"), l.close_hour);
+        //sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":peak_hour"), l.peak_hour);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":num_staff"), l.num_staff);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":is_public"), l.is_public ? 1 : 0);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":crime_factor"), l.crime_factor);
+        sqlite3_step(prep);
+    }
+    res = sqlite3_finalize(prep);
+    assert(res == 0 && "Could not finalize prepared statement");
 
     // Transit Links
     for (int i = 0; i < ctx->num_landmarks; i++) {
@@ -46,25 +104,6 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         }
     }
     // Cut some links
-
-    sqlite3 *db;
-    int res = sqlite3_open(":memory:", &db);
-    printf("[PROC-GEN] Opening in-memory DB; res = %i\n", res);
-    res = sqlite3_close(db);
-    printf("[PROC-GEN] Closing in-memory DB; res = %i\n", res);
-    /*
-    sqlite3 *db;
-    int res = sqlite3_open("./detective.db", &db);
-    printf("[PROC-GEN] Opening Case DB; res = %i\n", res);
-
-    char *err = nullptr;
-    res = sqlite3_exec(db, "SELECT * FROM users;", debug_callback, NULL, &err);
-    printf("[PROC-GEN] EXEC res = %i; err = %s\n", res, err);
-
-    res = sqlite3_close_v2(db);
-    printf("[PROC-GEN] Closing Case DB; res = %i\n", res);
-    printf("[PROC-GEN] Just testing, SQLITE_OK value = %i\n", SQLITE_OK);
-    */
 }
 
 void case_gen_population(case_gen *ctx) { }
@@ -76,7 +115,26 @@ void case_gen_hook(case_gen *ctx) { }
 void case_gen_polish(case_gen *ctx) { }
 
 void case_gen_clear(case_gen *ctx) {
-    //TODO: Memory cleanup
+    {
+        //TODO: Make this backup process optional? only happen on errors later in the process?
+        sqlite3 *file;
+        int res = sqlite3_open("detective.db", &file);
+        assert(res == 0 && "Could not open file to save in-memory db");
+
+        sqlite3_backup *back = sqlite3_backup_init(file, "main", ctx->db, "main");
+        assert(back != NULL && "Could not init backup process");
+        sqlite3_backup_step(back, -1);
+        sqlite3_backup_finish(back);
+
+        res = sqlite3_close(file);
+        assert(res == 0 && "Could not close in-memory db backup file");
+    }
+
+    int res = sqlite3_close(ctx->db);
+    assert(res == 0 && "Could not open in-memory DB");
+    printf("[PROC-GEN] Closing in-memory DB; res = %i\n", res);
+
+    //TODO: Memory arena cleanup
 }
 
 // ====================
