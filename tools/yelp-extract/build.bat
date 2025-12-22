@@ -1,3 +1,1 @@
-@echo off
-
-cl -nologo main.cpp -link -out:extract.exe
+odin build extract.odin -file -o:speed
