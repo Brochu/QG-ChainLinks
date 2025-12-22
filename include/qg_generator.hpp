@@ -30,12 +30,6 @@ enum landmark_size : i8 {
     LANDMARK_SIZE_COUNT,
 };
 
-extern i8 size_to_districts[city_size::SIZE_COUNT];
-extern i32 district_weights[district_type::DISTRICT_COUNT];
-
-extern i8 size_to_landmarks[city_size::SIZE_COUNT];
-extern i32 landmark_size_weights[landmark_size::LANDMARK_SIZE_COUNT];
-
 struct district {
     i64 id;
     const char *name;

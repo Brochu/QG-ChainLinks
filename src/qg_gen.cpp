@@ -11,12 +11,6 @@ int debug_callback(void *data, int size, char **var0, char **var1) {
     return 0;
 }
 
-i8 size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
-i32 district_weights[district_type::DISTRICT_COUNT] = { 2, 3, 4, 1, 1 };
-
-i8 size_to_landmarks[city_size::SIZE_COUNT] = { 5, 15, 40, 80 };
-i32 landmark_size_weights[landmark_size::LANDMARK_SIZE_COUNT] = { 1, 3, 4, 2 };
-
 void case_gen_init(case_gen *ctx) {
     //TODO: Memory arena init
 
@@ -27,12 +21,18 @@ void case_gen_init(case_gen *ctx) {
     sqlite3_exec(ctx->db, sql_init, debug_callback, NULL, NULL);
 }
 
+static i8 size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
+static i8 size_to_landmarks[city_size::SIZE_COUNT] = { 5, 15, 40, 80 };
+
+static i32 district_weights[district_type::DISTRICT_COUNT] = { 2, 3, 4, 1, 1 };
+static i32 landmark_size_weights[landmark_size::LANDMARK_SIZE_COUNT] = { 1, 3, 4, 2 };
+
 void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     rand_seed(seed);
 
     ctx->size = s;
-    ctx->num_landmarks = size_to_landmarks[s];
     ctx->num_districts = size_to_districts[s];
+    ctx->num_landmarks = size_to_landmarks[s];
 
     sqlite3_stmt *prep;
     int res = sqlite3_prepare_v3(ctx->db, sql_district, strlen(sql_district), 0, &prep, nullptr);
@@ -216,23 +216,20 @@ void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out) {
     static const char *district_suffix[] { "Heights", "Park", "Hills", "Grove", "Valley", "District", "Quarter", "Gardens", "Square", "Town", "Village", "Estates", "Side", "End" };
     static u64 num_district_suffix = sizeof(district_suffix) / sizeof(district_suffix[0]);
 
-    //TODO: Is there a better way
-    static i32 s_weights[15] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 42 };
-    static i32 p_weights[11] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 30 };
+    static const i32 prefix_odds_denum = 2;
+    static const i32 suffix_odds_denum = 2;
 
     name_gen_next(gen, num, out);
     for (std::string &name : *out) {
-        int suffix_idx = rand_weighted_index(s_weights, 15);
-        if (suffix_idx < num_district_suffix) {
+        if (rand_int(suffix_odds_denum) == 0) {
             name.append(" ");
-            name.append(district_suffix[suffix_idx]);
+            name.append(district_suffix[rand_int(num_district_suffix)]);
             continue;
         }
 
-        int prefix_idx = rand_weighted_index(p_weights, 11);
-        if (prefix_idx < num_district_prefix) {
+        if (rand_int(prefix_odds_denum) == 0) {
             name.insert(0, " ");
-            name.insert(0, district_prefix[prefix_idx]);
+            name.insert(0, district_prefix[rand_int(num_district_prefix)]);
         }
     }
 }
@@ -264,9 +261,8 @@ void name_cycle_init(name_cycle *ctx, const char *file_path) {
 
     static u32 prime_steps[] { 2, 29, 73, 113, 179, 229, 283, 349, 419, 463, 547, 601 };
     static u64 num_prime_steps = sizeof(prime_steps) / sizeof(prime_steps[0]);
-    static i32 primes_weights[12] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
-    ctx->step = prime_steps[rand_weighted_index(primes_weights, num_prime_steps)];
+    ctx->step = prime_steps[rand_int(num_prime_steps)];
     while (ctx->step % ctx->list.size() == 0) {
         ctx->step++;
     }
