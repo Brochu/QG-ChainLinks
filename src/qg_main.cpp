@@ -43,21 +43,21 @@ int main(int argc, char **argv) {
     out_names.clear();
     */
 
+    /*
     name_gen_district(&district_gen, 25, &out_names);
     for (std::string &name : out_names) {
         printf(" - '%s'\n", name.c_str());
     }
     out_names.clear();
+    */
 
-    /*
     name_cycle char_gen;
     name_cycle_init(&char_gen, "../assets/f_names.csv");
-    name_cycle_next(&char_gen, 25, &out_names);
+    name_cycle_next(&char_gen, 65, &out_names);
     for (std::string &name : out_names) {
         printf(" - '%s'\n", name.c_str());
     }
     out_names.clear();
-    */
 
     SDL_Quit();
     printf("[QG] quitting SDL3!\n");
