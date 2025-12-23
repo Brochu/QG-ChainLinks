@@ -1,5 +1,6 @@
 package main
 
+import "core:encoding/json"
 import "core:strings"
 import "core:fmt"
 import "core:os/os2"
@@ -23,12 +24,28 @@ main :: proc() {
         }
         */
 
+        dict := make(map[string]int);
+        //for line in lines[370:375] {
         for line in lines[:] {
-            start := strings.index(line, "categories");
-            res, ok_res := strings.substring_from(line, start);
-            end := strings.index(res, "\",");
-            cat, ok_cat := strings.substring(line, start+13, start+end);
-            fmt.printfln(" -> ({}) {} ", len(cat), cat);
+            parser := json.make_parser_from_string(line, json.DEFAULT_SPECIFICATION, false, context.temp_allocator);
+            val, err := json.parse_object(&parser)
+
+            obj, ok_obj := val.(json.Object);
+            if (!ok_obj) { continue }
+            cat_line, ok_line := obj["categories"].(json.String);
+            if (!ok_line) { continue }
+
+            cats, err_cats := strings.split(cat_line, ", ", context.temp_allocator);
+            for c in cats {
+                dict[c] += 1;
+            }
+        }
+
+        fmt.printfln("[EXT] dict len = {}", len(dict));
+        for k, v in dict {
+            if v > 2000 {
+                fmt.printfln(" - [%v] -> %v", v, k);
+            }
         }
         return;
     }

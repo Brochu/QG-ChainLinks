@@ -89,3 +89,53 @@ I know I would like it to be based off of Dwarf Fortress
 5. Pick one knob (e.g., “gang feud severity”) and expose it in a TOML config so you can re-roll quickly.  
 
 Once that loop feels fun to inspect in the DB browser, move on to layer 3.
+
+## More Details for Passes
+
+### 1. Foundation Pass
+
+``` Raw from Kimi
+district_type_to_landmarks lookup
+residential → {house, apartment, school, clinic, corner_store, park, church}
+commercial → {restaurant, bar, hotel, retail_shop, bank, apartment}
+industrial → {warehouse, factory, abandoned_building}
+nightlife → {bar, nightclub, casino, strip_club, fast_food}
+docks → {dock_warehouse, shipyard, bar, cheap_hotel}
+financial → {bank, office_tower, luxury_hotel, courthouse}
+```
+We want to refine this into a final list of v0 implemented types of landmarks
+
+- Residential Districts
+    * house
+    * apartment
+    * clinic
+    * corner_store
+    * park
+    * church
+- Commercial Districts
+    * restaurant
+    * bar
+    * hotel
+    * store
+    * bank
+    * apartment
+- Industrial Districs
+    * warehouse
+    * factory
+    * abandoned_building
+- Nightlife Districts
+    * bar
+    * nightclub
+    * casino
+    * stripclub
+    * fast_food
+- Docks Districts
+    * warehouse
+    * shipyard
+    * bar
+    * hotel
+- Financial Districts
+    * bank
+    * office
+    * hotel
+    * courthouse
