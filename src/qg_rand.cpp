@@ -1,4 +1,5 @@
 #include "qg_random.hpp"
+#include <cassert>
 #include <random>
 
 thread_local std::mt19937_64 g_rand_eng;
@@ -13,7 +14,15 @@ f32 rand_float01() {
 }
 
 i32 rand_int(i32 max_val) {
+    assert(max_val > 0);
+
     return (i32)(rand_float01() * max_val);
+}
+i32 rand_int_min(i32 min_val, i32 max_val) {
+    assert(max_val > 0);
+    assert(min_val < max_val);
+
+    return min_val + (i32)(rand_float01() * (max_val - min_val));
 }
 
 i32 rand_weighted_index(i32 *weights, i32 num_items) {
