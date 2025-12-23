@@ -13,6 +13,7 @@ int debug_callback(void *data, int size, char **var0, char **var1) {
 
 void case_gen_init(case_gen *ctx) {
     //TODO: Memory arena init
+    name_gen_train(&ctx->dist_names, "../assets/city_names.csv");
 
     int res = sqlite3_open(":memory:", &ctx->db);
     assert(res == 0 && "Could not open in-memory DB");
@@ -24,8 +25,9 @@ void case_gen_init(case_gen *ctx) {
 static i8 size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
 static i8 size_to_landmarks[city_size::SIZE_COUNT] = { 5, 15, 40, 80 };
 
-static i32 district_weights[district_type::DISTRICT_COUNT] = { 2, 3, 4, 1, 1 };
+static i32 district_weights[district_type::DISTRICT_COUNT] = { 4, 3, 2, 1, 1, 1 };
 static i32 landmark_size_weights[landmark_size::LANDMARK_SIZE_COUNT] = { 1, 3, 4, 2 };
+static i32 landmark_size_staff[landmark_size::LANDMARK_SIZE_COUNT] = { 2, 6, 20, 60 };
 
 void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     rand_seed(seed);
@@ -33,6 +35,10 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     ctx->size = s;
     ctx->num_districts = size_to_districts[s];
     ctx->num_landmarks = size_to_landmarks[s];
+
+    std::vector<std::string> dist_names;
+    name_gen_next(&ctx->dist_names, ctx->num_districts, &dist_names);
+    district dist_cache[16];
 
     sqlite3_stmt *prep;
     int res = sqlite3_prepare_v3(ctx->db, sql_district, strlen(sql_district), 0, &prep, nullptr);
@@ -44,11 +50,11 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         // Districts
         sqlite3_reset(prep);
 
-        district d;
-        d.name = "TOWNVILLE";
-        d.type = district_type::RESIDENTIAL;
-        d.wealth = rand_int(5) + 1;
-        d.roughness = rand_int(5) + 1;
+        district &d = dist_cache[i];
+        d.name = dist_names[i].c_str();
+        d.type = (district_type)rand_weighted_index(district_weights, district_type::DISTRICT_COUNT);
+        d.wealth = rand_int_min(1, 5);
+        d.roughness = rand_int_min(1, 5);
         d.response_time = 5 + (10 - d.wealth) + rand_int(6);
 
         //sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, "id"), i);
@@ -68,20 +74,63 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         assert(0 && "Could not create new prepared statement");
     }
     for (int i = 0; i < ctx->num_landmarks; i++) {
+        // Landmarks
         sqlite3_reset(prep);
 
         //TODO: Lot of these will depend on district type and landmark type
         landmark l;
         l.district_id = rand_int(ctx->num_districts)+1;
-        l.name = "TOWN SQUARE";
-        l.type = landmark_type::LANDMARK_TYPE_HOME;
-        l.size = landmark_size::LANDMARK_SIZE_SMALL;
+        l.name = "NAME_TBD";
+
+        district &dist = dist_cache[l.district_id-1];
+        switch (dist.type) {
+        case district_type::RESIDENTIAL:
+            l.type = (landmark_type)rand_int_min(landmark_type::LANDMARK_TYPE_RES_START, LANDMARK_TYPE_RES_END);
+            break;
+
+        case district_type::COMMERCIAL:
+            l.type = (landmark_type)rand_int_min(landmark_type::LANDMARK_TYPE_COMM_START, LANDMARK_TYPE_COMM_END);
+            break;
+
+        case district_type::INDUSTRIAL:
+            l.type = (landmark_type)rand_int_min(landmark_type::LANDMARK_TYPE_INDU_START, LANDMARK_TYPE_INDU_END);
+            break;
+
+        case district_type::NIGHTLIFE:
+            l.type = (landmark_type)rand_int_min(landmark_type::LANDMARK_TYPE_NIGHT_START, LANDMARK_TYPE_NIGHT_END);
+            break;
+
+        case district_type::DOCKS:
+            l.type = (landmark_type)rand_int_min(landmark_type::LANDMARK_TYPE_DOCKS_START, LANDMARK_TYPE_DOCKS_END);
+            break;
+
+        case district_type::FINANCIAL:
+            l.type = (landmark_type)rand_int_min(landmark_type::LANDMARK_TYPE_FIN_START, LANDMARK_TYPE_FIN_END);
+            break;
+
+        case district_type::DISTRICT_COUNT:
+            assert(false && "[PROC-GEN] Invalid district type provided");
+            break;;
+        }
+
+        l.size = (landmark_size)rand_int(landmark_size::LANDMARK_SIZE_COUNT); // Maybe we want to limit max size based on district's wealth
         l.open_hour = 0;
         l.close_hour = 0;
         l.peak_hour = 0;
-        l.num_staff = 0;
-        l.is_public = 0;
-        l.crime_factor = 0;
+        l.num_staff = landmark_size_staff[l.size] + rand_int_min(-2, 2);
+
+        bool is_public =
+            l.type != LANDMARK_TYPE_DOCKS_WAREHOUSE &&
+            l.type != LANDMARK_TYPE_INDU_WAREHOUSE &&
+            l.type != LANDMARK_TYPE_INDU_ABANDONED &&
+            l.type != LANDMARK_TYPE_FIN_OFFICE;
+        l.is_public = is_public;
+
+        i32 crime_f = std::max(0, (dist.roughness * 5) + rand_int_min(-10, 10));
+        if (dist.type == district_type::NIGHTLIFE || district_type::FINANCIAL) {
+            crime_f *= 2;
+        }
+        l.crime_factor = crime_f;
 
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":district_id"), l.district_id);
         sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":name"), l.name, -1, SQLITE_TRANSIENT);

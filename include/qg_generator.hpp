@@ -9,17 +9,79 @@
 #include "qg_types.hpp"
 #include "qg_memory.hpp"
 
+//TODO: Find a way to simplify this data structure; remove maps/vectors
+//TODO: Each name_gen should have it's own memory pool for names
+struct name_gen {
+    std::unordered_map<std::string, std::unordered_map<char, i32>> counts;
+};
+
+void name_gen_train(name_gen *gen, const char *file_path);
+void name_gen_next(name_gen *gen, u64 num, std::vector<std::string> *out);
+
+void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out);
+
+struct name_cycle {
+    mem_arena mem;
+    std::vector<const char*> list;
+    u64 step;
+    u64 next;
+};
+
+void name_cycle_init(name_cycle *ctx, const char *file_path);
+void name_cycle_next(name_cycle *ctx, u64 num, std::vector<std::string> *out);
+void name_cycle_clear(name_cycle *ctx);
+
 // CASE GENERATOR ====================
 
 enum city_size : i8 { SIZE_SMALL, SIZE_MEDIUM, SIZE_LARGE, SIZE_METRO, SIZE_COUNT };
-enum district_type : i8 { INDUSTRIAL, COMMERCIAL, RESIDENTIAL, NIGHT_LIFE, FINANCIAL, DISTRICT_COUNT };
+enum district_type : i8 { RESIDENTIAL, COMMERCIAL, INDUSTRIAL, NIGHTLIFE, DOCKS, FINANCIAL, DISTRICT_COUNT };
 enum landmark_type : i8 {
-    //TODO: More variety
-    // categorize by district type
-    LANDMARK_TYPE_RESIDENTIAL,
-    LANDMARK_TYPE_HOME = LANDMARK_TYPE_RESIDENTIAL,
-    LANDMARK_TYPE_RESTAURANT,
-    LANDMARK_TYPE_BANK,
+    LANDMARK_TYPE_RES_START,
+    LANDMARK_TYPE_RES_HOUSE = LANDMARK_TYPE_RES_START,
+    LANDMARK_TYPE_RES_APARTMENT,
+    LANDMARK_TYPE_RES_CLINIC,
+    LANDMARK_TYPE_RES_CORNERSTORE,
+    LANDMARK_TYPE_RES_PARK,
+    LANDMARK_TYPE_RES_CHURCH,
+    LANDMARK_TYPE_RES_END,
+
+    LANDMARK_TYPE_COMM_START = LANDMARK_TYPE_RES_END,
+    LANDMARK_TYPE_COMM_RESTAURANT = LANDMARK_TYPE_COMM_START,
+    LANDMARK_TYPE_COMM_BAR,
+    LANDMARK_TYPE_COMM_HOTEL,
+    LANDMARK_TYPE_COMM_STORE,
+    LANDMARK_TYPE_COMM_BANK,
+    LANDMARK_TYPE_COMM_APARTMENT,
+    LANDMARK_TYPE_COMM_END,
+
+    LANDMARK_TYPE_INDU_START = LANDMARK_TYPE_COMM_END,
+    LANDMARK_TYPE_INDU_WAREHOUSE = LANDMARK_TYPE_INDU_START,
+    LANDMARK_TYPE_INDU_FACTORY,
+    LANDMARK_TYPE_INDU_ABANDONED,
+    LANDMARK_TYPE_INDU_END,
+
+    LANDMARK_TYPE_NIGHT_START = LANDMARK_TYPE_INDU_END,
+    LANDMARK_TYPE_NIGHT_BAR = LANDMARK_TYPE_NIGHT_START,
+    LANDMARK_TYPE_NIGHT_NIGHTCLUB,
+    LANDMARK_TYPE_NIGHT_CASINO,
+    LANDMARK_TYPE_NIGHT_STRIPCLUB,
+    LANDMARK_TYPE_NIGHT_FASTFOOD,
+    LANDMARK_TYPE_NIGHT_END,
+
+    LANDMARK_TYPE_DOCKS_START = LANDMARK_TYPE_NIGHT_END,
+    LANDMARK_TYPE_DOCKS_WAREHOUSE = LANDMARK_TYPE_DOCKS_START,
+    LANDMARK_TYPE_DOCKS_SHIPYARD,
+    LANDMARK_TYPE_DOCKS_BAR,
+    LANDMARK_TYPE_DOCKS_HOTEL,
+    LANDMARK_TYPE_DOCKS_END,
+
+    LANDMARK_TYPE_FIN_START = LANDMARK_TYPE_DOCKS_END,
+    LANDMARK_TYPE_FIN_BANK = LANDMARK_TYPE_FIN_START,
+    LANDMARK_TYPE_FIN_OFFICE,
+    LANDMARK_TYPE_FIN_HOTEL,
+    LANDMARK_TYPE_FIN_COURTHOUSE,
+    LANDMARK_TYPE_FIN_END,
+
     LANDMARK_TYPE_COUNT,
 };
 enum landmark_size : i8 {
@@ -55,6 +117,7 @@ struct landmark {
 
 struct case_gen {
     sqlite3 *db;
+    name_gen dist_names;
 
     city_size size;
     i8 num_districts;
@@ -73,27 +136,3 @@ void case_gen_hook(case_gen *ctx);
 void case_gen_polish(case_gen *ctx);
 
 void case_gen_clear(case_gen *ctx);
-
-// NAME GENERATOR ====================
-
-//TODO: Find a way to simplify this data structure; remove maps/vectors
-//TODO: Each name_gen should have it's own memory pool for names
-struct name_gen {
-    std::unordered_map<std::string, std::unordered_map<char, i32>> counts;
-};
-
-void name_gen_train(name_gen *gen, const char *file_path);
-void name_gen_next(name_gen *gen, u64 num, std::vector<std::string> *out);
-
-void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out);
-
-struct name_cycle {
-    mem_arena mem;
-    std::vector<const char*> list;
-    u64 step;
-    u64 next;
-};
-
-void name_cycle_init(name_cycle *ctx, const char *file_path);
-void name_cycle_next(name_cycle *ctx, u64 num, std::vector<std::string> *out);
-void name_cycle_clear(name_cycle *ctx);
