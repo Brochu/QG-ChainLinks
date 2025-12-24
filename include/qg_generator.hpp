@@ -1,6 +1,5 @@
 #pragma once
 
-#include <unordered_map>
 #include <string>
 #include <vector>
 
@@ -9,15 +8,22 @@
 #include "qg_types.hpp"
 #include "qg_memory.hpp"
 
-//TODO: Find a way to simplify this data structure; remove maps/vectors
 //TODO: Each name_gen should have it's own memory pool for names
+struct name_gen_entry {
+    i8 num_options = 0;
+
+    char options[32];
+    u8 counts[32];
+};
+
 struct name_gen {
-    std::unordered_map<std::string, std::unordered_map<char, i32>> counts;
+    name_gen_entry *table = nullptr;
 };
 
 void name_gen_train(name_gen *gen, const char *file_path);
-void name_gen_next(name_gen *gen, u64 num, std::vector<std::string> *out);
+void name_gen_clear(name_gen *gen);
 
+void name_gen_next(name_gen *gen, u64 num, std::vector<std::string> *out);
 void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out);
 
 struct name_cycle {

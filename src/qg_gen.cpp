@@ -2,8 +2,215 @@
 #include "qg_random.hpp"
 #include "sqlite3.h"
 
+#include <array>
 #include <assert.h>
+#include <cstring>
 #include <SDL3/SDL.h>
+
+#define GEN_ALPHA_SIZE 58
+#define GEN_MAP_SIZE 256
+
+constexpr std::array<u8, GEN_MAP_SIZE> make_ascii_to_dense() {
+    std::array<u8, GEN_MAP_SIZE> arr {};
+    for (int i = 0; i < GEN_MAP_SIZE; i++) {
+        arr[i] = 0xFF; // Fill with invalid values first
+    }
+
+    for (int c = 'A'; c <= 'Z'; c++) {
+        arr[c] = c - 'A';
+    }
+    for (int c = 'a'; c <= 'z'; c++) {
+        arr[c] = 26 + (c - 'a');
+    }
+
+    arr['^'] = 52;
+    arr['$'] = 53;
+    arr[' '] = 54;
+    arr['.'] = 55;
+    arr['-'] = 56;
+    arr['\''] = 57;
+    return arr;
+}
+constexpr std::array<u8, GEN_MAP_SIZE> ascii_to_dense = make_ascii_to_dense();
+
+bool name_gen_validate(const std::string &name) {
+    size_t f_space = name.find_first_of(' ');
+    size_t l_space = name.find_last_of(' ');
+    if (f_space != l_space) return false; // Make sure we accept only MAX one space in the name
+
+    if (f_space == std::string::npos && (name.size() > 15 || name.size() < 5)) return false; // Prevent single word name over 15 chars or under 5
+    if (f_space != std::string::npos && (f_space > 10 || name.size() - f_space > 10)) return false; // Prevent each word in composed name to be over 10 chars
+
+    return true;
+}
+
+void name_gen_train(name_gen *gen, const char *file_path) {
+    assert(gen->table == nullptr && "Trying to re-train a name_gen instance");
+    gen->table = (name_gen_entry*)calloc(GEN_ALPHA_SIZE*GEN_ALPHA_SIZE*GEN_ALPHA_SIZE, sizeof(name_gen_entry));
+
+    u64 len = 0;
+    char *file_contents = (char*)SDL_LoadFile(file_path, &len);
+
+    char *s = file_contents;
+    char *e = strstr(s, ",");
+    const static u64 k = 3;
+
+    while (e != NULL) {
+        char buffer[64] = "^^^";
+        strncat_s(buffer, s, (e-s));
+        strncat_s(buffer, "$$$", 3);
+        int buf_len = (e-s) + 6;
+
+        s = e + 1;
+        e = strstr(s, ",");
+
+        for (int i = 0; i < buf_len - k; i++) {
+            i32 hi = ascii_to_dense[buffer[i+0]] * GEN_ALPHA_SIZE * GEN_ALPHA_SIZE;
+            i32 mid = ascii_to_dense[buffer[i+1]] * GEN_ALPHA_SIZE;
+            i32 lo = ascii_to_dense[buffer[i+2]];
+            i32 idx = hi + mid + lo;
+            assert(idx < GEN_ALPHA_SIZE * GEN_ALPHA_SIZE * GEN_ALPHA_SIZE);
+            char next = buffer[i+k];
+
+            name_gen_entry *e = &gen->table[idx];
+            bool added = false;
+            for (int i = 0; i < e->num_options; i++) {
+                if (next == e->options[i]) {
+                    added = true;
+                    if (e->counts[i] < 255) {
+                        e->counts[i]++;
+                    }
+                    break;
+                }
+            }
+            if (!added) {
+                assert(e->num_options < 32 && "Ran out of space for possible continuations");
+                e->options[e->num_options] = next;
+                e->counts[e->num_options++] = 1;
+            }
+        }
+    }
+
+    SDL_free((void*)file_contents);
+}
+
+void name_gen_clear(name_gen *gen) {
+    assert(gen->table != nullptr && "Cannot clear an empty name_gen instance");
+    free(gen->table);
+    gen->table = nullptr;
+}
+
+void name_gen_next(name_gen *gen, u64 num, std::vector<std::string> *out) {
+    const static u64 k = 3;
+
+    for (u64 i = 0; i < num; i++) {
+        std::string name = "^^^";
+
+        char next = '\0';
+        while (next != '$') {
+            std::string prefix = name.substr(name.size() - k, k);
+
+            i32 hi = ascii_to_dense[prefix[0]] * GEN_ALPHA_SIZE * GEN_ALPHA_SIZE;
+            i32 mid = ascii_to_dense[prefix[1]] * GEN_ALPHA_SIZE;
+            i32 lo = ascii_to_dense[prefix[2]];
+            i32 idx = hi + mid + lo;
+            if (idx >= GEN_ALPHA_SIZE * GEN_ALPHA_SIZE * GEN_ALPHA_SIZE) {
+                printf("euuu nop '%s'\n", prefix.c_str());
+            }
+
+            name_gen_entry *e = &gen->table[idx];
+            int next_idx = rand_weighted_index(e->counts, e->num_options);
+            next = e->options[next_idx];
+            name += next;
+        }
+
+        name.erase(0, k);
+        name.resize(name.size() - 1);
+        if (name_gen_validate(name)) {
+            out->push_back(name);
+        } else {
+            i--;
+        }
+    }
+}
+
+void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out) {
+    static const char *district_prefix[] { "Little", "Grand", "Silver", "High", "Low", "Old", "New", "Upper", "Lower", "Greater" };
+    static u64 num_district_prefix = sizeof(district_prefix) / sizeof(district_prefix[0]);
+    static const char *district_suffix[] { "Heights", "Park", "Hills", "Grove", "Valley", "District", "Quarter", "Gardens", "Square", "Town", "Village", "Estates", "Side", "End" };
+    static u64 num_district_suffix = sizeof(district_suffix) / sizeof(district_suffix[0]);
+
+    static const i32 prefix_odds_denum = 2;
+    static const i32 suffix_odds_denum = 2;
+
+    name_gen_next(gen, num, out);
+    for (std::string &name : *out) {
+        if (rand_int(suffix_odds_denum) == 0) {
+            name.append(" ");
+            name.append(district_suffix[rand_int(num_district_suffix)]);
+            continue;
+        }
+
+        if (rand_int(prefix_odds_denum) == 0) {
+            name.insert(0, " ");
+            name.insert(0, district_prefix[rand_int(num_district_prefix)]);
+        }
+    }
+}
+
+void name_cycle_init(name_cycle *ctx, const char *file_path) {
+    static u64 NAME_ARENA_SIZE = 850 * 20;
+    mem_arena_init(&ctx->mem, NAME_ARENA_SIZE);
+
+    u64 len = 0;
+    const char *file_contents = (char*)SDL_LoadFile(file_path, &len);
+    std::string data(file_contents);
+
+    u64 s = 0;
+    u64 e = data.find(',', s);
+
+    while (e != std::string::npos) {
+        const u64 len = (e-s)+1;
+        arena_ptr pname = mem_arena_alloc(&ctx->mem, len, 1);
+
+        memcpy_s(pname.p, len, data.data() + s, len-1);
+        pname.p[len-1] = '\0';
+        ctx->list.emplace_back((const char *)pname.p);
+
+        s = e + 1;
+        e = data.find(',', s);
+    }
+
+    SDL_free((void*)file_contents);
+
+    static u32 prime_steps[] { 2, 29, 73, 113, 179, 229, 283, 349, 419, 463, 547, 601 };
+    static u64 num_prime_steps = sizeof(prime_steps) / sizeof(prime_steps[0]);
+
+    ctx->step = prime_steps[rand_int(num_prime_steps)];
+    while (ctx->step % ctx->list.size() == 0) {
+        ctx->step++;
+    }
+    ctx->next = rand_int(ctx->list.size());
+}
+
+void name_cycle_next(name_cycle *ctx, u64 num, std::vector<std::string> *out) {
+    if (!ctx || !out || ctx->list.size() <= 0) return;
+
+    for (u64 i = 0; i < num; i++) {
+        out->emplace_back(ctx->list[ctx->next]);
+        ctx->next = (ctx->next + ctx->step) % ctx->list.size();
+    }
+}
+
+void name_cycle_clear(name_cycle *ctx) {
+    ctx->list.clear();
+    mem_arena_clear(&ctx->mem);
+
+    ctx->step = 0;
+    ctx->next = 0;
+}
+
+// ====================
 
 #include "qg_gen_sql.inc" // SQL static command strings
 
@@ -184,153 +391,4 @@ void case_gen_clear(case_gen *ctx) {
     printf("[PROC-GEN] Closing in-memory DB; res = %i\n", res);
 
     //TODO: Memory arena cleanup
-}
-
-// ====================
-
-
-bool name_gen_validate(const std::string &name) {
-    size_t f_space = name.find_first_of(' ');
-    size_t l_space = name.find_last_of(' ');
-    if (f_space != l_space) return false; // Make sure we accept only MAX one space in the name
-
-    if (f_space == std::string::npos && (name.size() > 15 || name.size() < 5)) return false; // Prevent single word name over 15 chars or under 5
-    if (f_space != std::string::npos && (f_space > 10 || name.size() - f_space > 10)) return false; // Prevent each word in composed name to be over 10 chars
-
-    return true;
-}
-
-void name_gen_train(name_gen *gen, const char *file_path) {
-    u64 len = 0;
-    const char *file_contents = (char*)SDL_LoadFile(file_path, &len);
-    std::string data(file_contents);
-
-    u64 s = 0;
-    u64 e = data.find(',', s);
-    static u64 k = 3;
-
-    while (e != std::string::npos) {
-        std::string name = "^^^" + data.substr(s, e-s) + "$$$";
-
-        s = e + 1;
-        e = data.find(',', s);
-
-        for (int i = 0; i < name.size() - k; i++) {
-            std::string prefix = name.substr(i, k);
-            char next = name[i + k];
-            gen->counts[prefix][next]++;
-        }
-    }
-
-    SDL_free((void*)file_contents);
-}
-
-void name_gen_next(name_gen *gen, u64 num, std::vector<std::string> *out) {
-    static u64 k = 3;
-    std::vector<char> options;
-    std::vector<int32_t> weights;
-
-    for (u64 i = 0; i < num; i++) {
-        std::string name = "^^^";
-
-        char next = '\0';
-        while (next != '$') {
-            std::string prefix = name.substr(name.size() - k, k);
-
-            options.clear();
-            weights.clear();
-            for (auto [k, v] : gen->counts[prefix]) {
-                options.emplace_back(k);
-                weights.emplace_back(v);
-            }
-
-            int next_idx = rand_weighted_index(weights.data(), weights.size());
-            next = options[next_idx];
-            name += next;
-        }
-
-        name.erase(0, k);
-        name.resize(name.size() - 1);
-        if (name_gen_validate(name)) {
-            out->push_back(name);
-        } else {
-            i--;
-        }
-    }
-}
-
-void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out) {
-    static const char *district_prefix[] { "Little", "Grand", "Silver", "High", "Low", "Old", "New", "Upper", "Lower", "Greater" };
-    static u64 num_district_prefix = sizeof(district_prefix) / sizeof(district_prefix[0]);
-    static const char *district_suffix[] { "Heights", "Park", "Hills", "Grove", "Valley", "District", "Quarter", "Gardens", "Square", "Town", "Village", "Estates", "Side", "End" };
-    static u64 num_district_suffix = sizeof(district_suffix) / sizeof(district_suffix[0]);
-
-    static const i32 prefix_odds_denum = 2;
-    static const i32 suffix_odds_denum = 2;
-
-    name_gen_next(gen, num, out);
-    for (std::string &name : *out) {
-        if (rand_int(suffix_odds_denum) == 0) {
-            name.append(" ");
-            name.append(district_suffix[rand_int(num_district_suffix)]);
-            continue;
-        }
-
-        if (rand_int(prefix_odds_denum) == 0) {
-            name.insert(0, " ");
-            name.insert(0, district_prefix[rand_int(num_district_prefix)]);
-        }
-    }
-}
-
-void name_cycle_init(name_cycle *ctx, const char *file_path) {
-    static u64 NAME_ARENA_SIZE = 850 * 20;
-    mem_arena_init(&ctx->mem, NAME_ARENA_SIZE);
-
-    u64 len = 0;
-    const char *file_contents = (char*)SDL_LoadFile(file_path, &len);
-    std::string data(file_contents);
-
-    u64 s = 0;
-    u64 e = data.find(',', s);
-
-    while (e != std::string::npos) {
-        const u64 len = (e-s)+1;
-        arena_ptr pname = mem_arena_alloc(&ctx->mem, len, 1);
-
-        memcpy_s(pname.p, len, data.data() + s, len-1);
-        pname.p[len-1] = '\0';
-        ctx->list.emplace_back((const char *)pname.p);
-
-        s = e + 1;
-        e = data.find(',', s);
-    }
-
-    SDL_free((void*)file_contents);
-
-    static u32 prime_steps[] { 2, 29, 73, 113, 179, 229, 283, 349, 419, 463, 547, 601 };
-    static u64 num_prime_steps = sizeof(prime_steps) / sizeof(prime_steps[0]);
-
-    ctx->step = prime_steps[rand_int(num_prime_steps)];
-    while (ctx->step % ctx->list.size() == 0) {
-        ctx->step++;
-    }
-    ctx->next = rand_int(ctx->list.size());
-}
-
-void name_cycle_next(name_cycle *ctx, u64 num, std::vector<std::string> *out) {
-    if (!ctx || !out || ctx->list.size() <= 0) return;
-
-    for (u64 i = 0; i < num; i++) {
-        out->emplace_back(ctx->list[ctx->next]);
-        ctx->next = (ctx->next + ctx->step) % ctx->list.size();
-    }
-}
-
-void name_cycle_clear(name_cycle *ctx) {
-    ctx->list.clear();
-    mem_arena_clear(&ctx->mem);
-
-    ctx->step = 0;
-    ctx->next = 0;
 }

@@ -25,6 +25,38 @@ i32 rand_int_min(i32 min_val, i32 max_val) {
     return min_val + (i32)(rand_float01() * (max_val - min_val));
 }
 
+i32 rand_weighted_index(i8 *weights, i32 num_items) {
+    i64 sum = 0;
+    for (int i = 0; i < num_items; i++) {
+        sum += weights[i];
+    }
+
+    i64 target = (int)(rand_float01() * sum) + 1;
+
+    i32 current = 0;
+    while (target > weights[current]) {
+        target -= weights[current];
+        current++;
+    }
+    return current;
+}
+
+i32 rand_weighted_index(u8 *weights, i32 num_items) {
+    i64 sum = 0;
+    for (int i = 0; i < num_items; i++) {
+        sum += weights[i];
+    }
+
+    i64 target = (int)(rand_float01() * sum) + 1;
+
+    i32 current = 0;
+    while (target > weights[current]) {
+        target -= weights[current];
+        current++;
+    }
+    return current;
+}
+
 i32 rand_weighted_index(i32 *weights, i32 num_items) {
     i64 sum = 0;
     for (int i = 0; i < num_items; i++) {
