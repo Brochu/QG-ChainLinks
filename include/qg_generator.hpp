@@ -1,8 +1,5 @@
 #pragma once
 
-#include <string>
-#include <vector>
-
 #include <sqlite3.h>
 
 #include "qg_types.hpp"

@@ -47,7 +47,6 @@ int main(int argc, char **argv) {
     name_gen_clear(&district_gen);
     */
 
-    /*
     name_cycle char_gen;
     name_cycle_init(&char_gen, "../assets/f_names.csv");
     for (i32 i = 0; i < 25; i++) {
@@ -55,7 +54,6 @@ int main(int argc, char **argv) {
         printf(" - '%s'\n", name);
     }
     name_cycle_clear(&char_gen);
-    */
 
     SDL_Quit();
     printf("[QG] quitting SDL3!\n");

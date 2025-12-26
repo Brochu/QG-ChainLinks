@@ -6,6 +6,7 @@
 #include <array>
 #include <assert.h>
 #include <cstring>
+#include <string>
 #include <SDL3/SDL.h>
 
 #define GEN_ALPHA_SIZE 58
