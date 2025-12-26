@@ -31,33 +31,30 @@ int main(int argc, char **argv) {
     case_gen_clear(&ctx);
     */
 
-    std::vector<std::string> out_names;
+    /*
     name_gen district_gen;
     name_gen_train(&district_gen, "../assets/city_names.csv");
 
-    /*
-    name_gen_next(&district_gen, 25, &out_names);
-    for (std::string &name : out_names) {
-        printf(" - '%s'\n", name.c_str());
+    name_gen_next(&district_gen, 25);
+    for (i32 i = 0; i < district_gen.num_names; i++) {
+        printf(" - '%s'\n", district_gen.names[i]);
     }
-    out_names.clear();
-    */
 
-    name_gen_district(&district_gen, 25, &out_names);
-    for (std::string &name : out_names) {
-        printf(" - '%s'\n", name.c_str());
+    name_gen_district(&district_gen, 80);
+    for (i32 i = 0; i < district_gen.num_names; i++) {
+        printf(" - '%s'\n", district_gen.names[i]);
     }
-    out_names.clear();
     name_gen_clear(&district_gen);
+    */
 
     /*
     name_cycle char_gen;
     name_cycle_init(&char_gen, "../assets/f_names.csv");
-    name_cycle_next(&char_gen, 65, &out_names);
-    for (std::string &name : out_names) {
-        printf(" - '%s'\n", name.c_str());
+    for (i32 i = 0; i < 25; i++) {
+        const char *name = name_cycle_next(&char_gen);
+        printf(" - '%s'\n", name);
     }
-    out_names.clear();
+    name_cycle_clear(&char_gen);
     */
 
     SDL_Quit();

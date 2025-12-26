@@ -1,4 +1,5 @@
 #include "qg_generator.hpp"
+#include "qg_memory.hpp"
 #include "qg_random.hpp"
 #include "sqlite3.h"
 
@@ -33,18 +34,13 @@ constexpr std::array<u8, GEN_MAP_SIZE> make_ascii_to_dense() {
 }
 constexpr std::array<u8, GEN_MAP_SIZE> ascii_to_dense = make_ascii_to_dense();
 
-bool name_gen_validate(const std::string &name) {
-    size_t f_space = name.find_first_of(' ');
-    size_t l_space = name.find_last_of(' ');
-    if (f_space != l_space) return false; // Make sure we accept only MAX one space in the name
-
-    if (f_space == std::string::npos && (name.size() > 15 || name.size() < 5)) return false; // Prevent single word name over 15 chars or under 5
-    if (f_space != std::string::npos && (f_space > 10 || name.size() - f_space > 10)) return false; // Prevent each word in composed name to be over 10 chars
-
-    return true;
-}
-
 void name_gen_train(name_gen *gen, const char *file_path) {
+    if (gen->_names_mem.base == nullptr) {
+        mem_arena_init(&gen->_names_mem, MAX_NUM_NAMES * 15 * sizeof(char));
+    } else {
+        mem_arena_reset(&gen->_names_mem);
+    }
+
     assert(gen->table == nullptr && "Trying to re-train a name_gen instance");
     gen->table = (name_gen_entry*)calloc(GEN_ALPHA_SIZE*GEN_ALPHA_SIZE*GEN_ALPHA_SIZE, sizeof(name_gen_entry));
 
@@ -98,43 +94,65 @@ void name_gen_clear(name_gen *gen) {
     assert(gen->table != nullptr && "Cannot clear an empty name_gen instance");
     free(gen->table);
     gen->table = nullptr;
+
+    mem_arena_clear(&gen->_names_mem);
+    gen->num_names = 0;
 }
 
-void name_gen_next(name_gen *gen, u64 num, std::vector<std::string> *out) {
+bool _name_gen_validate(const std::string &name) {
+    size_t f_space = name.find_first_of(' ');
+    size_t l_space = name.find_last_of(' ');
+    if (f_space != l_space) return false; // Make sure we accept only MAX one space in the name
+
+    if (f_space == std::string::npos && (name.size() > 15 || name.size() < 5)) return false; // Prevent single word name over 15 chars or under 5
+    if (f_space != std::string::npos && (f_space > 10 || name.size() - f_space > 10)) return false; // Prevent each word in composed name to be over 10 chars
+
+    return true;
+}
+
+void _name_gen_create(name_gen *gen, std::string &name) {
     const static u64 k = 3;
+    name.clear();
+    name = "^^^";
 
-    for (u64 i = 0; i < num; i++) {
-        std::string name = "^^^";
+    char next = '\0';
+    while (next != '$') {
+        std::string prefix = name.substr(name.size() - k, k);
 
-        char next = '\0';
-        while (next != '$') {
-            std::string prefix = name.substr(name.size() - k, k);
-
-            i32 hi = ascii_to_dense[prefix[0]] * GEN_ALPHA_SIZE * GEN_ALPHA_SIZE;
-            i32 mid = ascii_to_dense[prefix[1]] * GEN_ALPHA_SIZE;
-            i32 lo = ascii_to_dense[prefix[2]];
-            i32 idx = hi + mid + lo;
-            if (idx >= GEN_ALPHA_SIZE * GEN_ALPHA_SIZE * GEN_ALPHA_SIZE) {
-                printf("euuu nop '%s'\n", prefix.c_str());
-            }
-
-            name_gen_entry *e = &gen->table[idx];
-            int next_idx = rand_weighted_index(e->counts, e->num_options);
-            next = e->options[next_idx];
-            name += next;
+        i32 hi = ascii_to_dense[prefix[0]] * GEN_ALPHA_SIZE * GEN_ALPHA_SIZE;
+        i32 mid = ascii_to_dense[prefix[1]] * GEN_ALPHA_SIZE;
+        i32 lo = ascii_to_dense[prefix[2]];
+        i32 idx = hi + mid + lo;
+        if (idx >= GEN_ALPHA_SIZE * GEN_ALPHA_SIZE * GEN_ALPHA_SIZE) {
+            printf("euuu nop '%s'\n", prefix.c_str());
         }
 
-        name.erase(0, k);
-        name.resize(name.size() - 1);
-        if (name_gen_validate(name)) {
-            out->push_back(name);
+        name_gen_entry *e = &gen->table[idx];
+        int next_idx = rand_weighted_index(e->counts, e->num_options);
+        next = e->options[next_idx];
+        name += next;
+    }
+
+    name.erase(0, k);
+    name.resize(name.size() - 1);
+}
+
+void name_gen_next(name_gen *gen, u64 num) {
+    std::string name;
+    for (u64 i = 0; i < num; i++) {
+        _name_gen_create(gen, name);
+
+        if (_name_gen_validate(name)) {
+            arena_ptr ptr = mem_arena_alloc(&gen->_names_mem, name.size()+1);
+            strcpy_s((char *)ptr.p, name.size()+1, name.c_str());
+            gen->names[gen->num_names++] = (const char *)ptr.p;
         } else {
             i--;
         }
     }
 }
 
-void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out) {
+void name_gen_district(name_gen *gen, u64 num) {
     static const char *district_prefix[] { "Little", "Grand", "Silver", "High", "Low", "Old", "New", "Upper", "Lower", "Greater" };
     static u64 num_district_prefix = sizeof(district_prefix) / sizeof(district_prefix[0]);
     static const char *district_suffix[] { "Heights", "Park", "Hills", "Grove", "Valley", "District", "Quarter", "Gardens", "Square", "Town", "Village", "Estates", "Side", "End" };
@@ -143,23 +161,32 @@ void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out) {
     static const i32 prefix_odds_denum = 2;
     static const i32 suffix_odds_denum = 2;
 
-    name_gen_next(gen, num, out);
-    for (std::string &name : *out) {
-        if (rand_int(suffix_odds_denum) == 0) {
-            name.append(" ");
-            name.append(district_suffix[rand_int(num_district_suffix)]);
+    std::string name;
+    for (u64 i = 0; i < num; i++) {
+        _name_gen_create(gen, name);
+
+        if (!_name_gen_validate(name)) {
+            i--;
             continue;
         }
 
-        if (rand_int(prefix_odds_denum) == 0) {
+        if (rand_int(suffix_odds_denum) == 0) {
+            name.append(" ");
+            name.append(district_suffix[rand_int(num_district_suffix)]);
+        }
+        else if (rand_int(prefix_odds_denum) == 0) {
             name.insert(0, " ");
             name.insert(0, district_prefix[rand_int(num_district_prefix)]);
         }
+
+        arena_ptr ptr = mem_arena_alloc(&gen->_names_mem, name.size()+1);
+        strcpy_s((char *)ptr.p, name.size()+1, name.c_str());
+        gen->names[gen->num_names++] = (const char *)ptr.p;
     }
 }
 
 void name_cycle_init(name_cycle *ctx, const char *file_path) {
-    static u64 NAME_ARENA_SIZE = 850 * 20;
+    static u64 NAME_ARENA_SIZE = MAX_NUM_NAMES * 2 * 2 * 20;
     mem_arena_init(&ctx->mem, NAME_ARENA_SIZE);
 
     u64 len = 0;
@@ -175,7 +202,7 @@ void name_cycle_init(name_cycle *ctx, const char *file_path) {
 
         memcpy_s(pname.p, len, data.data() + s, len-1);
         pname.p[len-1] = '\0';
-        ctx->list.emplace_back((const char *)pname.p);
+        ctx->names[ctx->num_names++] = (const char *)pname.p;
 
         s = e + 1;
         e = data.find(',', s);
@@ -187,27 +214,27 @@ void name_cycle_init(name_cycle *ctx, const char *file_path) {
     static u64 num_prime_steps = sizeof(prime_steps) / sizeof(prime_steps[0]);
 
     ctx->step = prime_steps[rand_int(num_prime_steps)];
-    while (ctx->step % ctx->list.size() == 0) {
+    while (ctx->step % ctx->num_names == 0) {
         ctx->step++;
     }
-    ctx->next = rand_int(ctx->list.size());
-}
-
-void name_cycle_next(name_cycle *ctx, u64 num, std::vector<std::string> *out) {
-    if (!ctx || !out || ctx->list.size() <= 0) return;
-
-    for (u64 i = 0; i < num; i++) {
-        out->emplace_back(ctx->list[ctx->next]);
-        ctx->next = (ctx->next + ctx->step) % ctx->list.size();
-    }
+    ctx->next = rand_int(ctx->num_names);
 }
 
 void name_cycle_clear(name_cycle *ctx) {
-    ctx->list.clear();
     mem_arena_clear(&ctx->mem);
+    ctx->num_names = 0;
 
     ctx->step = 0;
     ctx->next = 0;
+}
+
+const char *name_cycle_next(name_cycle *ctx) {
+    if (!ctx || ctx->num_names <= 0) return nullptr;
+
+    const char *selected = ctx->names[ctx->next];
+    ctx->next = (ctx->next + ctx->step) % ctx->num_names;
+
+    return selected;
 }
 
 // ====================
@@ -243,8 +270,7 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     ctx->num_districts = size_to_districts[s];
     ctx->num_landmarks = size_to_landmarks[s];
 
-    std::vector<std::string> dist_names;
-    name_gen_next(&ctx->dist_names, ctx->num_districts, &dist_names);
+    name_gen_next(&ctx->dist_names, ctx->num_districts);
     district dist_cache[16];
 
     sqlite3_stmt *prep;
@@ -258,7 +284,7 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         sqlite3_reset(prep);
 
         district &d = dist_cache[i];
-        d.name = dist_names[i].c_str();
+        d.name = ctx->dist_names.names[i];
         d.type = (district_type)rand_weighted_index(district_weights, district_type::DISTRICT_COUNT);
         d.wealth = rand_int_min(1, 5);
         d.roughness = rand_int_min(1, 5);

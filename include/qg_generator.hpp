@@ -8,6 +8,8 @@
 #include "qg_types.hpp"
 #include "qg_memory.hpp"
 
+#define MAX_NUM_NAMES 255
+
 //TODO: Each name_gen should have it's own memory pool for names
 struct name_gen_entry {
     i8 num_options = 0;
@@ -18,24 +20,30 @@ struct name_gen_entry {
 
 struct name_gen {
     name_gen_entry *table = nullptr;
+    const char *names[MAX_NUM_NAMES];
+    u8 num_names = 0;
+
+    mem_arena _names_mem = {};
 };
 
 void name_gen_train(name_gen *gen, const char *file_path);
 void name_gen_clear(name_gen *gen);
 
-void name_gen_next(name_gen *gen, u64 num, std::vector<std::string> *out);
-void name_gen_district(name_gen *gen, u64 num, std::vector<std::string> *out);
+void name_gen_next(name_gen *gen, u64 num);
+void name_gen_district(name_gen *gen, u64 num);
 
 struct name_cycle {
     mem_arena mem;
-    std::vector<const char*> list;
+    const char *names[MAX_NUM_NAMES * 2 * 2];
+    i16 num_names = 0;
+
     u64 step;
     u64 next;
 };
 
 void name_cycle_init(name_cycle *ctx, const char *file_path);
-void name_cycle_next(name_cycle *ctx, u64 num, std::vector<std::string> *out);
 void name_cycle_clear(name_cycle *ctx);
+const char *name_cycle_next(name_cycle *ctx);
 
 // CASE GENERATOR ====================
 
