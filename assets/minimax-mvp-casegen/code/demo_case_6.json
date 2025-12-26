@@ -1,0 +1,83 @@
+{
+  "case_id": 6,
+  "title": "The Unknown Location Heist",
+  "crime_type": "theft",
+  "description": "Maria Smith stole valuable items from David Smith",
+  "victim_name": "Unknown Victim",
+  "perpetrator_name": "Unknown Perpetrator",
+  "location_name": "Unknown Location",
+  "evidence": [
+    {
+      "type": "location",
+      "description": "Security camera footage from Maple Heights",
+      "reliability": 0.8,
+      "connects_to": [
+        "1",
+        "86"
+      ]
+    },
+    {
+      "type": "physical",
+      "description": "Fingerprints found at crime scene",
+      "reliability": 0.9,
+      "connects_to": [
+        "1",
+        "86"
+      ]
+    },
+    {
+      "type": "testimonial",
+      "description": "David Smith's account of events",
+      "reliability": 0.7,
+      "connects_to": [
+        "1",
+        "86"
+      ]
+    },
+    {
+      "type": "physical",
+      "description": "Broken window or lock at entry point",
+      "reliability": 0.9,
+      "connects_to": [
+        "1"
+      ]
+    },
+    {
+      "type": "digital",
+      "description": "Security footage showing suspicious activity around None",
+      "reliability": 0.8,
+      "connects_to": [
+        "1"
+      ]
+    },
+    {
+      "type": "circumstantial",
+      "description": "Missing items inventory list",
+      "reliability": 0.7,
+      "connects_to": []
+    }
+  ],
+  "witnesses": [],
+  "red_herrings": [
+    {
+      "type": "evidence",
+      "description": "Security camera shows someone entering area 2 hours before incident",
+      "reliability": 0.7,
+      "explanation": "Different incident or routine maintenance",
+      "connects_to": []
+    }
+  ],
+  "missing_pieces": [
+    "Who committed the crime?",
+    "What was stolen?",
+    "How did the perpetrator enter the location?",
+    "What was the perpetrator's motive?"
+  ],
+  "solution_path": [
+    "Review initial crime scene evidence",
+    "Cross-reference physical evidence with suspects",
+    "Investigate greed as potential motive",
+    "Verify forced entry was the method used",
+    "Connect all evidence to identify the perpetrator"
+  ]
+}
