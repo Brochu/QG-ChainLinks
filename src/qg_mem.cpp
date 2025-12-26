@@ -22,6 +22,8 @@ void qg_free(void *ptr) {
 // MEMORY ARENA -----------------------------------
 
 static inline u64 align_fwd(u64 ptr, u64 align) {
+    assert((align & (align - 1)) == 0 && "alignment must be power of two");
+
     u64 m = align - 1;
     return (ptr + m) & ~m;
 }
