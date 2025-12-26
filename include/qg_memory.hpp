@@ -8,7 +8,7 @@ void *qg_realloc(void *ptr, u64 sz);
 void qg_free(void *ptr);
 
 struct mem_arena {
-    u8 *base;
+    u8 *base = nullptr;
     u64 next;
     u64 cap;
     u64 gen;
