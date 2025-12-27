@@ -298,7 +298,7 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     ctx->num_districts = size_to_districts[s];
     ctx->num_landmarks = size_to_landmarks[s];
 
-    name_gen_next(&ctx->dist_names, ctx->num_districts);
+    name_gen_district(&ctx->dist_names, ctx->num_districts);
     district dist_cache[16];
 
     sqlite3_stmt *prep;

@@ -24,13 +24,12 @@ int main(int argc, char **argv) {
     }
     printf("[QG] SDL3 Correctly init'ed!\n");
 
-    /*
     case_gen ctx = {};
     case_gen_init(&ctx);
-    case_gen_fondation(&ctx, city_size::SIZE_METRO, rand_int(INT_MAX));
+    case_gen_fondation(&ctx, city_size::SIZE_MEDIUM, rand_int(INT_MAX));
     case_gen_clear(&ctx);
-    */
 
+    /*
     name_gen district_gen;
     name_gen_train(&district_gen, "../assets/city_names.csv");
 
@@ -55,6 +54,7 @@ int main(int argc, char **argv) {
     }
     printf("-=-=-=-= \n");
     name_cycle_clear(&char_gen);
+    */
 
     SDL_Quit();
     printf("[QG] quitting SDL3!\n");
