@@ -31,28 +31,29 @@ int main(int argc, char **argv) {
     case_gen_clear(&ctx);
     */
 
-    /*
     name_gen district_gen;
     name_gen_train(&district_gen, "../assets/city_names.csv");
 
-    name_gen_next(&district_gen, 25);
+    name_gen_next(&district_gen, 10);
     for (i32 i = 0; i < district_gen.num_names; i++) {
         printf(" - '%s'\n", district_gen.names[i]);
     }
+    printf("-=-=-=-= \n");
 
-    name_gen_district(&district_gen, 80);
+    name_gen_district(&district_gen, 10);
     for (i32 i = 0; i < district_gen.num_names; i++) {
         printf(" - '%s'\n", district_gen.names[i]);
     }
+    printf("-=-=-=-= \n");
     name_gen_clear(&district_gen);
-    */
 
     name_cycle char_gen;
     name_cycle_init(&char_gen, "../assets/f_names.csv");
-    for (i32 i = 0; i < 25; i++) {
+    for (i32 i = 0; i < 10; i++) {
         const char *name = name_cycle_next(&char_gen);
         printf(" - '%s'\n", name);
     }
+    printf("-=-=-=-= \n");
     name_cycle_clear(&char_gen);
 
     SDL_Quit();

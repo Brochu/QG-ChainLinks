@@ -30,12 +30,12 @@ void name_gen_next(name_gen *gen, u64 num);
 void name_gen_district(name_gen *gen, u64 num);
 
 struct name_cycle {
-    mem_arena mem;
     const char *names[MAX_NUM_NAMES * 2 * 2];
     i16 num_names = 0;
 
     u64 step;
     u64 next;
+    mem_arena _mem;
 };
 
 void name_cycle_init(name_cycle *ctx, const char *file_path);
