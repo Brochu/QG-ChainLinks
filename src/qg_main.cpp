@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 
     case_gen ctx = {};
     case_gen_init(&ctx);
-    case_gen_fondation(&ctx, city_size::SIZE_MEDIUM, rand_int(INT_MAX));
+    case_gen_fondation(&ctx, city_size::SIZE_LARGE, rand_int(INT_MAX));
     case_gen_clear(&ctx);
 
     /*

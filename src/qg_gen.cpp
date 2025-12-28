@@ -291,6 +291,15 @@ static i32 district_weights[district_type::DISTRICT_COUNT] = { 4, 3, 2, 1, 1, 1 
 static i32 landmark_size_weights[landmark_size::LANDMARK_SIZE_COUNT] = { 1, 3, 4, 2 };
 static i32 landmark_size_staff[landmark_size::LANDMARK_SIZE_COUNT] = { 2, 6, 20, 60 };
 
+static const char *landmark_type_names[landmark_type::LANDMARK_TYPE_COUNT] {
+    "RES_HOUSE", "RES_APARTMENT", "RES_CLINIC", "RES_CORNERSTORE", "RES_PARK", "RES_CHURCH",
+    "COMM_RESTAURANT", "COMM_BAR", "COMM_HOTEL", "COMM_STORE", "COMM_BANK", "COMM_APARTMENT",
+    "INDU_WAREHOUSE", "INDU_FACTORY", "INDU_ABANDONED",
+    "NIGHT_BAR", "NIGHT_NIGHTCLUB", "NIGHT_CASINO", "NIGHT_STRIPCLUB", "NIGHT_FASTFOOD",
+    "DOCKS_WAREHOUSE", "DOCKS_SHIPYARD", "DOCKS_BAR", "DOCKS_HOTEL",
+    "FIN_BANK", "FIN_OFFICE", "FIN_HOTEL", "FIN_COURTHOUSE",
+};
+
 void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     rand_seed(seed);
 
@@ -300,6 +309,8 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
 
     name_gen_district(&ctx->dist_names, ctx->num_districts);
     district dist_cache[16];
+    i8 temp_counts[landmark_type::LANDMARK_TYPE_COUNT];
+    memset(temp_counts, 0, sizeof(i8) * landmark_type::LANDMARK_TYPE_COUNT);
 
     sqlite3_stmt *prep;
     int res = sqlite3_prepare_v3(ctx->db, sql_district, strlen(sql_district), 0, &prep, nullptr);
@@ -334,6 +345,8 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         printf("[PROC-GEN] Could not compile statement. ERR: %s\n", sqlite3_errmsg(ctx->db));
         assert(0 && "Could not create new prepared statement");
     }
+    char num[8];
+    char name[64];
     for (int i = 0; i < ctx->num_landmarks; i++) {
         // Landmarks
         sqlite3_reset(prep);
@@ -341,7 +354,6 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         //TODO: Lot of these will depend on district type and landmark type
         landmark l;
         l.district_id = rand_int(ctx->num_districts)+1;
-        l.name = "NAME_TBD";
 
         district &dist = dist_cache[l.district_id-1];
         switch (dist.type) {
@@ -373,6 +385,12 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
             assert(false && "[PROC-GEN] Invalid district type provided");
             break;;
         }
+        num[0] = name[0] = '\0';
+        _itoa_s(temp_counts[l.type]++, num, 10);
+        strcat_s(name, landmark_type_names[l.type]);
+        strcat_s(name, " ");
+        strcat_s(name, num);
+        l.name = name;
 
         l.size = (landmark_size)rand_int(landmark_size::LANDMARK_SIZE_COUNT); // Maybe we want to limit max size based on district's wealth
         l.open_hour = 0;
