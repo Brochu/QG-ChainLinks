@@ -38,3 +38,6 @@ static const char *sql_init =
 
 static const char *sql_district = "INSERT INTO districts VALUES (:id, :name, :type, :wealth, :rough, :response_time)";
 static const char *sql_landmark = "INSERT INTO landmarks VALUES (:landmark_id, :district_id, :name, :type, :size, :open_hour, :close_hour, :peak_hour, :num_staff, :is_public, :crime_factor)";
+static const char *sql_transit = "INSERT INTO transits VALUES (:from_landmark_id, :to_landmark_id, :mode, :day_phase, :minutes)";
+static const char *sql_cull_transit = "INSERT INTO transits VALUES (:from_landmark_id, :to_landmark_id, :mode, :day_phase, :minutes)";
+static const char *sql_prune_transit = "DELETE FROM transits WHERE (from_landmark_id * 37 + to_landmark_id * 41 + mode * 43 + day_phase * 47) % 10 = 0";

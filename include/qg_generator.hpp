@@ -103,6 +103,19 @@ enum landmark_size : i8 {
     LANDMARK_SIZE_COUNT,
 };
 
+enum travel_mode : i8 {
+    TRAVEL_WALK,
+    TRAVEL_DRIVE,
+    TRAVEL_COUNT,
+};
+
+enum travel_phase : i8 {
+    TIME_DAY,
+    TIME_NIGHT,
+    TIME_RUSH,
+    TIME_COUNT,
+};
+
 struct district {
     i64 id;
     const char *name;

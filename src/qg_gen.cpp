@@ -12,6 +12,7 @@
 #define GEN_ALPHA_SIZE 58
 #define GEN_MAP_SIZE 256
 #define NAME_BUF_LEN 64
+#define LANDMARK_POS_MAX 45
 
 constexpr std::array<u8, GEN_MAP_SIZE> make_ascii_to_dense() {
     std::array<u8, GEN_MAP_SIZE> arr {};
@@ -273,6 +274,22 @@ int debug_callback(void *data, int size, char **var0, char **var1) {
     return 0;
 }
 
+i32 _case_gen_transit_time(i32 dist, travel_mode mode, travel_phase time) {
+    i32 mins_mult = 0;
+    i32 mins_add = 0;
+
+    if (mode == travel_mode::TRAVEL_WALK) {
+        mins_mult = 4;
+        mins_add = (time == travel_phase::TIME_RUSH) ? 2 : 1;
+    }
+    else if (mode == travel_mode::TRAVEL_DRIVE) {
+        mins_mult = (time == travel_phase::TIME_RUSH) ? 2 : 1;
+        mins_add = (time == travel_phase::TIME_NIGHT) ? 1 : 2;
+    }
+
+    return (dist * mins_mult) + mins_add;
+}
+
 void case_gen_init(case_gen *ctx) {
     //TODO: Memory arena init
     name_gen_train(&ctx->dist_names, "../assets/city_names.csv");
@@ -426,12 +443,47 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     res = sqlite3_finalize(prep);
     assert(res == 0 && "Could not finalize prepared statement");
 
-    // Transit Links
+    i8 xs[128];
+    i8 ys[128];
+    for (int i = 0; i < ctx->num_landmarks; i++) {
+        // Generate positions per landmark
+        xs[i] = rand_int(LANDMARK_POS_MAX);
+        ys[i] = rand_int(LANDMARK_POS_MAX);
+    }
+
+    res = sqlite3_prepare_v3(ctx->db, sql_transit, strlen(sql_transit), 0, &prep, nullptr);
+    if (res != 0) {
+        printf("[PROC-GEN] Could not compile statement. ERR: %s\n", sqlite3_errmsg(ctx->db));
+        assert(0 && "Could not create new prepared statement");
+    }
     for (int i = 0; i < ctx->num_landmarks; i++) {
         for (int j = 0; j < ctx->num_landmarks; j++) {
+            if (i == j) {
+                continue;
+            }
+            const i32 dx = xs[j] - xs[i];
+            const i32 dy = ys[j] - ys[i];
+            const i32 dist = sqrt(dx*dx + dy*dy);
+
+            for (int mode = 0; mode < travel_mode::TRAVEL_COUNT; mode++) {
+                for (int phase = 0; phase < travel_phase::TIME_COUNT; phase++) {
+                    sqlite3_reset(prep);
+
+                    i32 mins = _case_gen_transit_time(dist, (travel_mode)mode, (travel_phase)phase);
+                    sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":from_landmark_id"), i+1);
+                    sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":to_landmark_id"), j+1);
+                    sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":mode"), mode);
+                    sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":day_phase"), phase);
+                    sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":minutes"), std::max(1, rand_int_min(mins-1, mins+1)));
+                    sqlite3_step(prep);
+                }
+            }
         }
     }
-    // Cut some links
+    res = sqlite3_finalize(prep);
+    assert(res == 0 && "Could not finalize prepared statement");
+
+    // Cut some links - 10% of them randomly
 }
 
 void case_gen_population(case_gen *ctx) { }
