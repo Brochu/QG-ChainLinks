@@ -301,6 +301,30 @@ void case_gen_init(case_gen *ctx) {
     sqlite3_exec(ctx->db, sql_init, debug_callback, NULL, NULL);
 }
 
+void case_gen_clear(case_gen *ctx) {
+    {
+        //TODO: Make this backup process optional? only happen on errors later in the process?
+        sqlite3 *file;
+        int res = sqlite3_open("detective.db", &file);
+        assert(res == 0 && "Could not open file to save in-memory db");
+
+        sqlite3_backup *back = sqlite3_backup_init(file, "main", ctx->db, "main");
+        assert(back != NULL && "Could not init backup process");
+        sqlite3_backup_step(back, -1);
+        sqlite3_backup_finish(back);
+
+        res = sqlite3_close(file);
+        assert(res == 0 && "Could not close in-memory db backup file");
+    }
+
+    int res = sqlite3_close(ctx->db);
+    assert(res == 0 && "Could not open in-memory DB");
+    printf("[PROC-GEN] Closing in-memory DB; res = %i\n", res);
+
+    name_gen_clear(&ctx->dist_names);
+    //TODO: Memory arena cleanup
+}
+
 static i8 size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
 static i8 size_to_landmarks[city_size::SIZE_COUNT] = { 5, 15, 40, 80 };
 
@@ -483,7 +507,8 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     res = sqlite3_finalize(prep);
     assert(res == 0 && "Could not finalize prepared statement");
 
-    // Cut some links - 10% of them randomly
+    res = sqlite3_exec(ctx->db, sql_prune_transit, debug_callback, NULL, NULL);
+    assert(res == 0 && "Could not cull 10% of transit entries");
 }
 
 void case_gen_population(case_gen *ctx) { }
@@ -493,26 +518,3 @@ void case_gen_planning(case_gen *ctx) { }
 void case_gen_exec(case_gen *ctx) { }
 void case_gen_hook(case_gen *ctx) { }
 void case_gen_polish(case_gen *ctx) { }
-
-void case_gen_clear(case_gen *ctx) {
-    {
-        //TODO: Make this backup process optional? only happen on errors later in the process?
-        sqlite3 *file;
-        int res = sqlite3_open("detective.db", &file);
-        assert(res == 0 && "Could not open file to save in-memory db");
-
-        sqlite3_backup *back = sqlite3_backup_init(file, "main", ctx->db, "main");
-        assert(back != NULL && "Could not init backup process");
-        sqlite3_backup_step(back, -1);
-        sqlite3_backup_finish(back);
-
-        res = sqlite3_close(file);
-        assert(res == 0 && "Could not close in-memory db backup file");
-    }
-
-    int res = sqlite3_close(ctx->db);
-    assert(res == 0 && "Could not open in-memory DB");
-    printf("[PROC-GEN] Closing in-memory DB; res = %i\n", res);
-
-    //TODO: Memory arena cleanup
-}

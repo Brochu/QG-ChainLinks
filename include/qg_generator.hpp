@@ -141,7 +141,10 @@ struct landmark {
 
 struct case_gen {
     sqlite3 *db;
+
     name_gen dist_names;
+    name_cycle male_names;
+    name_cycle female_names;
 
     city_size size;
     i8 num_districts;
@@ -149,6 +152,7 @@ struct case_gen {
 };
 
 void case_gen_init(case_gen *ctx);
+void case_gen_clear(case_gen *ctx);
 
 void case_gen_fondation(case_gen *ctx, city_size s, i32 seed);
 void case_gen_population(case_gen *ctx);
@@ -158,5 +162,3 @@ void case_gen_planning(case_gen *ctx);
 void case_gen_exec(case_gen *ctx);
 void case_gen_hook(case_gen *ctx);
 void case_gen_polish(case_gen *ctx);
-
-void case_gen_clear(case_gen *ctx);
