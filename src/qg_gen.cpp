@@ -371,8 +371,8 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         district &d = dist_cache[i];
         d.name = ctx->dist_names.names[i];
         d.type = (district_type)rand_weighted_index(district_weights, district_type::DISTRICT_COUNT);
-        d.wealth = rand_int_min(1, 5);
-        d.roughness = rand_int_min(1, 5);
+        d.wealth = rand_int_min(1, 6);
+        d.roughness = rand_int_min(1, 6);
         d.response_time = 5 + (10 - d.wealth) + rand_int(6);
 
         //sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, "id"), i);
@@ -537,14 +537,13 @@ void case_gen_population(case_gen *ctx) {
             a.sex = 'F';
             a.name = name_cycle_next(&ctx->female_names);
         }
-        a.age = rand_int_min(18, 110);
+        a.age = rand_actor_age();
         a.job = " -- ";
         a.home_district_id = rand_int(ctx->num_districts)+1; //TODO: Weight districts based on type
         a.workplace_landmark_id = rand_int(ctx->num_landmarks)+1; //TODO: Weight landmarks based on type
-        a.wealth = rand_int(5);
+        a.wealth = rand_int_min(1, 6);
         a.secrets = 0; // Init empty
 
-        static const char *sql_actor = "INSERT INTO actors VALUES (:actor_id, :name, :age, :sex, :job, :home_district_id, :workplace_landmark_id, :wealth, :secrets)";
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":actor_id"), i);
         sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":name"), a.name, -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":age"), a.age);
@@ -555,6 +554,20 @@ void case_gen_population(case_gen *ctx) {
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":wealth"), a.wealth);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":secrets"), a.secrets);
         sqlite3_step(prep);
+    }
+    res = sqlite3_finalize(prep);
+    assert(res == 0 && "Could not finalize prepared statement");
+
+    res = sqlite3_prepare_v3(ctx->db, sql_actor_routine, strlen(sql_actor_routine), 0, &prep, nullptr);
+    if (res != 0) {
+        printf("[PROC-GEN] Could not compile statement. ERR: %s\n", sqlite3_errmsg(ctx->db));
+        assert(0 && "Could not create new prepared statement");
+    }
+    for (i32 i = 0; i < ctx->num_actors; i++) {
+        sqlite3_reset(prep);
+
+        //TODO: Generate time tables based on home district and work landmark
+        //TODO: Generate optional steps for entertainmenet with probabilities
     }
     res = sqlite3_finalize(prep);
     assert(res == 0 && "Could not finalize prepared statement");

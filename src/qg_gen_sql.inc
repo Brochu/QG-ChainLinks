@@ -67,3 +67,4 @@ static const char *sql_transit = "INSERT INTO transits VALUES (:from_landmark_id
 static const char *sql_prune_transit = "DELETE FROM transits WHERE (from_landmark_id * 37 + to_landmark_id * 41 + mode * 43 + day_phase * 47) % 10 = 0;";
 
 static const char *sql_actor = "INSERT INTO actors VALUES (:actor_id, :name, :age, :sex, :job, :home_district_id, :workplace_landmark_id, :wealth, :secrets)";
+static const char *sql_actor_routine = "INSERT INTO actor_routines VALUES (:actor_id, :hour, :landmark_id)";
