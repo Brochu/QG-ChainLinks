@@ -2,6 +2,8 @@ static const char *sql_init =
 "DROP TABLE IF EXISTS districts;\n"
 "DROP TABLE IF EXISTS landmarks;\n"
 "DROP TABLE IF EXISTS transits;\n"
+"DROP TABLE IF EXISTS actors;\n"
+"DROP TABLE IF EXISTS actor_routines;\n"
 "CREATE TABLE districts(\n"
 "    district_id INTEGER PRIMARY KEY,\n"
 "    name TEXT NOT NULL,\n"
@@ -34,9 +36,34 @@ static const char *sql_init =
 "CREATE INDEX idx_landmark_district   ON landmarks(district_id);\n"
 "CREATE INDEX idx_landmark_type       ON landmarks(type);\n"
 "CREATE INDEX idx_transit_from        ON transits(from_landmark_id);\n"
-"CREATE INDEX idx_transit_to          ON transits(to_landmark_id);\n";
+"CREATE INDEX idx_transit_to          ON transits(to_landmark_id);\n"
+"-- 1. the cast -----------------------------------------------\n"
+"CREATE TABLE actors (\n"
+"    actor_id     INTEGER PRIMARY KEY,\n"
+"    name         TEXT NOT NULL,\n"
+"    age          INTEGER NOT NULL CHECK (age BETWEEN 0 AND 120),\n"
+"    sex          INTEGER    NOT NULL,\n"
+"    job          TEXT    NOT NULL,\n"
+"    home_district_id INTEGER NOT NULL REFERENCES district(district_id),\n"
+"    workplace_landmark_id INTEGER REFERENCES landmark(landmark_id),\n"
+"    wealth       INTEGER NOT NULL CHECK (wealth BETWEEN 1 AND 5),\n"
+"    secrets      INTEGER NOT NULL DEFAULT 0   -- bit-field\n"
+");\n"
+"-- 2. where they are every hour ------------------------------\n"
+"CREATE TABLE actor_routines (\n"
+"    actor_id   INTEGER NOT NULL REFERENCES actor(actor_id) ON DELETE CASCADE,\n"
+"    hour       INTEGER NOT NULL CHECK (hour BETWEEN 0 AND 23),\n"
+"    landmark_id INTEGER NOT NULL REFERENCES landmark(landmark_id),\n"
+"    PRIMARY KEY (actor_id, hour)\n"
+") WITHOUT ROWID;\n"
+"-- helpful indices\n"
+"CREATE INDEX idx_actor_district ON actors(home_district_id);\n"
+"CREATE INDEX idx_actor_workplace ON actors(workplace_landmark_id);\n"
+"CREATE INDEX idx_routine_landmark ON actor_routines(landmark_id);\n";
 
 static const char *sql_district = "INSERT INTO districts VALUES (:id, :name, :type, :wealth, :rough, :response_time)";
 static const char *sql_landmark = "INSERT INTO landmarks VALUES (:landmark_id, :district_id, :name, :type, :size, :open_hour, :close_hour, :peak_hour, :num_staff, :is_public, :crime_factor)";
 static const char *sql_transit = "INSERT INTO transits VALUES (:from_landmark_id, :to_landmark_id, :mode, :day_phase, :minutes)";
 static const char *sql_prune_transit = "DELETE FROM transits WHERE (from_landmark_id * 37 + to_landmark_id * 41 + mode * 43 + day_phase * 47) % 10 = 0;";
+
+static const char *sql_actor = "INSERT INTO actors VALUES (:actor_id, :name, :age, :sex, :job, :home_district_id, :workplace_landmark_id, :wealth, :secrets)";

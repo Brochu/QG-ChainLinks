@@ -6,13 +6,13 @@
 #include <array>
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <SDL3/SDL.h>
 
 #define GEN_ALPHA_SIZE 58
 #define GEN_MAP_SIZE 256
 #define NAME_BUF_LEN 64
-#define LANDMARK_POS_MAX 45
 
 constexpr std::array<u8, GEN_MAP_SIZE> make_ascii_to_dense() {
     std::array<u8, GEN_MAP_SIZE> arr {};
@@ -270,6 +270,9 @@ const char *name_cycle_next(name_cycle *ctx) {
 
 #include "qg_gen_sql.inc" // SQL static command strings
 
+#define LANDMARK_POS_MAX 45
+#define ASSETS_HOME_DIR "../assets/"
+
 int debug_callback(void *data, int size, char **var0, char **var1) {
     return 0;
 }
@@ -291,8 +294,9 @@ i32 _case_gen_transit_time(i32 dist, travel_mode mode, travel_phase time) {
 }
 
 void case_gen_init(case_gen *ctx) {
-    //TODO: Memory arena init
-    name_gen_train(&ctx->dist_names, "../assets/city_names.csv");
+    name_gen_train(&ctx->dist_names, ASSETS_HOME_DIR "city_names.csv");
+    name_cycle_init(&ctx->female_names, ASSETS_HOME_DIR "f_names.csv");
+    name_cycle_init(&ctx->male_names, ASSETS_HOME_DIR "m_names.csv");
 
     int res = sqlite3_open(":memory:", &ctx->db);
     assert(res == 0 && "Could not open in-memory DB");
@@ -321,8 +325,9 @@ void case_gen_clear(case_gen *ctx) {
     assert(res == 0 && "Could not open in-memory DB");
     printf("[PROC-GEN] Closing in-memory DB; res = %i\n", res);
 
+    name_cycle_clear(&ctx->male_names);
+    name_cycle_clear(&ctx->female_names);
     name_gen_clear(&ctx->dist_names);
-    //TODO: Memory arena cleanup
 }
 
 static i8 size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
@@ -511,7 +516,50 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     assert(res == 0 && "Could not cull 10% of transit entries");
 }
 
-void case_gen_population(case_gen *ctx) { }
+void case_gen_population(case_gen *ctx) {
+    ctx->num_actors = (ctx->num_landmarks * 3) + (ctx->num_districts * 5);
+
+    sqlite3_stmt *prep;
+    int res = sqlite3_prepare_v3(ctx->db, sql_actor, strlen(sql_actor), 0, &prep, nullptr);
+    if (res != 0) {
+        printf("[PROC-GEN] Could not compile statement. ERR: %s\n", sqlite3_errmsg(ctx->db));
+        assert(0 && "Could not create new prepared statement");
+    }
+    for (i32 i = 0; i < ctx->num_actors; i++) {
+        sqlite3_reset(prep);
+
+        actor a {};
+        a.id = i;
+        if (rand_int(2) == 0) {
+            a.sex = 'M';
+            a.name = name_cycle_next(&ctx->male_names);
+        } else {
+            a.sex = 'F';
+            a.name = name_cycle_next(&ctx->female_names);
+        }
+        a.age = rand_int_min(18, 110);
+        a.job = " -- ";
+        a.home_district_id = rand_int(ctx->num_districts)+1; //TODO: Weight districts based on type
+        a.workplace_landmark_id = rand_int(ctx->num_landmarks)+1; //TODO: Weight landmarks based on type
+        a.wealth = rand_int(5);
+        a.secrets = 0; // Init empty
+
+        static const char *sql_actor = "INSERT INTO actors VALUES (:actor_id, :name, :age, :sex, :job, :home_district_id, :workplace_landmark_id, :wealth, :secrets)";
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":actor_id"), i);
+        sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":name"), a.name, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":age"), a.age);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":sex"), a.sex);
+        sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":job"), a.job, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":home_district_id"), a.home_district_id);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":workplace_landmark_id"), a.workplace_landmark_id);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":wealth"), a.wealth);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":secrets"), a.secrets);
+        sqlite3_step(prep);
+    }
+    res = sqlite3_finalize(prep);
+    assert(res == 0 && "Could not finalize prepared statement");
+}
+
 void case_gen_motive(case_gen *ctx) { }
 void case_gen_crime(case_gen *ctx) { }
 void case_gen_planning(case_gen *ctx) { }

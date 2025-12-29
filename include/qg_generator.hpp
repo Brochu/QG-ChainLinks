@@ -139,6 +139,18 @@ struct landmark {
     i32 crime_factor;
 };
 
+struct actor {
+    i64 id;
+    char sex;
+    const char *name;
+    i8 age;
+    const char *job;
+    i64 home_district_id;
+    i64 workplace_landmark_id;
+    i32 wealth;
+    u32 secrets = 0;
+};
+
 struct case_gen {
     sqlite3 *db;
 
@@ -149,6 +161,8 @@ struct case_gen {
     city_size size;
     i8 num_districts;
     i8 num_landmarks;
+
+    i16 num_actors;
 };
 
 void case_gen_init(case_gen *ctx);
