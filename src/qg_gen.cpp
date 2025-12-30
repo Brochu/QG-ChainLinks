@@ -452,7 +452,7 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         l.is_public = is_public;
 
         i32 crime_f = std::max(0, (dist.roughness * 5) + rand_int_min(-10, 10));
-        if (dist.type == district_type::NIGHTLIFE || district_type::FINANCIAL) {
+        if (dist.type == district_type::NIGHTLIFE || dist.type == district_type::FINANCIAL) {
             crime_f *= 2;
         }
         l.crime_factor = crime_f;
