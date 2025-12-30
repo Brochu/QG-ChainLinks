@@ -5,6 +5,7 @@
 #include "SDL3/SDL_init.h"
 #include "SDL3/SDL_render.h"
 
+#include "qg_config.hpp"
 #include "qg_generator.hpp"
 #include "qg_random.hpp"
 
@@ -15,6 +16,8 @@
 
 bool qg_running = true;
 float pos = 0.f;
+
+config root_cfg;
 
 int main(int argc, char **argv) {
     rand_seed(time(NULL));
