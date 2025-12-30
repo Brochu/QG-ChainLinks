@@ -7,7 +7,6 @@
 
 #define MAX_NUM_NAMES 255
 
-//TODO: Each name_gen should have it's own memory pool for names
 struct name_gen_entry {
     i8 num_options = 0;
 
