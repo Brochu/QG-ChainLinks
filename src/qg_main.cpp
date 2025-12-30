@@ -60,6 +60,10 @@ void gamelib_refresh() {
     gamelib_load();
 }
 
+// ------------- CONFIG HANDLING
+
+config *root_cfg;
+
 // ------------- ENGINE - MAIN
 
 #define VERSION "ALPHA" //TODO: Export version from the main game DLL
@@ -69,8 +73,6 @@ void gamelib_refresh() {
 
 bool qg_running = true;
 float pos = 0.f;
-
-config root_cfg;
 
 int main(int argc, char **argv) {
     rand_seed(time(NULL));
