@@ -88,6 +88,17 @@ struct FDataKey {
 	};
 };
 
+/// <summary>
+/// Represents a cell of information in the matrix
+/// </summary>
+USTRUCT(BlueprintType)
+struct FDataPoint {
+	GENERATED_BODY()
+
+	FString value;
+	int64 timestamp;
+};
+
 UENUM(BlueprintType)
 enum class EDataSourceType : uint8 {
 	WITNESS,
@@ -105,20 +116,13 @@ enum class EReliabilityCategory : uint8 {
     VERIFIED,
 };
 
-/// <summary>
-/// Represents a cell of information in the matrix
-/// </summary>
 USTRUCT(BlueprintType)
-struct FDataPoint {
+struct FDataSource {
 	GENERATED_BODY()
-
-	FString value;
-	int64 timestamp;
 
 	EDataSourceType src_type;
 	int32 src_id;
-
-	EReliabilityCategory reliability;
+	FString src_name;
 };
 
 /// <summary>
@@ -127,8 +131,11 @@ struct FDataPoint {
 USTRUCT(BlueprintType)
 struct FDataBranch {
 	GENERATED_BODY()
-
 	//TODO :Add tagging features for fully confirmed branches / fully disproven branches
+
+	FDataSource source;
+	EReliabilityCategory reliability;
+
 	TArray<FDataPoint> history;
 };
 
@@ -138,14 +145,19 @@ struct FDataBranch {
 USTRUCT(BlueprintType)
 struct FDataEntry {
 	GENERATED_BODY()
+	//TODO :Add tagging features for their value in the chain of event
 
 	TArray<FDataBranch> forks;
 };
 
-UENUM(BlueprintType)
-enum class EConflictResolution : uint8 {
-	FORK,
-	CORRECT,
+USTRUCT(BlueprintType)
+struct FDataPointInfo {
+	GENERATED_BODY();
+
+	int32 entity_id;
+	FDataSource source;
+	EReliabilityCategory reliability;
+	FDataPoint data;
 };
 
 /// <summary>
@@ -161,13 +173,19 @@ class ALIBI_API UMatrixSubsystem : public UGameInstanceSubsystem
 	//TODO: Add more function to get/set information
 	// DO NOT FORCE THE USER TO INTERACT WITH THE KEY STRUCTS; combine it into a key for them in the function
 	UFUNCTION(Category = "Alibi|Matrix")
-	void Matrix_Init();
+	void Matrix_InitNewCase();
 
 	UFUNCTION(Category = "Alibi|Matrix")
-	bool Matrix_AddDataPoint(FDataKey key, FDataPoint point, EConflictResolution resolution);
+	int32 Matrix_NewPersonDataPoint(EPersonInfoType info_type, FDataPointInfo info);
 
 	UFUNCTION(Category = "Alibi|Matrix")
-	void Matrix_DisplayData();
+	int32 Matrix_NewLocationDataPoint(ELocationInfoType info_type, FDataPointInfo info);
+
+	UFUNCTION(Category = "Alibi|Matrix")
+	int32 Matrix_NewObjectDataPoint(EObjectInfoType info_type, FDataPointInfo info);
+
+	UFUNCTION(Category = "Alibi|Matrix")
+	int32 Matrix_NewEventDataPoint(EEventInfoType info_type, FDataPointInfo info);
 
 	UPROPERTY(Transient)
 	TMap<uint64, FDataEntry> sparse_entries;
