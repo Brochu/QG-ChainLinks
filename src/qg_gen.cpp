@@ -431,6 +431,8 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
             assert(false && "[PROC-GEN] Invalid district type provided");
             break;;
         }
+        //TODO: Rework this, so crazy, use sprintf + alloc per landmark
+        // Will need to store landmarks in ctx for later phases
         num[0] = name[0] = '\0';
         _itoa_s(temp_counts[l.type]++, num, 10);
         strcat_s(name, landmark_type_names[l.type]);
