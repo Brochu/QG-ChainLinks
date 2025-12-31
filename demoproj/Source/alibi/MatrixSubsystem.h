@@ -3,80 +3,172 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/WorldSubsystem.h"
+#include "Subsystems/GameInstanceSubsystem.h"
 #include "MatrixSubsystem.generated.h"
 
-/**
- * Information matrix subsystem. This will keep track of the information that was found by investigation
- * Each data point needs to have a possibility of multiple conflicting information
- * This does not represent the truth of the virtual world, but the current knowledge of the investigators
- */
-
-#define MAX_PEOPLE 255
-#define MAX_LOCATIONS 255
-#define MAX_OBJECTS 255
-
-// Start with one enum, see if we can split it later?
-UENUM()
-enum class EDataKey {
-	// PEOPLE KEYS
-	PER_FIRSTNAME,
-	PER_LASTNAME,
-	PER_ADDRESS, // Could refer to location
-	PER_PHONENUM,
-
-	// LOCATIONS KEYS
-	LOC_TYPE,
-	LOC_ADDRESS,
-	LOC_CITY,
-	LOC_COUNTRY,
-
-	// OBJECTS KEYS
-	OBJ_TYPE,
-	OBJ_NAME,
-	OBJ_COLOR,
-	OBJ_OWNER, // Could refer to people
+UENUM(BlueprintType)
+enum class EEntityType : uint8 {
+	PERSON,
+	LOCATION,
+	OBJECT,
+	EVENT,
 };
 
+UENUM(BlueprintType)
+enum class EPersonInfoType : uint8 {
+	PER_NAME,
+	PER_ALIAS,
+	PER_AGE,
+	PER_HEIGHT,
+	PER_BUILD,
+	PER_HAIR_COLOR,
+	PER_MARKS,
+	PER_ADDRESS,
+	PER_PHONE,
+	PER_EMAIL,
+	PER_OCCUPATION,
+	PER_ROLE,
+	PER_ALIBI,
+	PER_CRIME_HISTORY,
+};
+
+UENUM(BlueprintType)
+enum class ELocationInfoType : uint8 {
+	LOC_NAME,
+	LOC_ADDRESS,
+	LOC_TYPE,
+	LOC_OWNER,
+	LOC_RESIDENTS,
+	LOC_ACCESS_CONTROL,
+	LOC_OP_HOURS,
+};
+
+UENUM(BlueprintType)
+enum class EObjectInfoType : uint8 {
+	OBJ_NAME,
+	OBJ_TYPE,
+	OBJ_SERIAL_NUM,
+	OBJ_SIZE,
+	OBJ_COLOR,
+	OBJ_MATERIAL,
+	OBJ_CONDITION,
+	OBJ_OWNER,
+	OBJ_LOCATION,
+};
+
+UENUM(BlueprintType)
+enum class EEventInfoType : uint8 {
+	EVT_TYPE,
+	EVT_DATE_START,
+	EVT_DATE_END,
+	EVT_LOCATION,
+	EVT_PARTICIPANTS,
+	EVT_WITNESSES,
+	EVT_DESCRIPTION,
+	EVT_STATUS,
+};
+
+USTRUCT()
+struct FDataKey {
+	GENERATED_BODY()
+
+	union {
+		struct {
+			EEntityType entity_type;
+			union {
+				EPersonInfoType person_info_type;
+				ELocationInfoType location_info_type;
+				EObjectInfoType object_info_type;
+				EEventInfoType event_info_type;
+			};
+			int16 pad0;
+			int32 entity_id;
+		};
+		uint64 key;
+	};
+};
+
+UENUM(BlueprintType)
+enum class EDataSourceType : uint8 {
+	WITNESS,
+	FORENSIC,
+	DOCUMENT,
+	CAMERA,
+};
+
+UENUM(BlueprintType)
+enum class EReliabilityCategory : uint8 {
+    DISPROVEN,
+    UNRELIABLE,
+    QUESTIONABLE,
+    RELIABLE,
+    VERIFIED,
+};
+
+/// <summary>
+/// Represents a cell of information in the matrix
+/// </summary>
 USTRUCT(BlueprintType)
 struct FDataPoint {
-	// Represents a new value being added to the matrix, needs to have all the info required to place the
-	// point at the right place in the matrix
 	GENERATED_BODY()
+
+	FString value;
+	int64 timestamp;
+
+	EDataSourceType src_type;
+	int32 src_id;
+
+	EReliabilityCategory reliability;
 };
 
+/// <summary>
+/// Represents one of many conflicting informations for one given entity info and it's history over time with corrections
+/// </summary>
+USTRUCT(BlueprintType)
+struct FDataBranch {
+	GENERATED_BODY()
+
+	//TODO :Add tagging features for fully confirmed branches / fully disproven branches
+	TArray<FDataPoint> history;
+};
+
+/// <summary>
+/// Represents an entry in the matrix, needs to track multiple conflicting values and history
+/// </summary>
 USTRUCT(BlueprintType)
 struct FDataEntry {
-	// Represents an entry in the matrix, needs to track multiple conflicting values and history
 	GENERATED_BODY()
+
+	TArray<FDataBranch> forks;
 };
 
+UENUM(BlueprintType)
+enum class EConflictResolution : uint8 {
+	FORK,
+	CORRECT,
+};
+
+/// <summary>
+/// Information matrix subsystem. This will keep track of the information that was found by investigation
+/// Each data point needs to have a possibility of multiple conflicting information
+/// This does not represent the truth of the virtual world, but the current knowledge of the investigators
+/// </summary>
 UCLASS()
-class ALIBI_API UMatrixSubsystem : public UWorldSubsystem
+class ALIBI_API UMatrixSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
+	//TODO: Add more function to get/set information
+	// DO NOT FORCE THE USER TO INTERACT WITH THE KEY STRUCTS; combine it into a key for them in the function
 	UFUNCTION(Category = "Alibi|Matrix")
-	bool AddDataPoint(EDataKey key, FDataPoint point) {
-		return false;
-	}
+	void Matrix_Init();
 
-	void ShowMatrix() {
-		//TODO: Find a correct interface to communicate the whole matrix back to the game to show in the UI
-	}
+	UFUNCTION(Category = "Alibi|Matrix")
+	bool Matrix_AddDataPoint(FDataKey key, FDataPoint point, EConflictResolution resolution);
 
-	UPROPERTY(Transient)
-	FDataEntry people[MAX_PEOPLE];
-	UPROPERTY(Transient)
-	int32 num_peolpe = 0;
+	UFUNCTION(Category = "Alibi|Matrix")
+	void Matrix_DisplayData();
 
 	UPROPERTY(Transient)
-	FDataEntry locations[MAX_LOCATIONS];
-	UPROPERTY(Transient)
-	int32 num_locations = 0;
-
-	UPROPERTY(Transient)
-	FDataEntry objects[MAX_OBJECTS];
-	UPROPERTY(Transient)
-	int32 num_objects = 0;
+	TMap<uint64, FDataEntry> sparse_entries;
 };
