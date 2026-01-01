@@ -90,6 +90,8 @@ FDataPoint UMatrixSubsystem::Matrix_GetCurrentValue(EEntityType entity_type, int
 		return FDataPoint {};
 	}
 
+	check(fork_index < entry->forks.Num());
+
 	FDataFork &e = entry->forks[fork_index];
 	return e.history.Last();
 }
@@ -112,6 +114,8 @@ TArray<FDataPoint> UMatrixSubsystem::Matrix_GetDataHistory(EEntityType entity_ty
 	if (!entry || entry->forks.Num() == 0) {
 		return {};
 	}
+
+	check(fork_index < entry->forks.Num());
 
 	FDataFork &e = entry->forks[fork_index];
 	return e.history;
@@ -146,4 +150,32 @@ TArray<FDataEntry> UMatrixSubsystem::Matrix_GetAllDataForEntity(EEntityType enti
 	}
 
 	return entries;
+}
+
+// =============================
+
+int32 UMatrixSubsystem::Matrix_GetForkCount(EEntityType entity_type, int32 entity_id, uint8 info_type_id) {
+	FDataKey k = _Matrix_CreateKey(entity_type, entity_id, info_type_id);
+	FDataEntry *entry = sparse_entries.Find(k.key);
+
+	if (!entry) {
+		return 0;
+	}
+
+	return entry->forks.Num();
+}
+
+TArray<int32> UMatrixSubsystem::Matrix_GetAllEntityIds(EEntityType entity_type) {
+	TArray<int32> ids;
+
+	for (auto& [k, _] : sparse_entries) {
+		FDataKey current;
+		current.key = k;
+
+		if (current.entity_type == entity_type) {
+			ids.Add(current.entity_id);
+		}
+	}
+
+	return ids;
 }

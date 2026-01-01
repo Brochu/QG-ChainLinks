@@ -152,7 +152,7 @@ struct FDataEntry {
 
 USTRUCT(BlueprintType)
 struct FDataPointInfo {
-	GENERATED_BODY();
+	GENERATED_BODY()
 
 	int32 entity_id;
 	FDataSource source;
@@ -170,8 +170,7 @@ class ALIBI_API UMatrixSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
-	//TODO: Add more function to get/set information
-	// DO NOT FORCE THE USER TO INTERACT WITH THE KEY STRUCTS; combine it into a key for them in the function
+public:
 	UFUNCTION(Category = "Alibi|Matrix")
 	void Matrix_InitNewCase();
 
@@ -204,6 +203,15 @@ class ALIBI_API UMatrixSubsystem : public UGameInstanceSubsystem
 	UFUNCTION(Category = "Alibi|Matrix")
 	TArray<FDataEntry> Matrix_GetAllDataForEntity(EEntityType entity_type, int32 entity_id);
 
+	// =============================
+
+	UFUNCTION(Category = "Alibi|Matrix")
+	int32 Matrix_GetForkCount(EEntityType entity_type, int32 entity_id, uint8 info_type_id);
+
+	UFUNCTION(Category = "Alibi|Matrix")
+	TArray<int32> Matrix_GetAllEntityIds(EEntityType entity_type);
+
+private:
 	UPROPERTY(Transient)
 	TMap<uint64, FDataEntry> sparse_entries;
 };
