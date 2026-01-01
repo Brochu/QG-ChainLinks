@@ -129,9 +129,9 @@ struct FDataSource {
 /// Represents one of many conflicting informations for one given entity info and it's history over time with corrections
 /// </summary>
 USTRUCT(BlueprintType)
-struct FDataBranch {
+struct FDataFork {
 	GENERATED_BODY()
-	//TODO :Add tagging features for fully confirmed branches / fully disproven branches
+	//TODO :Add tagging features for fully confirmed forks / fully disproven forks
 
 	FDataSource source;
 	EReliabilityCategory reliability;
@@ -147,7 +147,7 @@ struct FDataEntry {
 	GENERATED_BODY()
 	//TODO :Add tagging features for their value in the chain of event
 
-	TArray<FDataBranch> forks;
+	TArray<FDataFork> forks;
 };
 
 USTRUCT(BlueprintType)
@@ -186,6 +186,23 @@ class ALIBI_API UMatrixSubsystem : public UGameInstanceSubsystem
 
 	UFUNCTION(Category = "Alibi|Matrix")
 	int32 Matrix_NewEventDataPoint(EEventInfoType info_type, FDataPointInfo info);
+
+	// =============================
+
+	UFUNCTION(Category = "Alibi|Matrix")
+	FDataPoint Matrix_GetCurrentValue(EEntityType entity_type, int32 entity_id, uint8 info_type_id, int32 fork_index);
+
+	UFUNCTION(Category = "Alibi|Matrix")
+	FDataEntry Matrix_GetDataEntry(EEntityType entity_type, int32 entity_id, uint8 info_type_id);
+
+	UFUNCTION(Category = "Alibi|Matrix")
+	TArray<FDataPoint> Matrix_GetDataHistory(EEntityType entity_type, int32 entity_id, uint8 info_type_id, int32 fork_index);
+
+	UFUNCTION(Category = "Alibi|Matrix")
+	TArray<FDataPoint> Matrix_GetAllForksLatest(EEntityType entity_type, int32 entity_id, uint8 info_type_id);
+
+	UFUNCTION(Category = "Alibi|Matrix")
+	TArray<FDataEntry> Matrix_GetAllDataForEntity(EEntityType entity_type, int32 entity_id);
 
 	UPROPERTY(Transient)
 	TMap<uint64, FDataEntry> sparse_entries;

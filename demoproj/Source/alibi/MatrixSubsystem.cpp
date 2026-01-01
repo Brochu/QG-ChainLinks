@@ -35,7 +35,7 @@ static FDataKey _Matrix_CreateKey(EEntityType entity_type, int32 entity_id, uint
 
 static int32 _Matrix_ApplyDataPoint(FDataEntry &entry, EReliabilityCategory reliability, const FDataSource &src, const FDataPoint &point) {
 	for (int32 i = 0; i < entry.forks.Num(); i++) {
-		FDataBranch& b = entry.forks[i];
+		FDataFork& b = entry.forks[i];
 		if (b.source.src_type == src.src_type && b.source.src_id == src.src_id) {
 			b.reliability = reliability;
 			b.history.Add(point);
@@ -44,7 +44,7 @@ static int32 _Matrix_ApplyDataPoint(FDataEntry &entry, EReliabilityCategory reli
 	}
 
 	entry.forks.Emplace();
-	FDataBranch& b = entry.forks[entry.forks.Num()-1];
+	FDataFork &b = entry.forks[entry.forks.Num()-1];
 	b.reliability = reliability;
 	b.source = src;
 	b.history.Add(point);
@@ -54,28 +54,96 @@ static int32 _Matrix_ApplyDataPoint(FDataEntry &entry, EReliabilityCategory reli
 
 int32 UMatrixSubsystem::Matrix_NewPersonDataPoint(EPersonInfoType info_type, FDataPointInfo info) {
 	FDataKey k = _Matrix_CreateKey(EEntityType::PERSON, info.entity_id, (uint8)info_type);
-	FDataEntry& entry = sparse_entries[k.key];
+	FDataEntry &entry = sparse_entries[k.key];
 
 	return _Matrix_ApplyDataPoint(entry, info.reliability, info.source, info.data);
 }
 
 int32 UMatrixSubsystem::Matrix_NewLocationDataPoint(ELocationInfoType info_type, FDataPointInfo info) {
 	FDataKey k = _Matrix_CreateKey(EEntityType::LOCATION, info.entity_id, (uint8)info_type);
-	FDataEntry& entry = sparse_entries[k.key];
+	FDataEntry &entry = sparse_entries[k.key];
 
 	return _Matrix_ApplyDataPoint(entry, info.reliability, info.source, info.data);
 }
 
 int32 UMatrixSubsystem::Matrix_NewObjectDataPoint(EObjectInfoType info_type, FDataPointInfo info) {
 	FDataKey k = _Matrix_CreateKey(EEntityType::OBJECT, info.entity_id, (uint8)info_type);
-	FDataEntry& entry = sparse_entries[k.key];
+	FDataEntry &entry = sparse_entries[k.key];
 
 	return _Matrix_ApplyDataPoint(entry, info.reliability, info.source, info.data);
 }
 
 int32 UMatrixSubsystem::Matrix_NewEventDataPoint(EEventInfoType info_type, FDataPointInfo info) {
 	FDataKey k = _Matrix_CreateKey(EEntityType::EVENT, info.entity_id, (uint8)info_type);
-	FDataEntry& entry = sparse_entries[k.key];
+	FDataEntry &entry = sparse_entries[k.key];
 
 	return _Matrix_ApplyDataPoint(entry, info.reliability, info.source, info.data);
+}
+
+// =============================
+
+FDataPoint UMatrixSubsystem::Matrix_GetCurrentValue(EEntityType entity_type, int32 entity_id, uint8 info_type_id, int32 fork_index) {
+	FDataKey k = _Matrix_CreateKey(entity_type, entity_id, info_type_id);
+	FDataEntry *entry = sparse_entries.Find(k.key);
+
+	if (!entry || entry->forks.Num() == 0) {
+		return FDataPoint {};
+	}
+
+	FDataFork &e = entry->forks[fork_index];
+	return e.history.Last();
+}
+
+FDataEntry UMatrixSubsystem::Matrix_GetDataEntry(EEntityType entity_type, int32 entity_id, uint8 info_type_id) {
+	FDataKey k = _Matrix_CreateKey(entity_type, entity_id, info_type_id);
+	FDataEntry *entry = sparse_entries.Find(k.key);
+
+	if (!entry) {
+		return FDataEntry {};
+	}
+
+	return *entry;
+}
+
+TArray<FDataPoint> UMatrixSubsystem::Matrix_GetDataHistory(EEntityType entity_type, int32 entity_id, uint8 info_type_id, int32 fork_index) {
+	FDataKey k = _Matrix_CreateKey(entity_type, entity_id, info_type_id);
+	FDataEntry *entry = sparse_entries.Find(k.key);
+
+	if (!entry || entry->forks.Num() == 0) {
+		return {};
+	}
+
+	FDataFork &e = entry->forks[fork_index];
+	return e.history;
+}
+
+TArray<FDataPoint> UMatrixSubsystem::Matrix_GetAllForksLatest(EEntityType entity_type, int32 entity_id, uint8 info_type_id) {
+	FDataKey k = _Matrix_CreateKey(entity_type, entity_id, info_type_id);
+	FDataEntry *entry = sparse_entries.Find(k.key);
+
+	if (!entry || entry->forks.Num() == 0) {
+		return {};
+	}
+
+	TArray<FDataPoint> latests;
+	for (FDataFork& fork : entry->forks) {
+		latests.Add(fork.history.Last());
+	}
+
+	return latests;
+}
+
+TArray<FDataEntry> UMatrixSubsystem::Matrix_GetAllDataForEntity(EEntityType entity_type, int32 entity_id) {
+	TArray<FDataEntry> entries;
+
+	for (auto& [k, v] : sparse_entries) {
+		FDataKey current;
+		current.key = k;
+
+		if (current.entity_type == entity_type && current.entity_id == entity_id) {
+			entries.Add(v);
+		}
+	}
+
+	return entries;
 }
