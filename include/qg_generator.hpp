@@ -160,6 +160,8 @@ struct case_gen {
     city_size size;
     i8 num_districts;
     i8 num_landmarks;
+    //TODO: Keep districts and landmarks generated here for next phases needing them
+    //TODO: Maybe we can have an arena here to store the generation data and clear them out after it's not required anymore?
 
     i16 num_actors;
 };
