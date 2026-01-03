@@ -83,8 +83,6 @@ int main(int argc, char **argv) {
     printf("[QG] SDL3 Correctly init'ed!\n");
     //gamelib_load();
 
-    game_init();
-
     case_gen ctx = {};
     case_gen_init(&ctx);
     case_gen_fondation(&ctx, city_size::SIZE_METRO, rand_int(INT_MAX));
