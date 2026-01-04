@@ -30,8 +30,8 @@
     -->
 
     <Target Name="chain">
-        <Exec Command="cl $(CFlags) src\chain.cpp" />
-        <Exec Command="link $(LinkFlags) -DLL $(ObjDir)\chain.obj -out:$(GameLibDir)\chain.dll" />
+        <Exec Command="cl $(CFlags) src\ch_game.cpp" />
+        <Exec Command="link $(LinkFlags) -DLL $(ObjDir)\ch_game.obj -out:$(GameLibDir)\ch_game.dll" />
     </Target>
 
     <!-- === FORGE MAIN === -->
@@ -49,8 +49,8 @@
     </Target>
     -->
     <Target Name="qg" DependsOnTargets="chain">
-        <Exec Command="rc -nologo -v -Fo $(ObjDir)\qg_res.res src\qg_res.rc" />
-        <Exec Command="cl $(CFlags) src\_main.cpp" />
-        <Exec Command="link $(LinkFlags) $(ObjDir)\_main.obj $(ObjDir)\qg_res.res SDL3.lib sqlite3.lib -out:$(BuildDir)\qg.exe" />
+        <Exec Command="rc -nologo -v -Fo $(ObjDir)\resources.res src\resources.rc" />
+        <Exec Command="cl $(CFlags) src\qg_main.cpp src\qg_rand.cpp src\qg_mem.cpp src\qg_conf.cpp" />
+        <Exec Command="link $(LinkFlags) $(ObjDir)\qg_main.obj $(ObjDir)\qg_rand.obj $(ObjDir)\qg_mem.obj $(ObjDir)\qg_conf.obj $(ObjDir)\resources.res SDL3.lib sqlite3.lib -out:$(BuildDir)\qg.exe" />
     </Target>
 </Project>

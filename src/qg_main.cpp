@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -7,50 +8,83 @@
 #include "SDL3/SDL_render.h"
 
 #include "qg_config.hpp"
-#include "qg_generator.hpp"
+#include "qg_memory.hpp"
 #include "qg_random.hpp"
+#include "shared.hpp"
 
 // ------------- GAMELIB LOADING
 
-#define GAMELIB_BASE_PATH "./gamelibs/chain.dll"
-#define GAMELIB_LOAD_PATH "./gamelibs/chain_loaded.dll"
+#define GAMELIB_BASE_PATH "./gamelibs/ch_game.dll"
+#define GAMELIB_LOAD_PATH "./gamelibs/ch_game_loaded.dll"
 
-#define GAMELIB_FUNCS \
-    X(void, game_init, "chain_init", (void)) \
-    X(void, game_tick, "chain_tick", (float)) \
-    X(void, game_draw, "chain_draw", (float)) \
-    X(void, game_close, "chain_exit", (void))
 
 #define X(ret, name, sym, args) typedef ret (*name##_t) args;
-GAMELIB_FUNCS
+GAME_MODULE_DEF
 #undef X
 
 #define X(ret, name, sym, args) name##_t name = NULL;
-GAMELIB_FUNCS
+GAME_MODULE_DEF
 #undef X
 
-HMODULE gamelib_mod = NULL;
+HMODULE game_module = NULL;
+
+engine_api g_engine {};
+qg_config_api conf;
+qg_memory_api mem;
+qg_random_api random;
 
 void gamelib_load() {
-    assert(gamelib_mod == NULL && "Did not properly free the gamelib module");
+    assert(game_module == NULL && "Did not properly free the gamelib module");
+
+    bool should_copy = false;
 
     if (GetFileAttributes(GAMELIB_LOAD_PATH) == INVALID_FILE_ATTRIBUTES) {
+        should_copy = true;
+    } else {
+        // Check if base file is more recent than load file
+        WIN32_FILE_ATTRIBUTE_DATA base_attrib, load_attrib;
+        if (GetFileAttributesEx(GAMELIB_BASE_PATH, GetFileExInfoStandard, &base_attrib) &&
+            GetFileAttributesEx(GAMELIB_LOAD_PATH, GetFileExInfoStandard, &load_attrib)) {
+
+            if (CompareFileTime(&base_attrib.ftLastWriteTime, &load_attrib.ftLastWriteTime) > 0) {
+                should_copy = true;
+            }
+        }
+    }
+
+    if (should_copy) {
         CopyFile(GAMELIB_BASE_PATH, GAMELIB_LOAD_PATH, false);
     }
-    gamelib_mod = LoadLibrary(GAMELIB_LOAD_PATH);
-    assert(gamelib_mod != NULL && "Failed to load game library");
+
+    game_module = LoadLibrary(GAMELIB_LOAD_PATH);
+    assert(game_module != NULL && "Failed to load game library");
 
     #define X(ret, name, sym, args) \
-        name = (name##_t)GetProcAddress(gamelib_mod, sym); \
+        name = (name##_t)GetProcAddress(game_module, sym); \
         assert(name != NULL && "Failed to load function " sym);
-    GAMELIB_FUNCS
+    GAME_MODULE_DEF
+    #undef X
+
+    #define X(ret, name, params) random.name = &name;
+    RANDOM_MODULE_DEF
+    g_engine.rand = &random;
+    #undef X
+
+    #define X(ret, name, params) mem.name = &name;
+    MEMORY_MODULE_DEF
+    g_engine.mem = &mem;
+    #undef X
+
+    #define X(ret, name, params) conf.name = &name;
+    CONFIG_MODULE_DEF
+    g_engine.conf = &conf;
     #undef X
 }
 
 void gamelib_free() {
-    if (gamelib_mod != NULL) {
-        FreeLibrary(gamelib_mod);
-        gamelib_mod = NULL;
+    if (game_module != NULL) {
+        FreeLibrary(game_module);
+        game_module = NULL;
     }
 }
 
@@ -71,8 +105,7 @@ config *root_cfg;
 #define WIDTH 800
 #define HEIGHT 600
 
-bool qg_running = true;
-float pos = 0.f;
+bool g_running = true;
 
 int main(int argc, char **argv) {
     rand_seed(time(NULL));
@@ -81,18 +114,6 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     printf("[QG] SDL3 Correctly init'ed!\n");
-    //gamelib_load();
-
-    case_gen ctx = {};
-    case_gen_init(&ctx);
-    case_gen_fondation(&ctx, city_size::SIZE_METRO, rand_int(INT_MAX));
-    case_gen_population(&ctx);
-    case_gen_clear(&ctx);
-
-    //gamelib_free();
-    SDL_Quit();
-    printf("[QG] quitting SDL3!\n");
-    return 0;
 
     SDL_Window *window;
     SDL_Renderer *context;
@@ -100,35 +121,30 @@ int main(int argc, char **argv) {
         printf("Could not create Window or Renderer\nerror: %s\n", SDL_GetError());
         return EXIT_FAILURE;
     }
+    gamelib_load();
+
+    game_init(g_engine);
 
     SDL_Event event;
-    while (qg_running) {
+    while (g_running) {
 
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) {
-                qg_running = false;
+                g_running = false;
             }
             if (event.type == SDL_EVENT_KEY_UP && event.key.key == SDLK_ESCAPE) {
-                qg_running = false;
+                g_running = false;
             }
         }
 
-        // Update State
-        pos += 0.01f;
-
         // Draw current frame
-        SDL_SetRenderDrawColor(context, 255, 255, 255, 255);
+        SDL_SetRenderDrawColor(context, 0, 0, 0, 255);
         SDL_RenderFillRect(context, NULL);
-
-        SDL_SetRenderDrawColor(context, 255, 0, 0, 255);
-        SDL_FRect r;
-        r.x = r.y = pos;
-        r.w = r.h = 100.f;
-        SDL_RenderFillRect(context, &r);
 
         SDL_RenderPresent(context);
     }
 
+    gamelib_free();
     SDL_DestroyWindow(window);
     SDL_Quit();
     printf("[QG] quitting SDL3!\n");
