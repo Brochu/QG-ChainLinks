@@ -1,9 +1,8 @@
 #pragma once
+#include "shared_types.hpp"
+#include "qg_memory.hpp"
 
 #include <sqlite3.h>
-
-#include "qg_types.hpp"
-#include "qg_memory.hpp"
 
 #define MAX_NUM_NAMES 255
 
