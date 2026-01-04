@@ -30,8 +30,8 @@
     -->
 
     <Target Name="chain">
-        <Exec Command="cl $(CFlags) src\ch_game.cpp" />
-        <Exec Command="link $(LinkFlags) -DLL $(ObjDir)\ch_game.obj -out:$(GameLibDir)\ch_game.dll" />
+        <Exec Command="cl $(CFlags) src\~chain.cpp" />
+        <Exec Command="link $(LinkFlags) -DLL $(ObjDir)\~chain.obj SDL3.lib sqlite3.lib -out:$(GameLibDir)\ch_game.dll" />
     </Target>
 
     <!-- === FORGE MAIN === -->
@@ -48,9 +48,13 @@
         <Exec Command="copy libs\TracyProfiler.dll TracyProfiler.dll" />
     </Target>
     -->
-    <Target Name="qg" DependsOnTargets="chain">
+    <Target Name="qg">
         <Exec Command="rc -nologo -v -Fo $(ObjDir)\resources.res src\resources.rc" />
-        <Exec Command="cl $(CFlags) src\qg_main.cpp src\qg_rand.cpp src\qg_mem.cpp src\qg_conf.cpp" />
-        <Exec Command="link $(LinkFlags) $(ObjDir)\qg_main.obj $(ObjDir)\qg_rand.obj $(ObjDir)\qg_mem.obj $(ObjDir)\qg_conf.obj $(ObjDir)\resources.res SDL3.lib sqlite3.lib -out:$(BuildDir)\qg.exe" />
+        <Exec Command="cl $(CFlags) src\~qg.cpp" />
+        <Exec Command="link $(LinkFlags) $(ObjDir)\~qg.obj $(ObjDir)\resources.res SDL3.lib -out:$(BuildDir)\qg.exe" />
+    </Target>
+
+    <Target Name="all" DependsOnTargets="chain;qg">
+        <Message Text="=== Build complete: chain -> qg ===" Importance="high" />
     </Target>
 </Project>

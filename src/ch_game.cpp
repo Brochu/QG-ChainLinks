@@ -4,9 +4,16 @@
 #include "qg_memory.hpp"
 #include "qg_random.hpp"
 
+#include "ch_generator.hpp"
+
 #include <cstdio>
+#include <ctime>
+
+engine_api g_eng {};
 
 void chain_init(engine_api engine) {
+    g_eng = engine;
+
     mem_arena a;
     engine.mem->mem_arena_init(&a, 1024);
 
@@ -28,6 +35,12 @@ void chain_init(engine_api engine) {
     u8 ws[2] = { 25, 12 };
     i32 idx = rand_weighted_index(engine.rand->rand_float01(), ws, 2);
     printf("RANDOM INDEX = %d\n", idx);
+
+    case_gen ctx;
+    case_gen_init(&ctx);
+    case_gen_fondation(&ctx, city_size::SIZE_SMALL, time(NULL));
+    case_gen_population(&ctx);
+    case_gen_clear(&ctx);
 }
 
 void chain_tick(f32 dt) {
