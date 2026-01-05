@@ -3,15 +3,43 @@
 
 // ENGINE ======================================
 
-struct qg_config_api;
-struct qg_memory_api;
-struct qg_random_api;
+struct config;
+#define CONFIG_MODULE_DEF \
+    X(void, config_init, (config*, const char*)) \
+    X(void, config_free, (config*))
+
+struct mem_arena;
+struct arena_ptr;
+struct arena_off;
+#define MEMORY_MODULE_DEF \
+    X(void*, qg_malloc, (u64)) \
+    X(void*, qg_calloc, (u64, u64)) \
+    X(void*, qg_realloc, (void*, u64)) \
+    X(void, qg_free, (void*)) \
+    X(void, mem_arena_init, (mem_arena*, u64)) \
+    X(void, mem_arena_reset, (mem_arena*)) \
+    X(void, mem_arena_clear, (mem_arena*)) \
+    X(arena_ptr, mem_arena_alloc, (mem_arena*, u64, u64)) \
+    X(arena_off, mem_arena_offloc, (mem_arena*, u64, u64))
+
+#define RANDOM_MODULE_DEF \
+    X(void, rand_seed, (i64)) \
+    X(f32, rand_float01, (void)) \
+    X(i32, rand_int, (i32)) \
+    X(i32, rand_int_min, (i32, i32))  \
+    X(i8, rand_actor_age, (void))
 
 struct engine_api {
-    qg_config_api *conf;
-    qg_memory_api *mem;
-    qg_random_api *rand;
+    #define X(ret, name, params) ret (*name) params;
+
+    struct { CONFIG_MODULE_DEF };
+    struct { MEMORY_MODULE_DEF };
+    struct { RANDOM_MODULE_DEF };
+
+    #undef X
 };
+
+extern engine_api g_eng;
 
 // GAME   ======================================
 

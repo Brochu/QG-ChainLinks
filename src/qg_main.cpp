@@ -27,11 +27,7 @@ GAME_MODULE_DEF
 #undef X
 
 HMODULE game_module = NULL;
-
-engine_api g_engine {};
-qg_config_api conf;
-qg_memory_api mem;
-qg_random_api random;
+engine_api g_eng {};
 
 void gamelib_load() {
     assert(game_module == NULL && "Did not properly free the gamelib module");
@@ -65,19 +61,10 @@ void gamelib_load() {
     GAME_MODULE_DEF
     #undef X
 
-    #define X(ret, name, params) random.name = &name;
+    #define X(ret, name, params) g_eng.name = &name;
     RANDOM_MODULE_DEF
-    g_engine.rand = &random;
-    #undef X
-
-    #define X(ret, name, params) mem.name = &name;
-    MEMORY_MODULE_DEF
-    g_engine.mem = &mem;
-    #undef X
-
-    #define X(ret, name, params) conf.name = &name;
     CONFIG_MODULE_DEF
-    g_engine.conf = &conf;
+    MEMORY_MODULE_DEF
     #undef X
 }
 
@@ -123,7 +110,7 @@ int main(int argc, char **argv) {
     }
     gamelib_load();
 
-    game_init(g_engine);
+    game_init(g_eng);
 
     SDL_Event event;
     while (g_running) {

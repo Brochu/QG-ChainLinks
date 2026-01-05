@@ -1,5 +1,5 @@
 #pragma once
-#include "shared.hpp"
+#include "shared_types.hpp"
 
 #include <cassert>
 
@@ -37,20 +37,3 @@ static inline T *mem_arena_at(mem_arena *arena, arena_off offset) {
     assert(arena->gen == offset.gen && "Trying to access stale offset in arena");
     return reinterpret_cast<T *>(arena->base + offset.off);
 }
-
-#define MEMORY_MODULE_DEF \
-    X(void*, qg_malloc, (u64)) \
-    X(void*, qg_calloc, (u64, u64)) \
-    X(void*, qg_realloc, (void*, u64)) \
-    X(void, qg_free, (void*)) \
-    X(void, mem_arena_init, (mem_arena*, u64)) \
-    X(void, mem_arena_reset, (mem_arena*)) \
-    X(void, mem_arena_clear, (mem_arena*)) \
-    X(arena_ptr, mem_arena_alloc, (mem_arena*, u64, u64)) \
-    X(arena_off, mem_arena_offloc, (mem_arena*, u64, u64))
-
-struct qg_memory_api {
-    #define X(ret, name, params) ret (*name) params;
-    MEMORY_MODULE_DEF
-    #undef X
-};

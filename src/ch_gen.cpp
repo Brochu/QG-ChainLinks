@@ -1,5 +1,6 @@
 #include "ch_generator.hpp"
 #include "qg_random.hpp"
+#include "shared.hpp"
 
 #include <sqlite3.h>
 #include <SDL3/SDL.h>
@@ -13,8 +14,6 @@
 #define GEN_ALPHA_SIZE 58
 #define GEN_MAP_SIZE 256
 #define NAME_BUF_LEN 64
-
-extern engine_api g_eng;
 
 constexpr std::array<u8, GEN_MAP_SIZE> make_ascii_to_dense() {
     std::array<u8, GEN_MAP_SIZE> arr {};
@@ -41,13 +40,13 @@ constexpr std::array<u8, GEN_MAP_SIZE> ascii_to_dense = make_ascii_to_dense();
 
 void name_gen_train(name_gen *gen, const char *file_path) {
     if (gen->_names_mem.base == nullptr) {
-        g_eng.mem->mem_arena_init(&gen->_names_mem, (GEN_ALPHA_SIZE*GEN_ALPHA_SIZE*GEN_ALPHA_SIZE*sizeof(name_gen_entry)) + (MAX_NUM_NAMES * 15 * sizeof(char)));
+        g_eng.mem_arena_init(&gen->_names_mem, (GEN_ALPHA_SIZE*GEN_ALPHA_SIZE*GEN_ALPHA_SIZE*sizeof(name_gen_entry)) + (MAX_NUM_NAMES * 15 * sizeof(char)));
     } else {
-        g_eng.mem->mem_arena_reset(&gen->_names_mem);
+        g_eng.mem_arena_reset(&gen->_names_mem);
     }
 
     assert(gen->table == nullptr && "Trying to re-train a name_gen instance");
-    gen->table = (name_gen_entry *)g_eng.mem->mem_arena_alloc(&gen->_names_mem, GEN_ALPHA_SIZE*GEN_ALPHA_SIZE*GEN_ALPHA_SIZE*sizeof(name_gen_entry), sizeof(void*)).p;
+    gen->table = (name_gen_entry *)g_eng.mem_arena_alloc(&gen->_names_mem, GEN_ALPHA_SIZE*GEN_ALPHA_SIZE*GEN_ALPHA_SIZE*sizeof(name_gen_entry), sizeof(void*)).p;
 
     u64 len = 0;
     char *file_contents = (char*)SDL_LoadFile(file_path, &len);
@@ -98,7 +97,7 @@ void name_gen_train(name_gen *gen, const char *file_path) {
 void name_gen_clear(name_gen *gen) {
     assert(gen->_names_mem.base != nullptr && "Cannot clear an empty name_gen instance");
 
-    g_eng.mem->mem_arena_clear(&gen->_names_mem);
+    g_eng.mem_arena_clear(&gen->_names_mem);
     gen->table = nullptr;
     gen->num_names = 0;
 }
@@ -137,7 +136,7 @@ i32 _name_gen_create(name_gen *gen, char *name) {
         }
 
         name_gen_entry *e = &gen->table[idx];
-        int next_idx = rand_weighted_index(g_eng.rand->rand_float01(), e->counts, e->num_options);
+        int next_idx = rand_weighted_index(g_eng.rand_float01(), e->counts, e->num_options);
         next = e->options[next_idx];
         name[i+3] = next;
     }
@@ -156,7 +155,7 @@ void name_gen_next(name_gen *gen, u64 num) {
         i32 len = _name_gen_create(gen, name);
 
         if (_name_gen_validate(name, len)) {
-            arena_ptr ptr = g_eng.mem->mem_arena_alloc(&gen->_names_mem, len+1, sizeof(void*));
+            arena_ptr ptr = g_eng.mem_arena_alloc(&gen->_names_mem, len+1, sizeof(void*));
             strcpy_s((char *)ptr.p, len+1, name);
             gen->names[gen->num_names++] = (const char *)ptr.p;
         } else {
@@ -185,8 +184,8 @@ void name_gen_district(name_gen *gen, u64 num) {
             continue;
         }
 
-        if (g_eng.rand->rand_int(suffix_odds_denum) == 0) {
-            const char *suffix = district_suffix[g_eng.rand->rand_int(num_district_suffix)];
+        if (g_eng.rand_int(suffix_odds_denum) == 0) {
+            const char *suffix = district_suffix[g_eng.rand_int(num_district_suffix)];
             u64 suf_len = strlen(suffix);
             assert(suf_len + 1 + len < 64 && "Not enough space to append suffix");
 
@@ -194,8 +193,8 @@ void name_gen_district(name_gen *gen, u64 num) {
             strncat_s(name, NAME_BUF_LEN, suffix, suf_len);
             len += suf_len+1;
         }
-        else if (g_eng.rand->rand_int(prefix_odds_denum) == 0) {
-            const char *prefix = district_prefix[g_eng.rand->rand_int(num_district_prefix)];
+        else if (g_eng.rand_int(prefix_odds_denum) == 0) {
+            const char *prefix = district_prefix[g_eng.rand_int(num_district_prefix)];
             u64 pre_len = strlen(prefix);
             assert(pre_len + 1 + len < 64 && "Not enough space to prepend prefix");
 
@@ -207,7 +206,7 @@ void name_gen_district(name_gen *gen, u64 num) {
             name[len] = '\0';
         }
 
-        arena_ptr ptr = g_eng.mem->mem_arena_alloc(&gen->_names_mem, len+1, sizeof(void*));
+        arena_ptr ptr = g_eng.mem_arena_alloc(&gen->_names_mem, len+1, sizeof(void*));
         strcpy_s((char *)ptr.p, len+1, name);
         gen->names[gen->num_names++] = (const char *)ptr.p;
     }
@@ -216,9 +215,9 @@ void name_gen_district(name_gen *gen, u64 num) {
 void name_cycle_init(name_cycle *ctx, const char *file_path) {
     static u64 NAME_ARENA_SIZE = MAX_NUM_NAMES * 2 * 2 * 20;
     if (ctx->_mem.base == nullptr) {
-        g_eng.mem->mem_arena_init(&ctx->_mem, NAME_ARENA_SIZE);
+        g_eng.mem_arena_init(&ctx->_mem, NAME_ARENA_SIZE);
     } else {
-        g_eng.mem->mem_arena_reset(&ctx->_mem);
+        g_eng.mem_arena_reset(&ctx->_mem);
     }
 
     u64 len = 0;
@@ -229,7 +228,7 @@ void name_cycle_init(name_cycle *ctx, const char *file_path) {
 
     while (e != NULL) {
         const u64 len = (e-s)+1;
-        arena_ptr pname = g_eng.mem->mem_arena_alloc(&ctx->_mem, len, 1);
+        arena_ptr pname = g_eng.mem_arena_alloc(&ctx->_mem, len, 1);
 
         memcpy_s(pname.p, len, s, len-1);
         pname.p[len-1] = '\0';
@@ -244,15 +243,15 @@ void name_cycle_init(name_cycle *ctx, const char *file_path) {
     static u32 prime_steps[] { 2, 29, 73, 113, 179, 229, 283, 349, 419, 463, 547, 601 };
     static u64 num_prime_steps = sizeof(prime_steps) / sizeof(prime_steps[0]);
 
-    ctx->step = prime_steps[g_eng.rand->rand_int(num_prime_steps)];
+    ctx->step = prime_steps[g_eng.rand_int(num_prime_steps)];
     while (ctx->step % ctx->num_names == 0) {
         ctx->step++;
     }
-    ctx->next = g_eng.rand->rand_int(ctx->num_names);
+    ctx->next = g_eng.rand_int(ctx->num_names);
 }
 
 void name_cycle_clear(name_cycle *ctx) {
-    g_eng.mem->mem_arena_clear(&ctx->_mem);
+    g_eng.mem_arena_clear(&ctx->_mem);
     ctx->num_names = 0;
 
     ctx->step = 0;
@@ -349,7 +348,7 @@ static const char *landmark_type_names[landmark_type::LANDMARK_TYPE_COUNT] {
 };
 
 void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
-    g_eng.rand->rand_seed(seed);
+    g_eng.rand_seed(seed);
 
     ctx->size = s;
     ctx->num_districts = size_to_districts[s];
@@ -372,10 +371,10 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
 
         district &d = dist_cache[i];
         d.name = ctx->dist_names.names[i];
-        d.type = (district_type)rand_weighted_index(g_eng.rand->rand_float01(), district_weights, district_type::DISTRICT_COUNT);
-        d.wealth = g_eng.rand->rand_int_min(1, 6);
-        d.roughness = g_eng.rand->rand_int_min(1, 6);
-        d.response_time = 5 + (10 - d.wealth) + g_eng.rand->rand_int(6);
+        d.type = (district_type)rand_weighted_index(g_eng.rand_float01(), district_weights, district_type::DISTRICT_COUNT);
+        d.wealth = g_eng.rand_int_min(1, 6);
+        d.roughness = g_eng.rand_int_min(1, 6);
+        d.response_time = 5 + (10 - d.wealth) + g_eng.rand_int(6);
 
         //sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, "id"), i);
         sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":name"), d.name, -1, SQLITE_TRANSIENT);
@@ -401,32 +400,32 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
 
         //TODO: Lot of these will depend on district type and landmark type
         landmark l;
-        l.district_id = g_eng.rand->rand_int(ctx->num_districts)+1;
+        l.district_id = g_eng.rand_int(ctx->num_districts)+1;
 
         district &dist = dist_cache[l.district_id-1];
         switch (dist.type) {
         case district_type::RESIDENTIAL:
-            l.type = (landmark_type)g_eng.rand->rand_int_min(landmark_type::LANDMARK_TYPE_RES_START, LANDMARK_TYPE_RES_END);
+            l.type = (landmark_type)g_eng.rand_int_min(landmark_type::LANDMARK_TYPE_RES_START, LANDMARK_TYPE_RES_END);
             break;
 
         case district_type::COMMERCIAL:
-            l.type = (landmark_type)g_eng.rand->rand_int_min(landmark_type::LANDMARK_TYPE_COMM_START, LANDMARK_TYPE_COMM_END);
+            l.type = (landmark_type)g_eng.rand_int_min(landmark_type::LANDMARK_TYPE_COMM_START, LANDMARK_TYPE_COMM_END);
             break;
 
         case district_type::INDUSTRIAL:
-            l.type = (landmark_type)g_eng.rand->rand_int_min(landmark_type::LANDMARK_TYPE_INDU_START, LANDMARK_TYPE_INDU_END);
+            l.type = (landmark_type)g_eng.rand_int_min(landmark_type::LANDMARK_TYPE_INDU_START, LANDMARK_TYPE_INDU_END);
             break;
 
         case district_type::NIGHTLIFE:
-            l.type = (landmark_type)g_eng.rand->rand_int_min(landmark_type::LANDMARK_TYPE_NIGHT_START, LANDMARK_TYPE_NIGHT_END);
+            l.type = (landmark_type)g_eng.rand_int_min(landmark_type::LANDMARK_TYPE_NIGHT_START, LANDMARK_TYPE_NIGHT_END);
             break;
 
         case district_type::DOCKS:
-            l.type = (landmark_type)g_eng.rand->rand_int_min(landmark_type::LANDMARK_TYPE_DOCKS_START, LANDMARK_TYPE_DOCKS_END);
+            l.type = (landmark_type)g_eng.rand_int_min(landmark_type::LANDMARK_TYPE_DOCKS_START, LANDMARK_TYPE_DOCKS_END);
             break;
 
         case district_type::FINANCIAL:
-            l.type = (landmark_type)g_eng.rand->rand_int_min(landmark_type::LANDMARK_TYPE_FIN_START, LANDMARK_TYPE_FIN_END);
+            l.type = (landmark_type)g_eng.rand_int_min(landmark_type::LANDMARK_TYPE_FIN_START, LANDMARK_TYPE_FIN_END);
             break;
 
         case district_type::DISTRICT_COUNT:
@@ -442,11 +441,11 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         strcat_s(name, num);
         l.name = name;
 
-        l.size = (landmark_size)g_eng.rand->rand_int(landmark_size::LANDMARK_SIZE_COUNT); // Maybe we want to limit max size based on district's wealth
+        l.size = (landmark_size)g_eng.rand_int(landmark_size::LANDMARK_SIZE_COUNT); // Maybe we want to limit max size based on district's wealth
         l.open_hour = 0;
         l.close_hour = 0;
         l.peak_hour = 0;
-        l.num_staff = landmark_size_staff[l.size] + g_eng.rand->rand_int_min(-2, 2);
+        l.num_staff = landmark_size_staff[l.size] + g_eng.rand_int_min(-2, 2);
 
         bool is_public =
             l.type != LANDMARK_TYPE_DOCKS_WAREHOUSE &&
@@ -455,7 +454,7 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
             l.type != LANDMARK_TYPE_FIN_OFFICE;
         l.is_public = is_public;
 
-        i32 crime_f = std::max(0, (dist.roughness * 5) + g_eng.rand->rand_int_min(-10, 10));
+        i32 crime_f = std::max(0, (dist.roughness * 5) + g_eng.rand_int_min(-10, 10));
         if (dist.type == district_type::NIGHTLIFE || dist.type == district_type::FINANCIAL) {
             crime_f *= 2;
         }
@@ -480,8 +479,8 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     i8 ys[128];
     for (int i = 0; i < ctx->num_landmarks; i++) {
         // Generate positions per landmark
-        xs[i] = g_eng.rand->rand_int(LANDMARK_POS_MAX);
-        ys[i] = g_eng.rand->rand_int(LANDMARK_POS_MAX);
+        xs[i] = g_eng.rand_int(LANDMARK_POS_MAX);
+        ys[i] = g_eng.rand_int(LANDMARK_POS_MAX);
     }
 
     res = sqlite3_prepare_v3(ctx->db, sql_transit, strlen(sql_transit), 0, &prep, nullptr);
@@ -507,7 +506,7 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
                     sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":to_landmark_id"), j+1);
                     sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":mode"), mode);
                     sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":day_phase"), phase);
-                    sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":minutes"), std::max(1, g_eng.rand->rand_int_min(mins-1, mins+1)));
+                    sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":minutes"), std::max(1, g_eng.rand_int_min(mins-1, mins+1)));
                     sqlite3_step(prep);
                 }
             }
@@ -534,18 +533,18 @@ void case_gen_population(case_gen *ctx) {
 
         actor a {};
         a.id = i;
-        if (g_eng.rand->rand_int(2) == 0) {
+        if (g_eng.rand_int(2) == 0) {
             a.sex = 'M';
             a.name = name_cycle_next(&ctx->male_names);
         } else {
             a.sex = 'F';
             a.name = name_cycle_next(&ctx->female_names);
         }
-        a.age = g_eng.rand->rand_actor_age();
+        a.age = g_eng.rand_actor_age();
         a.job = " -- ";
-        a.home_district_id = g_eng.rand->rand_int(ctx->num_districts)+1; //TODO: Weight districts based on type
-        a.workplace_landmark_id = g_eng.rand->rand_int(ctx->num_landmarks)+1; //TODO: Weight landmarks based on type
-        a.wealth = g_eng.rand->rand_int_min(1, 6);
+        a.home_district_id = g_eng.rand_int(ctx->num_districts)+1; //TODO: Weight districts based on type
+        a.workplace_landmark_id = g_eng.rand_int(ctx->num_landmarks)+1; //TODO: Weight landmarks based on type
+        a.wealth = g_eng.rand_int_min(1, 6);
         a.secrets = 0; // Init empty
 
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":actor_id"), i);
