@@ -1,5 +1,6 @@
 #include "qg_config.hpp"
 #include "qg_memory.hpp"
+#include "qg_parse.hpp"
 #include "qg_random.hpp"
 #include "shared.hpp"
 
@@ -42,6 +43,13 @@ void chain_init(engine_api engine) {
     case_gen_fondation(&ctx, city_size::SIZE_SMALL, time(NULL));
     case_gen_population(&ctx);
     case_gen_clear(&ctx);
+
+    strview text = sv("0,1,2,3,4,5,6,7,8,9");
+    strview out[16];
+    u64 n = g_eng.sv_split(text, ",", out, 16);
+    for (int i = 0; i < n; i++) {
+        printf("ELEM -> '" SV_FMT "'\n", SV_ARG(out[i]));
+    }
 }
 
 void chain_tick(f32 dt) {
