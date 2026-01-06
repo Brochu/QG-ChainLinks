@@ -22,6 +22,12 @@ struct arena_off;
     X(arena_ptr, mem_arena_alloc, (mem_arena*, u64, u64)) \
     X(arena_off, mem_arena_offloc, (mem_arena*, u64, u64))
 
+struct strview;
+#define PARSE_MODULE_DEF \
+    X(strview, sv_find, (strview, const char*)) \
+    X(u64, sv_split, (strview, const char*, strview*, u64)) \
+    X(bool, sv_split_once, (strview, const char*, strview*, strview*)) \
+
 #define RANDOM_MODULE_DEF \
     X(void, rand_seed, (i64)) \
     X(f32, rand_float01, (void)) \
@@ -34,6 +40,7 @@ struct engine_api {
 
     struct { CONFIG_MODULE_DEF };
     struct { MEMORY_MODULE_DEF };
+    struct { PARSE_MODULE_DEF };
     struct { RANDOM_MODULE_DEF };
 
     #undef X

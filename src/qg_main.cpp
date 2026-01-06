@@ -9,6 +9,7 @@
 
 #include "qg_config.hpp"
 #include "qg_memory.hpp"
+#include "qg_parse.hpp"
 #include "qg_random.hpp"
 #include "shared.hpp"
 
@@ -62,9 +63,10 @@ void gamelib_load() {
     #undef X
 
     #define X(ret, name, params) g_eng.name = &name;
-    RANDOM_MODULE_DEF
     CONFIG_MODULE_DEF
     MEMORY_MODULE_DEF
+    PARSE_MODULE_DEF
+    RANDOM_MODULE_DEF
     #undef X
 }
 
