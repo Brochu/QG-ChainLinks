@@ -3,10 +3,13 @@
 
 // ENGINE ======================================
 
+enum class value_type : u8;
+struct config_value;
 struct config;
 #define CONFIG_MODULE_DEF \
     X(void, config_init, (config*, const char*)) \
-    X(void, config_free, (config*))
+    X(void, config_free, (config*)) \
+    X(bool, config_read, (config*, const char*, config_value*))
 
 struct mem_arena;
 struct arena_ptr;
