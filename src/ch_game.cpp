@@ -31,6 +31,16 @@ void chain_init(engine_api engine) {
     config cfg;
     g_eng.config_init(&cfg, "../assets/city_gen.ini");
     printf("CONFIG VALUE = %d\n", cfg.value);
+    config_value val;
+    if (g_eng.config_read(&cfg, "ComposedWordLengthMax", &val)) {
+        printf(" ComposedWordLengthMax -> '%d'\n", val.single);
+    }
+    if (g_eng.config_read(&cfg, "CrimeRandomRange", &val)) {
+        printf(" CrimeRandomRange -> ['%d', '%d']\n", val.range.min, val.range.max);
+    }
+    if (g_eng.config_read(&cfg, "AssetsHomeDir", &val)) {
+        printf(" AssetsHomeDir -> '%s'\n", val.str.arr);
+    }
 
     u8 ws[2] = { 25, 12 };
     for (int i = 0; i < 10; i++) {
