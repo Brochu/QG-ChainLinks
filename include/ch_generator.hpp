@@ -126,7 +126,7 @@ struct district {
 struct landmark {
     i64 id;
     i64 district_id;
-    const char *name;
+    char *name;
     landmark_type type;
     landmark_size size;
     i32 open_hour;
@@ -144,6 +144,7 @@ struct actor {
     i8 age;
     const char *job;
     i64 home_district_id;
+    i64 home_landmark_id;
     i64 workplace_landmark_id;
     i32 wealth;
     u32 secrets = 0;

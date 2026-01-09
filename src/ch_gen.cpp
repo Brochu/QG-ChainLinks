@@ -371,13 +371,14 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         sqlite3_reset(prep);
 
         district &d = ctx->districs[i];
+        d.id = i;
         d.name = ctx->dist_names.names[i];
         d.type = (district_type)rand_weighted_index(g_eng.rand_float01(), district_weights, (i == 0) ? 1 : district_type::DISTRICT_COUNT); // Force RESIDENTIAL for first District
         d.wealth = g_eng.rand_int_min(1, 6);
         d.roughness = g_eng.rand_int_min(1, 6);
         d.response_time = 5 + (10 - d.wealth) + g_eng.rand_int(6);
 
-        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":id"), i);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":id"), d.id);
         sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":name"), d.name, -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":type"), d.type);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":wealth"), d.wealth);
@@ -403,12 +404,13 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         sqlite3_reset(prep);
 
         landmark &l = ctx->landmarks[i];
+        l.id = i;
         l.district_id = g_eng.rand_int(ctx->num_districts);
 
         district &dist = ctx->districs[l.district_id];
         switch (dist.type) {
         case district_type::RESIDENTIAL:
-            l.type = (landmark_type)g_eng.rand_int_min(landmark_type::LANDMARK_TYPE_RES_START, LANDMARK_TYPE_RES_END);
+            l.type = (i == 0) ? landmark_type::LANDMARK_TYPE_RES_APARTMENT : (landmark_type)g_eng.rand_int_min(landmark_type::LANDMARK_TYPE_RES_START, LANDMARK_TYPE_RES_END);
             break;
 
         case district_type::COMMERCIAL:
@@ -435,8 +437,10 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
             assert(false && "[PROC-GEN] Invalid district type provided");
             break;;
         }
-        sprintf_s(name, "%s - %i", landmark_type_names[l.type], temp_counts[l.type]++);
-        l.name = name;
+
+        i32 len = sprintf_s(name, "%s - %i", landmark_type_names[l.type], temp_counts[l.type]++);
+        l.name = (char*)g_eng.mem_arena_alloc(&ctx->_scratch, len+1, 1).p;
+        strncpy_s(l.name, len+1, name, len);
 
         l.size = (landmark_size)g_eng.rand_int(landmark_size::LANDMARK_SIZE_COUNT); // Maybe we want to limit max size based on district's wealth
         l.open_hour = 0;
@@ -457,6 +461,7 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         }
         l.crime_factor = crime_f;
 
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":landmark_id"), l.id);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":district_id"), l.district_id);
         sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":name"), l.name, -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":type"), l.type);
@@ -498,8 +503,8 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
                     sqlite3_reset(prep);
 
                     i32 mins = _case_gen_transit_time(dist, (travel_mode)mode, (travel_phase)phase);
-                    sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":from_landmark_id"), i+1);
-                    sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":to_landmark_id"), j+1);
+                    sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":from_landmark_id"), i);
+                    sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":to_landmark_id"), j);
                     sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":mode"), mode);
                     sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":day_phase"), phase);
                     sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":minutes"), std::max(1, g_eng.rand_int_min(mins-1, mins+1)));
@@ -518,6 +523,16 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
 void case_gen_population(case_gen *ctx) {
     ctx->num_actors = (ctx->num_landmarks * 3) + (ctx->num_districts * 5);
     ctx->actors = (actor*)g_eng.mem_arena_alloc(&ctx->_scratch, sizeof(actor) * ctx->num_actors, sizeof(u64)).p;
+
+    i8 home_district_weights[16];
+    for (int i = 0; i < ctx->num_districts; i++) {
+        home_district_weights[i] = (ctx->districs[i].type == district_type::RESIDENTIAL) ? 1 : 0;
+    }
+    i8 work_landmark_weights[128];
+    for (int i = 0; i < ctx->num_landmarks; i++) {
+        landmark_type t = ctx->landmarks[i].type;
+        work_landmark_weights[i] = (t == landmark_type::LANDMARK_TYPE_COMM_APARTMENT || t == landmark_type::LANDMARK_TYPE_RES_APARTMENT || t == landmark_type::LANDMARK_TYPE_RES_HOUSE) ? 0 : 1;
+    }
 
     sqlite3_stmt *prep;
     int res = sqlite3_prepare_v3(ctx->db, sql_actor, strlen(sql_actor), 0, &prep, nullptr);
@@ -539,17 +554,31 @@ void case_gen_population(case_gen *ctx) {
         }
         a.age = g_eng.rand_actor_age();
         a.job = " -- ";
-        a.home_district_id = g_eng.rand_int(ctx->num_districts)+1; //TODO: Weight districts based on type
-        a.workplace_landmark_id = g_eng.rand_int(ctx->num_landmarks)+1; //TODO: Weight landmarks based on type
+        a.home_district_id = rand_weighted_index(g_eng.rand_float01(), home_district_weights, ctx->num_districts);
+
+        i8 home_landmark_weights[128];
+        for (int i = 0; i < ctx->num_landmarks; i++) {
+            landmark_type t = ctx->landmarks[i].type;
+            i64 d_id = ctx->landmarks[i].district_id;
+            if (d_id == a.home_district_id && (t == landmark_type::LANDMARK_TYPE_RES_APARTMENT || t == landmark_type::LANDMARK_TYPE_RES_HOUSE)) {
+                home_landmark_weights[i] = (t == landmark_type::LANDMARK_TYPE_RES_APARTMENT) ? 3 : 1;
+            }
+            else {
+                home_landmark_weights[i] = 0;
+            }
+        }
+        a.home_landmark_id = rand_weighted_index(g_eng.rand_float01(), home_landmark_weights, ctx->num_landmarks);
+        a.workplace_landmark_id = rand_weighted_index(g_eng.rand_float01(), work_landmark_weights, ctx->num_landmarks);
         a.wealth = g_eng.rand_int_min(1, 6);
         a.secrets = 0; // Init empty
 
-        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":actor_id"), i);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":actor_id"), a.id);
         sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":name"), a.name, -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":age"), a.age);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":sex"), a.sex);
         sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":job"), a.job, -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":home_district_id"), a.home_district_id);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":home_landmark_id"), a.home_landmark_id);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":workplace_landmark_id"), a.workplace_landmark_id);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":wealth"), a.wealth);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":secrets"), a.secrets);
@@ -565,13 +594,25 @@ void case_gen_population(case_gen *ctx) {
         assert(0 && "Could not create new prepared statement");
     }
     for (i32 i = 0; i < ctx->num_actors; i++) {
-        sqlite3_reset(prep);
+        actor &a = ctx->actors[i];
+        static i8 hours[5] = { 3, 8, 12, 17, 20 };
+        i64 landmark_ids[5] {
+            a.home_landmark_id,
+            a.workplace_landmark_id,
+            a.workplace_landmark_id,
+            a.home_landmark_id,
+            g_eng.rand_int(ctx->num_landmarks)
+        };
 
-        //TODO: Generate time tables based on home district and work landmark
-        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":actor_id"), i);
-        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":hour"), 8);
-        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":landmark_id"), 1);
-        sqlite3_step(prep);
+        for (i32 j = 0; j < 5; j++) {
+            sqlite3_reset(prep);
+
+            //TODO: Generate time tables based on home district and work landmark
+            sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":actor_id"), i);
+            sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":hour"), hours[j]);
+            sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":landmark_id"), landmark_ids[j]);
+            sqlite3_step(prep);
+        }
     }
     res = sqlite3_finalize(prep);
     assert(res == 0 && "Could not finalize prepared statement");
@@ -582,7 +623,9 @@ void case_gen_population(case_gen *ctx) {
         assert(0 && "Could not create new prepared statement");
     }
     for (i32 i = 0; i < ctx->num_actors; i++) {
+        //sqlite3_reset(prep);
         //TODO: Generate optional steps for entertainmenet with probabilities
+        //sqlite3_step(prep);
     }
     res = sqlite3_finalize(prep);
     assert(res == 0 && "Could not finalize prepared statement");
