@@ -271,6 +271,7 @@ const char *name_cycle_next(name_cycle *ctx) {
 
 #include "ch_gen_sql.inc" // SQL static command strings
 
+#define CASEGEN_SCRATCH_ALLOC 2048*2048
 #define LANDMARK_POS_MAX 45
 #define ASSETS_HOME_DIR "../assets/"
 
@@ -295,6 +296,8 @@ i32 _case_gen_transit_time(i32 dist, travel_mode mode, travel_phase time) {
 }
 
 void case_gen_init(case_gen *ctx) {
+    g_eng.mem_arena_init(&ctx->_scratch, CASEGEN_SCRATCH_ALLOC);
+
     name_gen_train(&ctx->dist_names, ASSETS_HOME_DIR "city_names.csv");
     name_cycle_init(&ctx->female_names, ASSETS_HOME_DIR "f_names.csv");
     name_cycle_init(&ctx->male_names, ASSETS_HOME_DIR "m_names.csv");
@@ -329,6 +332,8 @@ void case_gen_clear(case_gen *ctx) {
     name_cycle_clear(&ctx->male_names);
     name_cycle_clear(&ctx->female_names);
     name_gen_clear(&ctx->dist_names);
+
+    g_eng.mem_arena_clear(&ctx->_scratch);
 }
 
 static i8 size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
@@ -352,12 +357,9 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
 
     ctx->size = s;
     ctx->num_districts = size_to_districts[s];
-    ctx->num_landmarks = size_to_landmarks[s];
+    ctx->districs = (district*)g_eng.mem_arena_alloc(&ctx->_scratch, sizeof(district) * ctx->num_districts, sizeof(u64)).p;
 
     name_gen_district(&ctx->dist_names, ctx->num_districts);
-    district dist_cache[16];
-    i8 temp_counts[landmark_type::LANDMARK_TYPE_COUNT];
-    memset(temp_counts, 0, sizeof(i8) * landmark_type::LANDMARK_TYPE_COUNT);
 
     sqlite3_stmt *prep;
     int res = sqlite3_prepare_v3(ctx->db, sql_district, strlen(sql_district), 0, &prep, nullptr);
@@ -366,17 +368,16 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
         assert(0 && "Could not create new prepared statement");
     }
     for (int i = 0; i < ctx->num_districts; i++) {
-        // Districts
         sqlite3_reset(prep);
 
-        district &d = dist_cache[i];
+        district &d = ctx->districs[i];
         d.name = ctx->dist_names.names[i];
-        d.type = (district_type)rand_weighted_index(g_eng.rand_float01(), district_weights, district_type::DISTRICT_COUNT);
+        d.type = (district_type)rand_weighted_index(g_eng.rand_float01(), district_weights, (i == 0) ? 1 : district_type::DISTRICT_COUNT); // Force RESIDENTIAL for first District
         d.wealth = g_eng.rand_int_min(1, 6);
         d.roughness = g_eng.rand_int_min(1, 6);
         d.response_time = 5 + (10 - d.wealth) + g_eng.rand_int(6);
 
-        //sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, "id"), i);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":id"), i);
         sqlite3_bind_text(prep, sqlite3_bind_parameter_index(prep, ":name"), d.name, -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":type"), d.type);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":wealth"), d.wealth);
@@ -387,22 +388,24 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     res = sqlite3_finalize(prep);
     assert(res == 0 && "Could not finalize prepared statement");
 
+    ctx->num_landmarks = size_to_landmarks[s];
+    ctx->landmarks = (landmark*)g_eng.mem_arena_alloc(&ctx->_scratch, sizeof(landmark) * ctx->num_landmarks, sizeof(u64)).p;
+    i8 temp_counts[landmark_type::LANDMARK_TYPE_COUNT];
+    memset(temp_counts, 0, sizeof(i8) * landmark_type::LANDMARK_TYPE_COUNT);
+    char name[64];
+
     res = sqlite3_prepare_v3(ctx->db, sql_landmark, strlen(sql_landmark), 0, &prep, nullptr);
     if (res != 0) {
         printf("[PROC-GEN] Could not compile statement. ERR: %s\n", sqlite3_errmsg(ctx->db));
         assert(0 && "Could not create new prepared statement");
     }
-    char num[8];
-    char name[64];
     for (int i = 0; i < ctx->num_landmarks; i++) {
-        // Landmarks
         sqlite3_reset(prep);
 
-        //TODO: Lot of these will depend on district type and landmark type
-        landmark l;
-        l.district_id = g_eng.rand_int(ctx->num_districts)+1;
+        landmark &l = ctx->landmarks[i];
+        l.district_id = g_eng.rand_int(ctx->num_districts);
 
-        district &dist = dist_cache[l.district_id-1];
+        district &dist = ctx->districs[l.district_id];
         switch (dist.type) {
         case district_type::RESIDENTIAL:
             l.type = (landmark_type)g_eng.rand_int_min(landmark_type::LANDMARK_TYPE_RES_START, LANDMARK_TYPE_RES_END);
@@ -432,13 +435,7 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
             assert(false && "[PROC-GEN] Invalid district type provided");
             break;;
         }
-        //TODO: Rework this, so crazy, use sprintf + alloc per landmark
-        // Will need to store landmarks in ctx for later phases
-        num[0] = name[0] = '\0';
-        _itoa_s(temp_counts[l.type]++, num, 10);
-        strcat_s(name, landmark_type_names[l.type]);
-        strcat_s(name, " ");
-        strcat_s(name, num);
+        sprintf_s(name, "%s - %i", landmark_type_names[l.type], temp_counts[l.type]++);
         l.name = name;
 
         l.size = (landmark_size)g_eng.rand_int(landmark_size::LANDMARK_SIZE_COUNT); // Maybe we want to limit max size based on district's wealth
@@ -478,7 +475,6 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     i8 xs[128];
     i8 ys[128];
     for (int i = 0; i < ctx->num_landmarks; i++) {
-        // Generate positions per landmark
         xs[i] = g_eng.rand_int(LANDMARK_POS_MAX);
         ys[i] = g_eng.rand_int(LANDMARK_POS_MAX);
     }
@@ -521,6 +517,7 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
 
 void case_gen_population(case_gen *ctx) {
     ctx->num_actors = (ctx->num_landmarks * 3) + (ctx->num_districts * 5);
+    ctx->actors = (actor*)g_eng.mem_arena_alloc(&ctx->_scratch, sizeof(actor) * ctx->num_actors, sizeof(u64)).p;
 
     sqlite3_stmt *prep;
     int res = sqlite3_prepare_v3(ctx->db, sql_actor, strlen(sql_actor), 0, &prep, nullptr);
@@ -531,7 +528,7 @@ void case_gen_population(case_gen *ctx) {
     for (i32 i = 0; i < ctx->num_actors; i++) {
         sqlite3_reset(prep);
 
-        actor a {};
+        actor &a = ctx->actors[i];
         a.id = i;
         if (g_eng.rand_int(2) == 0) {
             a.sex = 'M';
@@ -561,6 +558,7 @@ void case_gen_population(case_gen *ctx) {
     res = sqlite3_finalize(prep);
     assert(res == 0 && "Could not finalize prepared statement");
 
+//static const char *sql_actor_routine = "INSERT INTO actor_routines VALUES (:actor_id, :hour, :landmark_id)";
     res = sqlite3_prepare_v3(ctx->db, sql_actor_routine, strlen(sql_actor_routine), 0, &prep, nullptr);
     if (res != 0) {
         printf("[PROC-GEN] Could not compile statement. ERR: %s\n", sqlite3_errmsg(ctx->db));
@@ -570,6 +568,20 @@ void case_gen_population(case_gen *ctx) {
         sqlite3_reset(prep);
 
         //TODO: Generate time tables based on home district and work landmark
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":actor_id"), i);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":hour"), 8);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":landmark_id"), 1);
+        sqlite3_step(prep);
+    }
+    res = sqlite3_finalize(prep);
+    assert(res == 0 && "Could not finalize prepared statement");
+
+    res = sqlite3_prepare_v3(ctx->db, sql_actor_routine_variant, strlen(sql_actor_routine_variant), 0, &prep, nullptr);
+    if (res != 0) {
+        printf("[PROC-GEN] Could not compile statement. ERR: %s\n", sqlite3_errmsg(ctx->db));
+        assert(0 && "Could not create new prepared statement");
+    }
+    for (i32 i = 0; i < ctx->num_actors; i++) {
         //TODO: Generate optional steps for entertainmenet with probabilities
     }
     res = sqlite3_finalize(prep);

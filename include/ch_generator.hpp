@@ -157,12 +157,16 @@ struct case_gen {
     name_cycle female_names;
 
     city_size size;
+    district *districs;
     i8 num_districts;
-    i8 num_landmarks;
-    //TODO: Keep districts and landmarks generated here for next phases needing them
-    //TODO: Maybe we can have an arena here to store the generation data and clear them out after it's not required anymore?
 
+    landmark *landmarks;
+    i8 num_landmarks;
+
+    actor *actors;
     i16 num_actors;
+
+    mem_arena _scratch;
 };
 
 void case_gen_init(case_gen *ctx);
