@@ -50,7 +50,7 @@ void chain_init(engine_api engine) {
 
     case_gen ctx;
     case_gen_init(&ctx);
-    case_gen_fondation(&ctx, city_size::SIZE_SMALL, time(NULL));
+    case_gen_fondation(&ctx, city_size::SIZE_METRO, time(NULL));
     case_gen_population(&ctx);
     case_gen_clear(&ctx);
 

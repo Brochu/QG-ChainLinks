@@ -339,7 +339,7 @@ void case_gen_clear(case_gen *ctx) {
 static i8 size_to_districts[city_size::SIZE_COUNT] = { 1, 3, 5, 9 };
 static i8 size_to_landmarks[city_size::SIZE_COUNT] = { 5, 15, 40, 80 };
 
-static i32 district_weights[district_type::DISTRICT_COUNT] = { 4, 3, 2, 1, 1, 1 };
+static i32 district_weights[district_type::DISTRICT_COUNT] = { 3, 2, 2, 2, 1, 1 };
 static i32 landmark_size_weights[landmark_size::LANDMARK_SIZE_COUNT] = { 1, 3, 4, 2 };
 static i32 landmark_size_staff[landmark_size::LANDMARK_SIZE_COUNT] = { 2, 6, 20, 60 };
 
@@ -520,6 +520,31 @@ void case_gen_fondation(case_gen *ctx, city_size s, i32 seed) {
     assert(res == 0 && "Could not cull 10% of transit entries");
 }
 
+static i8 landmark_time_start[landmark_type::LANDMARK_TYPE_COUNT] {
+    -1, -1, -1, -1, 6, 7,
+    18, 21, -1, -1, -1, -1,
+    -1, -1, -1,
+    21, 21, 21, 21, 20,
+    -1, -1, 21, -1,
+    -1, -1, -1, -1,
+};
+static i8 landmark_time_end[landmark_type::LANDMARK_TYPE_COUNT] {
+    -1, -1, -1, -1, 8, 12,
+    20, 23, -1, -1, -1, -1,
+    -1, -1, -1,
+    23, 23, 23, 23, 22,
+    -1, -1, 23, -1,
+    -1, -1, -1, -1,
+};
+static f32 landmark_probs[landmark_type::LANDMARK_TYPE_COUNT] {
+    .0, .0, .0, .0, .45, .30,
+    .45, .35, .0, .0, .0, .0,
+    .0, .0, .0,
+    .35, .25, .15, .15, .35,
+    .0, .0, .35, .0,
+    .0, .0, .0, .0,
+};
+
 void case_gen_population(case_gen *ctx) {
     ctx->num_actors = (ctx->num_landmarks * 3) + (ctx->num_districts * 5);
     ctx->actors = (actor*)g_eng.mem_arena_alloc(&ctx->_scratch, sizeof(actor) * ctx->num_actors, sizeof(u64)).p;
@@ -587,7 +612,6 @@ void case_gen_population(case_gen *ctx) {
     res = sqlite3_finalize(prep);
     assert(res == 0 && "Could not finalize prepared statement");
 
-//static const char *sql_actor_routine = "INSERT INTO actor_routines VALUES (:actor_id, :hour, :landmark_id)";
     res = sqlite3_prepare_v3(ctx->db, sql_actor_routine, strlen(sql_actor_routine), 0, &prep, nullptr);
     if (res != 0) {
         printf("[PROC-GEN] Could not compile statement. ERR: %s\n", sqlite3_errmsg(ctx->db));
@@ -607,7 +631,6 @@ void case_gen_population(case_gen *ctx) {
         for (i32 j = 0; j < 5; j++) {
             sqlite3_reset(prep);
 
-            //TODO: Generate time tables based on home district and work landmark
             sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":actor_id"), i);
             sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":hour"), hours[j]);
             sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":landmark_id"), landmark_ids[j]);
@@ -622,10 +645,40 @@ void case_gen_population(case_gen *ctx) {
         printf("[PROC-GEN] Could not compile statement. ERR: %s\n", sqlite3_errmsg(ctx->db));
         assert(0 && "Could not create new prepared statement");
     }
+
+    static const i32 variant_odds_denum = 3;
+    i8 var_landmark_weights[128];
+    for (int i = 0; i < ctx->num_landmarks; i++) {
+        landmark_type t = ctx->landmarks[i].type;
+        if (t == landmark_type::LANDMARK_TYPE_COMM_BAR || 
+            t == landmark_type::LANDMARK_TYPE_COMM_RESTAURANT ||
+            t == landmark_type::LANDMARK_TYPE_DOCKS_BAR ||
+            t == landmark_type::LANDMARK_TYPE_NIGHT_BAR || 
+            t == landmark_type::LANDMARK_TYPE_NIGHT_CASINO ||
+            t == landmark_type::LANDMARK_TYPE_NIGHT_FASTFOOD ||
+            t == landmark_type::LANDMARK_TYPE_NIGHT_NIGHTCLUB ||
+            t == landmark_type::LANDMARK_TYPE_NIGHT_STRIPCLUB ||
+            t == landmark_type::LANDMARK_TYPE_RES_CHURCH ||
+            t == landmark_type::LANDMARK_TYPE_RES_PARK)
+        {
+            var_landmark_weights[i] = 1;
+        }
+        else {
+            var_landmark_weights[i] = 0;
+        }
+    }
     for (i32 i = 0; i < ctx->num_actors; i++) {
-        //sqlite3_reset(prep);
-        //TODO: Generate optional steps for entertainmenet with probabilities
-        //sqlite3_step(prep);
+        if (g_eng.rand_int(variant_odds_denum) != 0) {
+            continue;
+        }
+
+        landmark variant_landmark = ctx->landmarks[rand_weighted_index(g_eng.rand_float01(), var_landmark_weights, ctx->num_landmarks)];
+        sqlite3_reset(prep);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":actor_id"), i);
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":hour"), g_eng.rand_int_min(landmark_time_start[variant_landmark.type], landmark_time_end[variant_landmark.type]));
+        sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":landmark_id"), variant_landmark.id);
+        sqlite3_bind_double(prep, sqlite3_bind_parameter_index(prep, ":prob"), landmark_probs[variant_landmark.type]);
+        sqlite3_step(prep);
     }
     res = sqlite3_finalize(prep);
     assert(res == 0 && "Could not finalize prepared statement");
