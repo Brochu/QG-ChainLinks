@@ -545,19 +545,32 @@ static f32 landmark_probs[landmark_type::LANDMARK_TYPE_COUNT] {
     .0, .0, .0, .0,
 };
 
+struct landmark_filter {
+    landmark_type type;
+    i8 weight;
+};
+
+i32 _case_gen_roll_landmark(case_gen *ctx, std::initializer_list<landmark_filter> filters, i8 start_weight = 0) {
+    i8 weights[128];
+    for (int i = 0; i < 128; i++) {
+        weights[i] = start_weight;
+    }
+
+    for (int i = 0; i < ctx->num_landmarks; i++) {
+        for (landmark_filter f : filters) {
+            if (ctx->landmarks[i].type == f.type) {
+                weights[i] = f.weight;
+                break;
+            }
+        }
+    }
+
+    return rand_weighted_index(g_eng.rand_float01(), weights, ctx->num_landmarks);
+}
+
 void case_gen_population(case_gen *ctx) {
     ctx->num_actors = (ctx->num_landmarks * 3) + (ctx->num_districts * 5);
     ctx->actors = (actor*)g_eng.mem_arena_alloc(&ctx->_scratch, sizeof(actor) * ctx->num_actors, sizeof(u64)).p;
-
-    i8 home_district_weights[16];
-    for (int i = 0; i < ctx->num_districts; i++) {
-        home_district_weights[i] = (ctx->districs[i].type == district_type::RESIDENTIAL) ? 1 : 0;
-    }
-    i8 work_landmark_weights[128];
-    for (int i = 0; i < ctx->num_landmarks; i++) {
-        landmark_type t = ctx->landmarks[i].type;
-        work_landmark_weights[i] = (t == landmark_type::LANDMARK_TYPE_COMM_APARTMENT || t == landmark_type::LANDMARK_TYPE_RES_APARTMENT || t == landmark_type::LANDMARK_TYPE_RES_HOUSE) ? 0 : 1;
-    }
 
     sqlite3_stmt *prep;
     int res = sqlite3_prepare_v3(ctx->db, sql_actor, strlen(sql_actor), 0, &prep, nullptr);
@@ -579,21 +592,18 @@ void case_gen_population(case_gen *ctx) {
         }
         a.age = g_eng.rand_actor_age();
         a.job = " -- ";
-        a.home_district_id = rand_weighted_index(g_eng.rand_float01(), home_district_weights, ctx->num_districts);
 
-        i8 home_landmark_weights[128];
-        for (int i = 0; i < ctx->num_landmarks; i++) {
-            landmark_type t = ctx->landmarks[i].type;
-            i64 d_id = ctx->landmarks[i].district_id;
-            if (d_id == a.home_district_id && (t == landmark_type::LANDMARK_TYPE_RES_APARTMENT || t == landmark_type::LANDMARK_TYPE_RES_HOUSE)) {
-                home_landmark_weights[i] = (t == landmark_type::LANDMARK_TYPE_RES_APARTMENT) ? 3 : 1;
-            }
-            else {
-                home_landmark_weights[i] = 0;
-            }
-        }
-        a.home_landmark_id = rand_weighted_index(g_eng.rand_float01(), home_landmark_weights, ctx->num_landmarks);
-        a.workplace_landmark_id = rand_weighted_index(g_eng.rand_float01(), work_landmark_weights, ctx->num_landmarks);
+        a.home_landmark_id = _case_gen_roll_landmark(ctx, {
+            {landmark_type::LANDMARK_TYPE_RES_HOUSE, 1},
+            {landmark_type::LANDMARK_TYPE_RES_APARTMENT, 3},
+            {landmark_type::LANDMARK_TYPE_COMM_APARTMENT, 2},
+        });
+        a.home_district_id = ctx->landmarks[a.home_landmark_id].district_id;
+        a.workplace_landmark_id = _case_gen_roll_landmark(ctx, {
+            {landmark_type::LANDMARK_TYPE_COMM_APARTMENT, 0},
+            {landmark_type::LANDMARK_TYPE_RES_APARTMENT, 0},
+            {landmark_type::LANDMARK_TYPE_RES_HOUSE, 0},
+        }, 1);
         a.wealth = g_eng.rand_int_min(1, 6);
         a.secrets = 0; // Init empty
 
@@ -647,32 +657,23 @@ void case_gen_population(case_gen *ctx) {
     }
 
     static const i32 variant_odds_denum = 3;
-    i8 var_landmark_weights[128];
-    for (int i = 0; i < ctx->num_landmarks; i++) {
-        landmark_type t = ctx->landmarks[i].type;
-        if (t == landmark_type::LANDMARK_TYPE_COMM_BAR || 
-            t == landmark_type::LANDMARK_TYPE_COMM_RESTAURANT ||
-            t == landmark_type::LANDMARK_TYPE_DOCKS_BAR ||
-            t == landmark_type::LANDMARK_TYPE_NIGHT_BAR || 
-            t == landmark_type::LANDMARK_TYPE_NIGHT_CASINO ||
-            t == landmark_type::LANDMARK_TYPE_NIGHT_FASTFOOD ||
-            t == landmark_type::LANDMARK_TYPE_NIGHT_NIGHTCLUB ||
-            t == landmark_type::LANDMARK_TYPE_NIGHT_STRIPCLUB ||
-            t == landmark_type::LANDMARK_TYPE_RES_CHURCH ||
-            t == landmark_type::LANDMARK_TYPE_RES_PARK)
-        {
-            var_landmark_weights[i] = 1;
-        }
-        else {
-            var_landmark_weights[i] = 0;
-        }
-    }
     for (i32 i = 0; i < ctx->num_actors; i++) {
         if (g_eng.rand_int(variant_odds_denum) != 0) {
             continue;
         }
 
-        landmark variant_landmark = ctx->landmarks[rand_weighted_index(g_eng.rand_float01(), var_landmark_weights, ctx->num_landmarks)];
+        landmark variant_landmark = ctx->landmarks[_case_gen_roll_landmark(ctx, {
+            {landmark_type::LANDMARK_TYPE_COMM_BAR, 1},
+            {landmark_type::LANDMARK_TYPE_COMM_RESTAURANT, 1},
+            {landmark_type::LANDMARK_TYPE_DOCKS_BAR, 1},
+            {landmark_type::LANDMARK_TYPE_NIGHT_BAR, 1},
+            {landmark_type::LANDMARK_TYPE_NIGHT_CASINO , 1},
+            {landmark_type::LANDMARK_TYPE_NIGHT_FASTFOOD, 1},
+            {landmark_type::LANDMARK_TYPE_NIGHT_NIGHTCLUB, 1},
+            {landmark_type::LANDMARK_TYPE_NIGHT_STRIPCLUB, 1},
+            {landmark_type::LANDMARK_TYPE_RES_CHURCH, 1},
+            {landmark_type::LANDMARK_TYPE_RES_PARK, 1},
+        })];
         sqlite3_reset(prep);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":actor_id"), i);
         sqlite3_bind_int(prep, sqlite3_bind_parameter_index(prep, ":hour"), g_eng.rand_int_min(landmark_time_start[variant_landmark.type], landmark_time_end[variant_landmark.type]));
