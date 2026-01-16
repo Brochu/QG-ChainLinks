@@ -7,6 +7,7 @@
 #include "SDL3/SDL_init.h"
 #include "SDL3/SDL_render.h"
 
+#include "qg_bus.hpp"
 #include "qg_config.hpp"
 #include "qg_memory.hpp"
 #include "qg_parse.hpp"
@@ -29,6 +30,7 @@ GAME_MODULE_DEF
 
 HMODULE game_module = NULL;
 engine_api g_eng {};
+event_bus g_bus {};
 
 void gamelib_load() {
     assert(game_module == NULL && "Did not properly free the gamelib module");
@@ -60,13 +62,6 @@ void gamelib_load() {
         name = (name##_t)GetProcAddress(game_module, sym); \
         assert(name != NULL && "Failed to load function " sym);
     GAME_MODULE_DEF
-    #undef X
-
-    #define X(ret, name, params) g_eng.name = &name;
-    CONFIG_MODULE_DEF
-    MEMORY_MODULE_DEF
-    PARSE_MODULE_DEF
-    RANDOM_MODULE_DEF
     #undef X
 }
 
@@ -111,6 +106,19 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     gamelib_load();
+
+    // ENGINE INIT SEQUENCE
+    #define X(ret, name, params) g_eng.name = &name;
+    BUS_MODULE_DEF
+    CONFIG_MODULE_DEF
+    MEMORY_MODULE_DEF
+    PARSE_MODULE_DEF
+    RANDOM_MODULE_DEF
+    #undef X
+
+    bus_init(&g_bus, 2 * 1024 * 1024);
+    g_eng.bus = &g_bus;
+    // -----------------------------------------
 
     game_init(g_eng);
 

@@ -1,3 +1,4 @@
+#include "qg_bus.hpp"
 #include "qg_config.hpp"
 #include "qg_memory.hpp"
 #include "qg_parse.hpp"
@@ -60,6 +61,12 @@ void chain_init(engine_api engine) {
     for (int i = 0; i < n; i++) {
         printf("ELEM -> '" SV_FMT "'\n", SV_ARG(out[i]));
     }
+
+    level_loaded_event evt {};
+    evt.level_id = 0;
+    evt.level_name = "LEVEL0";
+
+    g_eng.bus_fire(g_eng.bus, event_type::LEVEL_LOADED, &evt, sizeof(evt));
 }
 
 void chain_tick(f32 dt) {
