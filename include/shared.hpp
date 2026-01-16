@@ -3,6 +3,19 @@
 
 // ENGINE ======================================
 
+enum class event_type : u16;
+struct event_bus;
+struct handler_id;
+typedef void (*event_handler_fn)(event_type, void*, void*);
+#define BUS_MODULE_DEF \
+    X(void, bus_init, (event_bus*, u64)) \
+    X(void, bus_free, (event_bus*)) \
+    X(handler_id, bus_subscribe, (event_bus*, event_type, event_handler_fn, void*)) \
+    X(bool, bus_unsubscribe, (event_bus*, handler_id)) \
+    X(bool, bus_fire, (event_bus*, event_type, const void*, u32)) \
+    X(void, bus_process, (event_bus*)) \
+    X(void, bus_reset, (event_bus*))
+
 enum class value_type : u8;
 struct config_value;
 struct config;
@@ -41,12 +54,15 @@ struct strview;
 struct engine_api {
     #define X(ret, name, params) ret (*name) params;
 
+    struct { BUS_MODULE_DEF };
     struct { CONFIG_MODULE_DEF };
     struct { MEMORY_MODULE_DEF };
     struct { PARSE_MODULE_DEF };
     struct { RANDOM_MODULE_DEF };
 
     #undef X
+
+    event_bus *bus;
 };
 
 extern engine_api g_eng;
