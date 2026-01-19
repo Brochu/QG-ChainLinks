@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(./build.bat)",
+      "Bash(./casegen.exe:*)",
+      "Bash(casegen.exe:*)",
+      "Bash(\"C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen\\\\casegen.exe\" -size small -seed 12345)",
+      "Bash(cmd.exe /c \"casegen.exe -size small -seed 12345\")",
+      "Bash(cmd //c \"casegen.exe -size small -seed 12345 -db simulation.db\")",
+      "Bash(build.bat)"
+    ]
+  }
+}
