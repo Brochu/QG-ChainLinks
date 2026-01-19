@@ -4,7 +4,7 @@
 
 #include <sqlite3.h>
 
-#define MAX_NUM_NAMES 255
+#define MAX_NUM_NAMES 256
 
 struct name_gen_entry {
     i8 num_options = 0;
