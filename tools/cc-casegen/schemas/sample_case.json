@@ -1,0 +1,919 @@
+{
+  "metadata": {
+    "case_id": "case_sample_001",
+    "crime_type": "kidnapping",
+    "difficulty": null,
+    "actor_count": 7,
+    "location_count": 4,
+    "generation_seed": 42,
+    "version": "0.1.0"
+  },
+
+  "chain": [
+    {
+      "chain_index": 0,
+      "event_id": "evt_001",
+      "event_type": "CrimeStalking",
+      "blanks": [
+        {
+          "blank_index": 0,
+          "event_field": "participants",
+          "entity_type": "person",
+          "entity_field": "build",
+          "correct_value": "person_002",
+          "evidence_ids": ["evi_001", "evi_008"]
+        },
+        {
+          "blank_index": 1,
+          "event_field": "location",
+          "entity_type": "location",
+          "entity_field": "name",
+          "correct_value": "loc_001",
+          "evidence_ids": ["evi_001", "evi_003"]
+        }
+      ]
+    },
+    {
+      "chain_index": 1,
+      "event_id": "evt_002",
+      "event_type": "CrimeStage",
+      "blanks": [
+        {
+          "blank_index": 0,
+          "event_field": "objects",
+          "entity_type": "object",
+          "entity_field": "type",
+          "correct_value": "obj_001",
+          "evidence_ids": ["evi_004", "evi_005"]
+        }
+      ]
+    },
+    {
+      "chain_index": 2,
+      "event_id": "evt_003",
+      "event_type": "ActorEnters",
+      "blanks": [
+        {
+          "blank_index": 0,
+          "event_field": "participants",
+          "entity_type": "person",
+          "entity_field": "name",
+          "correct_value": "person_002",
+          "evidence_ids": ["evi_006", "evi_007", "evi_014"]
+        },
+        {
+          "blank_index": 1,
+          "event_field": "location",
+          "entity_type": "location",
+          "entity_field": "address",
+          "correct_value": "loc_001",
+          "evidence_ids": ["evi_003", "evi_009"]
+        }
+      ]
+    },
+    {
+      "chain_index": 3,
+      "event_id": "evt_004",
+      "event_type": "CrimeCommitted",
+      "blanks": [
+        {
+          "blank_index": 0,
+          "event_field": "participants",
+          "entity_type": "person",
+          "entity_field": "name",
+          "correct_value": "person_002",
+          "evidence_ids": ["evi_005", "evi_007", "evi_010"]
+        },
+        {
+          "blank_index": 1,
+          "event_field": "participants",
+          "entity_type": "person",
+          "entity_field": "name",
+          "correct_value": "person_001",
+          "evidence_ids": ["evi_003", "evi_009"]
+        },
+        {
+          "blank_index": 2,
+          "event_field": "objects",
+          "entity_type": "object",
+          "entity_field": "name",
+          "correct_value": "obj_006",
+          "evidence_ids": ["evi_005", "evi_011"]
+        }
+      ]
+    },
+    {
+      "chain_index": 4,
+      "event_id": "evt_005",
+      "event_type": "ActorEnters",
+      "blanks": [
+        {
+          "blank_index": 0,
+          "event_field": "location",
+          "entity_type": "location",
+          "entity_field": "type",
+          "correct_value": "loc_003",
+          "evidence_ids": ["evi_010", "evi_012"]
+        }
+      ]
+    },
+    {
+      "chain_index": 5,
+      "event_id": "evt_006",
+      "event_type": "ObjectMoved",
+      "blanks": [
+        {
+          "blank_index": 0,
+          "event_field": "objects",
+          "entity_type": "object",
+          "entity_field": "type",
+          "correct_value": "obj_002",
+          "evidence_ids": ["evi_013", "evi_014"]
+        },
+        {
+          "blank_index": 1,
+          "event_field": "location",
+          "entity_type": "location",
+          "entity_field": "name",
+          "correct_value": "loc_001",
+          "evidence_ids": ["evi_013", "evi_014"]
+        }
+      ]
+    }
+  ],
+
+  "matrix": {
+    "people": [
+      {
+        "id": "person_001",
+        "name": "Elena",
+        "alias": null,
+        "age": 34,
+        "height": "average",
+        "build": "slim",
+        "hair_color": "black",
+        "home_location": "loc_001",
+        "work_location": null,
+        "occupation": "Business owner",
+        "phone_number": "555-0101",
+        "email_address": "elena@email.com",
+        "role": "victim",
+        "relationships": [
+          {"person_id": "person_003", "type": "ex_partner"},
+          {"person_id": "person_004", "type": "employer"}
+        ],
+        "org_affiliation": "Vance Industries",
+        "alibi": null,
+        "motive": null,
+        "opportunity": null
+      },
+      {
+        "id": "person_002",
+        "name": "Marcus",
+        "alias": "Marc",
+        "age": 41,
+        "height": "tall",
+        "build": "athletic",
+        "hair_color": "brown",
+        "home_location": "loc_002",
+        "work_location": null,
+        "occupation": "Unemployed",
+        "phone_number": "555-0102",
+        "email_address": null,
+        "role": "suspect",
+        "relationships": [
+          {"person_id": "person_005", "type": "debtor"}
+        ],
+        "org_affiliation": null,
+        "alibi": "evt_010",
+        "motive": "evt_007",
+        "opportunity": "Had access to victim's schedule through social media"
+      },
+      {
+        "id": "person_003",
+        "name": "David",
+        "alias": null,
+        "age": 36,
+        "height": "average",
+        "build": "average",
+        "hair_color": "blonde",
+        "home_location": null,
+        "work_location": null,
+        "occupation": "Accountant",
+        "phone_number": "555-0103",
+        "email_address": "david@email.com",
+        "role": "suspect",
+        "relationships": [
+          {"person_id": "person_001", "type": "ex_partner"}
+        ],
+        "org_affiliation": null,
+        "alibi": "evt_011",
+        "motive": "evt_008",
+        "opportunity": "Knew victim's routines"
+      },
+      {
+        "id": "person_004",
+        "name": "Sophie",
+        "alias": null,
+        "age": 28,
+        "height": "short",
+        "build": "petite",
+        "hair_color": "red",
+        "home_location": null,
+        "work_location": null,
+        "occupation": "Personal assistant",
+        "phone_number": "555-0104",
+        "email_address": "sophie@email.com",
+        "role": "witness",
+        "relationships": [
+          {"person_id": "person_001", "type": "employee"}
+        ],
+        "org_affiliation": "Vance Industries",
+        "alibi": null,
+        "motive": null,
+        "opportunity": null
+      },
+      {
+        "id": "person_005",
+        "name": "Victor",
+        "alias": "Vic",
+        "age": 52,
+        "height": "average",
+        "build": "heavy",
+        "hair_color": "gray",
+        "home_location": null,
+        "work_location": "loc_004",
+        "occupation": "Casino manager",
+        "phone_number": "555-0105",
+        "email_address": null,
+        "role": "person_of_interest",
+        "relationships": [
+          {"person_id": "person_002", "type": "creditor"}
+        ],
+        "org_affiliation": "Golden Chip Casino",
+        "alibi": null,
+        "motive": null,
+        "opportunity": null
+      },
+      {
+        "id": "person_006",
+        "name": "Nina",
+        "alias": null,
+        "age": 67,
+        "height": "short",
+        "build": "frail",
+        "hair_color": "white",
+        "home_location": "loc_001",
+        "work_location": null,
+        "occupation": "Retired",
+        "phone_number": "555-0106",
+        "email_address": null,
+        "role": "witness",
+        "relationships": [],
+        "org_affiliation": null,
+        "alibi": null,
+        "motive": null,
+        "opportunity": null
+      },
+      {
+        "id": "person_007",
+        "name": "Tom",
+        "alias": null,
+        "age": 45,
+        "height": "tall",
+        "build": "stocky",
+        "hair_color": "black",
+        "home_location": null,
+        "work_location": "loc_003",
+        "occupation": "Security guard",
+        "phone_number": "555-0107",
+        "email_address": null,
+        "role": "witness",
+        "relationships": [],
+        "org_affiliation": null,
+        "alibi": null,
+        "motive": null,
+        "opportunity": null
+      }
+    ],
+
+    "locations": [
+      {
+        "id": "loc_001",
+        "name": "Riverside Apartments",
+        "address": "142 River Street, Unit 4B",
+        "type": "residence",
+        "owner": null,
+        "residents": ["person_001", "person_006"],
+        "access_control": "keypad",
+        "operation_hours": "24_7"
+      },
+      {
+        "id": "loc_002",
+        "name": "Marcus's Studio",
+        "address": "78 Oak Avenue, Unit 12",
+        "type": "residence",
+        "owner": null,
+        "residents": ["person_002"],
+        "access_control": "standard_lock",
+        "operation_hours": "24_7"
+      },
+      {
+        "id": "loc_003",
+        "name": "Dockside Warehouse",
+        "address": "Harbor District, Building 7",
+        "type": "business",
+        "owner": null,
+        "residents": [],
+        "access_control": "gated",
+        "operation_hours": "abandoned"
+      },
+      {
+        "id": "loc_004",
+        "name": "Golden Chip Casino",
+        "address": "500 Fortune Boulevard",
+        "type": "business",
+        "owner": "person_005",
+        "residents": [],
+        "access_control": "security_staff",
+        "operation_hours": "24_7"
+      }
+    ],
+
+    "objects": [
+      {
+        "id": "obj_001",
+        "name": "Roll of Duct Tape",
+        "type": "tool",
+        "serial_number": null,
+        "size": "small",
+        "color": "silver",
+        "material": "fabric",
+        "condition": "worn",
+        "owner": "person_002",
+        "location": "loc_003"
+      },
+      {
+        "id": "obj_002",
+        "name": "Ransom Note",
+        "type": "document",
+        "serial_number": null,
+        "size": "small",
+        "color": "white",
+        "material": "paper",
+        "condition": "damaged",
+        "owner": null,
+        "location": "loc_001"
+      },
+      {
+        "id": "obj_003",
+        "name": "Elena's Phone",
+        "type": "personal_item",
+        "serial_number": "IMEI-9988776655",
+        "size": "small",
+        "color": "gold",
+        "material": "metal",
+        "condition": "good",
+        "owner": "person_001",
+        "location": "loc_001"
+      },
+      {
+        "id": "obj_004",
+        "name": "Gray Sedan",
+        "type": "vehicle",
+        "serial_number": "VIN-ABC123XYZ",
+        "size": "large",
+        "color": "gray",
+        "material": "metal",
+        "condition": "good",
+        "owner": "person_002",
+        "location": null
+      },
+      {
+        "id": "obj_005",
+        "name": "Crowbar",
+        "type": "tool",
+        "serial_number": null,
+        "size": "medium",
+        "color": "black",
+        "material": "metal",
+        "condition": "damaged",
+        "owner": null,
+        "location": "loc_001"
+      },
+      {
+        "id": "obj_006",
+        "name": "Chloroform Bottle",
+        "type": "other",
+        "serial_number": "LOT-2024-887",
+        "size": "small",
+        "color": "brown",
+        "material": "glass",
+        "condition": "good",
+        "owner": null,
+        "location": "loc_003"
+      }
+    ],
+
+    "events": [
+      {
+        "id": "evt_001",
+        "type": "CrimeStalking",
+        "start_time": "2026-01-10T18:00:00Z",
+        "end_time": "2026-01-14T22:00:00Z",
+        "location": "loc_001",
+        "participants": ["person_002"],
+        "witnesses": ["person_006"],
+        "status": "confirmed",
+        "class": "primary_crime",
+        "description": "Perpetrator observed victim's apartment building on multiple occasions",
+        "objects": [],
+        "source": "person_006",
+        "parent_event_id": "evt_007"
+      },
+      {
+        "id": "evt_002",
+        "type": "CrimeStage",
+        "start_time": "2026-01-13T14:30:00Z",
+        "end_time": null,
+        "location": null,
+        "participants": ["person_002"],
+        "witnesses": [],
+        "status": "confirmed",
+        "class": "primary_crime",
+        "description": "Perpetrator purchased supplies including duct tape and crowbar",
+        "objects": ["obj_001", "obj_005"],
+        "source": null,
+        "parent_event_id": "evt_001"
+      },
+      {
+        "id": "evt_003",
+        "type": "ActorEnters",
+        "start_time": "2026-01-15T02:15:00Z",
+        "end_time": null,
+        "location": "loc_001",
+        "participants": ["person_002"],
+        "witnesses": [],
+        "status": "confirmed",
+        "class": "primary_crime",
+        "description": "Perpetrator forced entry into victim's apartment using crowbar",
+        "objects": ["obj_005"],
+        "source": null,
+        "parent_event_id": "evt_002"
+      },
+      {
+        "id": "evt_004",
+        "type": "CrimeCommitted",
+        "start_time": "2026-01-15T02:20:00Z",
+        "end_time": "2026-01-15T02:35:00Z",
+        "location": "loc_001",
+        "participants": ["person_002", "person_001"],
+        "witnesses": [],
+        "status": "confirmed",
+        "class": "primary_crime",
+        "description": "Perpetrator subdued and abducted victim using chloroform and duct tape",
+        "objects": ["obj_001", "obj_006"],
+        "source": null,
+        "parent_event_id": "evt_003"
+      },
+      {
+        "id": "evt_005",
+        "type": "ActorEnters",
+        "start_time": "2026-01-15T03:10:00Z",
+        "end_time": null,
+        "location": "loc_003",
+        "participants": ["person_002", "person_001"],
+        "witnesses": ["person_007"],
+        "status": "confirmed",
+        "class": "primary_crime",
+        "description": "Perpetrator arrived at warehouse with victim",
+        "objects": ["obj_004"],
+        "source": "person_007",
+        "parent_event_id": "evt_004"
+      },
+      {
+        "id": "evt_006",
+        "type": "ObjectMoved",
+        "start_time": "2026-01-15T08:00:00Z",
+        "end_time": null,
+        "location": "loc_001",
+        "participants": [],
+        "witnesses": ["person_004"],
+        "status": "confirmed",
+        "class": "primary_crime",
+        "description": "Ransom note demanding $500,000 was slipped under victim's apartment door",
+        "objects": ["obj_002"],
+        "source": "person_004",
+        "parent_event_id": "evt_005"
+      },
+      {
+        "id": "evt_007",
+        "type": "FinancialChange",
+        "start_time": "2026-01-01T00:00:00Z",
+        "end_time": null,
+        "location": "loc_004",
+        "participants": ["person_002", "person_005"],
+        "witnesses": [],
+        "status": "confirmed",
+        "class": "background_event",
+        "description": "Marcus accumulated $200,000 gambling debt to Victor",
+        "objects": [],
+        "source": null,
+        "parent_event_id": null
+      },
+      {
+        "id": "evt_008",
+        "type": "RelationshipStatusChange",
+        "start_time": "2025-11-15T00:00:00Z",
+        "end_time": null,
+        "location": null,
+        "participants": ["person_001", "person_003"],
+        "witnesses": [],
+        "status": "confirmed",
+        "class": "background_event",
+        "description": "Elena ended relationship with David after discovering infidelity",
+        "objects": [],
+        "source": null,
+        "parent_event_id": null
+      },
+      {
+        "id": "evt_009",
+        "type": "CrimeDiscovered",
+        "start_time": "2026-01-15T09:30:00Z",
+        "end_time": null,
+        "location": "loc_001",
+        "participants": ["person_004"],
+        "witnesses": [],
+        "status": "confirmed",
+        "class": "primary_crime",
+        "description": "Sophie discovered signs of break-in and ransom note when arriving for work",
+        "objects": ["obj_002", "obj_005"],
+        "source": "person_004",
+        "parent_event_id": "evt_006"
+      },
+      {
+        "id": "evt_010",
+        "type": "GroupGathering",
+        "start_time": "2026-01-15T01:00:00Z",
+        "end_time": "2026-01-15T04:00:00Z",
+        "location": "loc_004",
+        "participants": ["person_002"],
+        "witnesses": [],
+        "status": "suspected",
+        "class": "related_incident",
+        "description": "Marcus claims he was gambling at the casino during the kidnapping",
+        "objects": [],
+        "source": "person_002",
+        "parent_event_id": null
+      },
+      {
+        "id": "evt_011",
+        "type": "ActorSeenAt",
+        "start_time": "2026-01-15T02:00:00Z",
+        "end_time": "2026-01-15T03:30:00Z",
+        "location": null,
+        "participants": ["person_003"],
+        "witnesses": [],
+        "status": "confirmed",
+        "class": "related_incident",
+        "description": "David's home security camera confirms he was at his residence",
+        "objects": [],
+        "source": null,
+        "parent_event_id": null
+      }
+    ]
+  },
+
+  "evidence_pool": [
+    {
+      "id": "evi_001",
+      "type": "testimony",
+      "source_event": "evt_001",
+      "discovery_method": "interview",
+      "location": "loc_001",
+      "reveals": [
+        {
+          "entity_type": "person",
+          "entity_id": "person_002",
+          "field": "build",
+          "value": "Witness describes an athletic build male watching the building"
+        },
+        {
+          "entity_type": "person",
+          "entity_id": "person_002",
+          "field": "hair_color",
+          "value": "Brown hair"
+        },
+        {
+          "entity_type": "location",
+          "entity_id": "loc_001",
+          "field": "name",
+          "value": "Riverside Apartments"
+        }
+      ]
+    },
+    {
+      "id": "evi_002",
+      "type": "digital",
+      "source_event": "evt_001",
+      "discovery_method": "forensics",
+      "location": "loc_001",
+      "reveals": [
+        {
+          "entity_type": "person",
+          "entity_id": "person_002",
+          "field": "phone_number",
+          "value": "Cell tower data places phone near Riverside Apartments Jan 10-14"
+        }
+      ]
+    },
+    {
+      "id": "evi_003",
+      "type": "physical",
+      "source_event": "evt_009",
+      "discovery_method": "examine_scene",
+      "location": "loc_001",
+      "reveals": [
+        {
+          "entity_type": "location",
+          "entity_id": "loc_001",
+          "field": "address",
+          "value": "Crime scene at 142 River Street, Unit 4B"
+        },
+        {
+          "entity_type": "location",
+          "entity_id": "loc_001",
+          "field": "access_control",
+          "value": "Forced entry via pried door frame"
+        },
+        {
+          "entity_type": "person",
+          "entity_id": "person_001",
+          "field": "name",
+          "value": "Victim identified as Elena from apartment lease"
+        }
+      ]
+    },
+    {
+      "id": "evi_004",
+      "type": "document",
+      "source_event": "evt_002",
+      "discovery_method": "search_records",
+      "location": null,
+      "reveals": [
+        {
+          "entity_type": "object",
+          "entity_id": "obj_001",
+          "field": "type",
+          "value": "Hardware store receipt shows purchase of tools - duct tape, crowbar"
+        },
+        {
+          "entity_type": "object",
+          "entity_id": "obj_005",
+          "field": "type",
+          "value": "tool"
+        }
+      ]
+    },
+    {
+      "id": "evi_005",
+      "type": "forensic",
+      "source_event": "evt_004",
+      "discovery_method": "forensics",
+      "location": "loc_003",
+      "reveals": [
+        {
+          "entity_type": "object",
+          "entity_id": "obj_001",
+          "field": "owner",
+          "value": "Fingerprints on duct tape match person_002"
+        },
+        {
+          "entity_type": "object",
+          "entity_id": "obj_006",
+          "field": "name",
+          "value": "Chloroform bottle found at warehouse with matching lot number"
+        },
+        {
+          "entity_type": "person",
+          "entity_id": "person_002",
+          "field": "name",
+          "value": "Fingerprint match identifies Marcus"
+        }
+      ]
+    },
+    {
+      "id": "evi_006",
+      "type": "forensic",
+      "source_event": "evt_003",
+      "discovery_method": "forensics",
+      "location": "loc_001",
+      "reveals": [
+        {
+          "entity_type": "object",
+          "entity_id": "obj_005",
+          "field": "condition",
+          "value": "Paint transfer matches victim's door frame"
+        },
+        {
+          "entity_type": "person",
+          "entity_id": "person_002",
+          "field": null,
+          "value": "Partial fingerprint on crowbar"
+        }
+      ]
+    },
+    {
+      "id": "evi_007",
+      "type": "digital",
+      "source_event": "evt_003",
+      "discovery_method": "search_records",
+      "location": "loc_001",
+      "reveals": [
+        {
+          "entity_type": "event",
+          "entity_id": "evt_003",
+          "field": "start_time",
+          "value": "Building security log shows keypad bypass at 02:15"
+        },
+        {
+          "entity_type": "person",
+          "entity_id": "person_002",
+          "field": null,
+          "value": "Security camera captured gray sedan in parking lot"
+        }
+      ]
+    },
+    {
+      "id": "evi_008",
+      "type": "physical",
+      "source_event": "evt_003",
+      "discovery_method": "examine_scene",
+      "location": "loc_001",
+      "reveals": [
+        {
+          "entity_type": "person",
+          "entity_id": "person_002",
+          "field": "build",
+          "value": "Boot prints size 12 - athletic male"
+        }
+      ]
+    },
+    {
+      "id": "evi_009",
+      "type": "testimony",
+      "source_event": "evt_009",
+      "discovery_method": "interview",
+      "location": null,
+      "reveals": [
+        {
+          "entity_type": "person",
+          "entity_id": "person_001",
+          "field": "home_location",
+          "value": "Sophie confirms Elena lives at Riverside Apartments"
+        },
+        {
+          "entity_type": "location",
+          "entity_id": "loc_001",
+          "field": "address",
+          "value": "142 River Street, Unit 4B"
+        }
+      ]
+    },
+    {
+      "id": "evi_010",
+      "type": "testimony",
+      "source_event": "evt_005",
+      "discovery_method": "interview",
+      "location": "loc_003",
+      "reveals": [
+        {
+          "entity_type": "location",
+          "entity_id": "loc_003",
+          "field": "type",
+          "value": "Security guard saw gray sedan arrive at the warehouse around 3 AM"
+        },
+        {
+          "entity_type": "object",
+          "entity_id": "obj_004",
+          "field": "color",
+          "value": "Gray sedan"
+        },
+        {
+          "entity_type": "person",
+          "entity_id": "person_002",
+          "field": "build",
+          "value": "Driver was tall, athletic male"
+        }
+      ]
+    },
+    {
+      "id": "evi_011",
+      "type": "forensic",
+      "source_event": "evt_004",
+      "discovery_method": "forensics",
+      "location": "loc_001",
+      "reveals": [
+        {
+          "entity_type": "object",
+          "entity_id": "obj_006",
+          "field": "name",
+          "value": "Traces of chloroform detected on victim's pillow"
+        }
+      ]
+    },
+    {
+      "id": "evi_012",
+      "type": "digital",
+      "source_event": "evt_005",
+      "discovery_method": "search_records",
+      "location": null,
+      "reveals": [
+        {
+          "entity_type": "location",
+          "entity_id": "loc_003",
+          "field": "type",
+          "value": "License plate reader captured vehicle heading toward Harbor District business area at 02:50"
+        }
+      ]
+    },
+    {
+      "id": "evi_013",
+      "type": "physical",
+      "source_event": "evt_006",
+      "discovery_method": "examine_scene",
+      "location": "loc_001",
+      "reveals": [
+        {
+          "entity_type": "object",
+          "entity_id": "obj_002",
+          "field": "type",
+          "value": "A document - ransom note demanding $500,000 in cash"
+        },
+        {
+          "entity_type": "location",
+          "entity_id": "loc_001",
+          "field": "name",
+          "value": "Note found under door at Riverside Apartments"
+        }
+      ]
+    },
+    {
+      "id": "evi_014",
+      "type": "forensic",
+      "source_event": "evt_006",
+      "discovery_method": "forensics",
+      "location": null,
+      "reveals": [
+        {
+          "entity_type": "object",
+          "entity_id": "obj_002",
+          "field": "type",
+          "value": "Fingerprint analysis on the document matches person_002"
+        },
+        {
+          "entity_type": "person",
+          "entity_id": "person_002",
+          "field": "name",
+          "value": "Fingerprint database match: Marcus"
+        }
+      ]
+    },
+    {
+      "id": "evi_015",
+      "type": "document",
+      "source_event": "evt_007",
+      "discovery_method": "search_records",
+      "location": "loc_004",
+      "reveals": [
+        {
+          "entity_type": "event",
+          "entity_id": "evt_007",
+          "field": null,
+          "value": "Casino records show Marcus owes $200,000"
+        },
+        {
+          "entity_type": "person",
+          "entity_id": "person_002",
+          "field": "motive",
+          "value": "Severe gambling debt - desperate for money"
+        }
+      ]
+    },
+    {
+      "id": "evi_016",
+      "type": "digital",
+      "source_event": "evt_010",
+      "discovery_method": "search_records",
+      "location": "loc_004",
+      "reveals": [
+        {
+          "entity_type": "event",
+          "entity_id": "evt_010",
+          "field": "status",
+          "value": "Casino cameras show Marcus NOT present between 1-4 AM despite his claim"
+        }
+      ]
+    }
+  ]
+}

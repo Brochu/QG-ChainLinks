@@ -1,0 +1,659 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "case_export_v0.schema.json",
+  "title": "Case Export Schema v0",
+  "description": "Schema for exported case files from the ChainLinks case generator",
+  "type": "object",
+  "required": ["metadata", "chain", "matrix", "evidence_pool"],
+  "properties": {
+    "metadata": {
+      "$ref": "#/$defs/Metadata"
+    },
+    "chain": {
+      "type": "array",
+      "description": "The chain of events with blanks for the player to fill",
+      "items": {
+        "$ref": "#/$defs/ChainEvent"
+      },
+      "minItems": 5,
+      "maxItems": 8
+    },
+    "matrix": {
+      "$ref": "#/$defs/Matrix"
+    },
+    "evidence_pool": {
+      "type": "array",
+      "description": "All discoverable evidence for the case",
+      "items": {
+        "$ref": "#/$defs/Evidence"
+      }
+    }
+  },
+
+  "$defs": {
+    "Metadata": {
+      "type": "object",
+      "description": "Case metadata for identification and categorization",
+      "required": ["case_id", "crime_type", "actor_count", "location_count", "generation_seed", "version"],
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "description": "Unique identifier for the case"
+        },
+        "crime_type": {
+          "$ref": "#/$defs/CrimeType"
+        },
+        "difficulty": {
+          "type": ["string", "null"],
+          "description": "Reserved for future difficulty calculation - leave null for now"
+        },
+        "actor_count": {
+          "type": "integer",
+          "minimum": 6,
+          "maximum": 8,
+          "description": "Number of actors in the case"
+        },
+        "location_count": {
+          "type": "integer",
+          "minimum": 3,
+          "description": "Number of locations in the case"
+        },
+        "generation_seed": {
+          "type": "integer",
+          "description": "Seed used for reproducibility"
+        },
+        "version": {
+          "type": "string",
+          "description": "Schema version for compatibility",
+          "const": "0.1.0"
+        }
+      }
+    },
+
+    "CrimeType": {
+      "type": "string",
+      "enum": ["kidnapping", "attempted_murder", "extortion", "drug_trafficking", "money_laundering"],
+      "description": "Supported crime categories for v1"
+    },
+
+    "Matrix": {
+      "type": "object",
+      "description": "The information matrix containing all case entities",
+      "required": ["people", "locations", "objects", "events"],
+      "properties": {
+        "people": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Person"
+          }
+        },
+        "locations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Location"
+          }
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Object"
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Event"
+          }
+        }
+      }
+    },
+
+    "Person": {
+      "type": "object",
+      "description": "A person entity in the matrix",
+      "required": ["id", "name", "role"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^person_[0-9]{3}$",
+          "description": "Unique person identifier (e.g., person_001)"
+        },
+        "name": {
+          "type": "string",
+          "description": "First name only"
+        },
+        "alias": {
+          "type": ["string", "null"],
+          "description": "Known alternate names/nicknames"
+        },
+        "age": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 120
+        },
+        "height": {
+          "oneOf": [
+            { "$ref": "#/$defs/PersonHeight" },
+            { "type": "null" }
+          ],
+          "description": "Physical descriptor for witness matching"
+        },
+        "build": {
+          "oneOf": [
+            { "$ref": "#/$defs/PersonBuild" },
+            { "type": "null" }
+          ],
+          "description": "Weight/body type descriptor"
+        },
+        "hair_color": {
+          "oneOf": [
+            { "$ref": "#/$defs/HairColor" },
+            { "type": "null" }
+          ],
+          "description": "Physical descriptor for witness matching"
+        },
+        "home_location": {
+          "type": ["string", "null"],
+          "description": "Reference to location ID where they live"
+        },
+        "work_location": {
+          "type": ["string", "null"],
+          "description": "Reference to location ID where they work"
+        },
+        "occupation": {
+          "type": ["string", "null"],
+          "description": "Job title/profession"
+        },
+        "phone_number": {
+          "type": ["string", "null"],
+          "description": "For phone record evidence"
+        },
+        "email_address": {
+          "type": ["string", "null"],
+          "description": "For email/digital evidence"
+        },
+        "role": {
+          "$ref": "#/$defs/PersonRole"
+        },
+        "relationships": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Relationship"
+          },
+          "description": "Connections to other people"
+        },
+        "org_affiliation": {
+          "type": ["string", "null"],
+          "description": "Gang, company, group membership"
+        },
+        "alibi": {
+          "type": ["string", "null"],
+          "description": "Reference to event ID representing claimed whereabouts"
+        },
+        "motive": {
+          "type": ["string", "null"],
+          "description": "Reference to event ID that gives them reason"
+        },
+        "opportunity": {
+          "type": ["string", "null"],
+          "description": "Access to crime scene, means"
+        }
+      }
+    },
+
+    "PersonRole": {
+      "type": "string",
+      "enum": ["victim", "suspect", "witness", "person_of_interest", "other"]
+    },
+
+    "PersonHeight": {
+      "type": "string",
+      "enum": ["very_short", "short", "average", "tall", "very_tall"],
+      "description": "Height category for witness matching"
+    },
+
+    "PersonBuild": {
+      "type": "string",
+      "enum": ["frail", "petite", "slim", "average", "athletic", "stocky", "heavy"],
+      "description": "Body type for witness matching"
+    },
+
+    "HairColor": {
+      "type": "string",
+      "enum": ["black", "brown", "blonde", "red", "gray", "white", "bald"],
+      "description": "Hair color for witness matching"
+    },
+
+    "RelationshipType": {
+      "type": "string",
+      "enum": ["spouse", "ex_spouse", "partner", "ex_partner", "parent", "child", "sibling", "friend", "colleague", "employer", "employee", "rival", "neighbor", "debtor", "creditor"],
+      "description": "Nature of relationship between people (spouse/ex_spouse for marriage, partner/ex_partner for dating)"
+    },
+
+    "Relationship": {
+      "type": "object",
+      "required": ["person_id", "type"],
+      "properties": {
+        "person_id": {
+          "type": "string",
+          "description": "Reference to related person ID"
+        },
+        "type": {
+          "$ref": "#/$defs/RelationshipType"
+        }
+      }
+    },
+
+    "Location": {
+      "type": "object",
+      "description": "A location entity in the matrix",
+      "required": ["id", "name", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^loc_[0-9]{3}$",
+          "description": "Unique location identifier (e.g., loc_001)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Descriptive name (e.g., Mike's Apartment, Harbor Warehouse)"
+        },
+        "address": {
+          "type": ["string", "null"],
+          "description": "Street address or general area"
+        },
+        "type": {
+          "$ref": "#/$defs/LocationType"
+        },
+        "owner": {
+          "type": ["string", "null"],
+          "description": "Reference to person ID who owns the property"
+        },
+        "residents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "References to person IDs who live/work there regularly"
+        },
+        "access_control": {
+          "oneOf": [
+            { "$ref": "#/$defs/AccessControl" },
+            { "type": "null" }
+          ],
+          "description": "Security level of the location"
+        },
+        "operation_hours": {
+          "oneOf": [
+            { "$ref": "#/$defs/OperationHours" },
+            { "type": "null" }
+          ],
+          "description": "When the location is accessible"
+        }
+      }
+    },
+
+    "LocationType": {
+      "type": "string",
+      "enum": ["residence", "business", "public", "outdoor", "vehicle"]
+    },
+
+    "AccessControl": {
+      "type": "string",
+      "enum": ["none", "standard_lock", "deadbolt", "keypad", "keycard", "security_staff", "gated"],
+      "description": "Security level of a location"
+    },
+
+    "OperationHours": {
+      "type": "string",
+      "enum": ["24_7", "business_hours", "evening_only", "daytime_only", "by_appointment", "abandoned"],
+      "description": "When a location is accessible"
+    },
+
+    "Object": {
+      "type": "object",
+      "description": "A physical object entity in the matrix",
+      "required": ["id", "name", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^obj_[0-9]{3}$",
+          "description": "Unique object identifier (e.g., obj_001)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Descriptive name (e.g., Kitchen Knife, Gold Watch)"
+        },
+        "type": {
+          "$ref": "#/$defs/ObjectType"
+        },
+        "serial_number": {
+          "type": ["string", "null"],
+          "description": "Unique identifier for traceable items"
+        },
+        "size": {
+          "type": ["string", "null"],
+          "enum": ["small", "medium", "large", null],
+          "description": "Relative size category"
+        },
+        "color": {
+          "oneOf": [
+            { "$ref": "#/$defs/ObjectColor" },
+            { "type": "null" }
+          ],
+          "description": "Physical descriptor for witness matching"
+        },
+        "material": {
+          "oneOf": [
+            { "$ref": "#/$defs/ObjectMaterial" },
+            { "type": "null" }
+          ],
+          "description": "What the object is made of"
+        },
+        "condition": {
+          "oneOf": [
+            { "$ref": "#/$defs/ObjectCondition" },
+            { "type": "null" }
+          ],
+          "description": "Physical/forensic state of the object"
+        },
+        "owner": {
+          "type": ["string", "null"],
+          "description": "Reference to person ID who owns it"
+        },
+        "location": {
+          "type": ["string", "null"],
+          "description": "Reference to location ID where item is found"
+        }
+      }
+    },
+
+    "ObjectType": {
+      "type": "string",
+      "enum": ["weapon", "tool", "vehicle", "document", "personal_item", "other"]
+    },
+
+    "ObjectColor": {
+      "type": "string",
+      "enum": ["black", "white", "gray", "brown", "red", "blue", "green", "yellow", "orange", "silver", "gold"],
+      "description": "Color of an object for witness matching"
+    },
+
+    "ObjectMaterial": {
+      "type": "string",
+      "enum": ["metal", "wood", "plastic", "glass", "fabric", "paper", "leather", "ceramic", "rubber"],
+      "description": "What an object is made of"
+    },
+
+    "ObjectCondition": {
+      "type": "string",
+      "enum": ["new", "good", "worn", "damaged", "broken", "bloody", "burnt", "wet", "clean"],
+      "description": "Physical/forensic state of an object"
+    },
+
+    "Event": {
+      "type": "object",
+      "description": "An event entity in the matrix",
+      "required": ["id", "type", "start_time", "status", "class", "description"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^evt_[0-9]{3}$",
+          "description": "Unique event identifier (e.g., evt_001)"
+        },
+        "type": {
+          "$ref": "#/$defs/EventType"
+        },
+        "start_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the event began (ISO 8601)"
+        },
+        "end_time": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "When the event ended (null for instant events)"
+        },
+        "location": {
+          "type": ["string", "null"],
+          "description": "Reference to location ID where it happened"
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "References to person IDs involved in the action"
+        },
+        "witnesses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "References to person IDs who observed (distinct from participants)"
+        },
+        "status": {
+          "$ref": "#/$defs/EventStatus"
+        },
+        "class": {
+          "$ref": "#/$defs/EventClass"
+        },
+        "description": {
+          "type": "string",
+          "description": "What happened"
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "References to object IDs involved in the event"
+        },
+        "source": {
+          "type": ["string", "null"],
+          "description": "Reference to person or object ID - how we know about this"
+        },
+        "parent_event_id": {
+          "type": ["string", "null"],
+          "description": "Reference to event ID that caused this (null for root events)"
+        }
+      }
+    },
+
+    "EventType": {
+      "type": "string",
+      "enum": [
+        "CrimeCommitted",
+        "CrimeAttempted",
+        "CrimeDiscovered",
+        "CrimeStage",
+        "CrimeStalking",
+        "ActorEnters",
+        "ActorLeaves",
+        "ActorSeenAt",
+        "GroupGathering",
+        "Loitering",
+        "RoutineDeviation",
+        "DirectConversation",
+        "PhoneCall",
+        "MessageSent",
+        "Argument",
+        "Transaction",
+        "Threat",
+        "ObjectCreated",
+        "ObjectMoved",
+        "ObjectUsed",
+        "ObjectDestroyed",
+        "ObjectDiscovered",
+        "ObjectModified",
+        "BodyFound",
+        "BreakInReported",
+        "MissingPersonReported",
+        "AnonymousTip",
+        "SuspiciousActivityReported",
+        "FinancialChange",
+        "RelationshipStatusChange",
+        "EmploymentChange",
+        "EmotionalState",
+        "Injury",
+        "ScheduleChange",
+        "SecuritySystemOffline",
+        "WeatherEvent",
+        "PowerOutage",
+        "PublicEvent"
+      ],
+      "description": "34 event types across 7 categories"
+    },
+
+    "EventStatus": {
+      "type": "string",
+      "enum": ["suspected", "confirmed"]
+    },
+
+    "EventClass": {
+      "type": "string",
+      "enum": ["primary_crime", "related_incident", "background_event"]
+    },
+
+    "ChainEvent": {
+      "type": "object",
+      "description": "A single event in the chain with its blanks",
+      "required": ["chain_index", "event_id", "event_type", "blanks"],
+      "properties": {
+        "chain_index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Position in the chain (0-indexed)"
+        },
+        "event_id": {
+          "type": "string",
+          "description": "Reference to the event in the matrix"
+        },
+        "event_type": {
+          "$ref": "#/$defs/EventType"
+        },
+        "blanks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Blank"
+          }
+        }
+      }
+    },
+
+    "Blank": {
+      "type": "object",
+      "description": "A blank field the player must fill in",
+      "required": ["blank_index", "event_field", "entity_type", "entity_field", "correct_value", "evidence_ids"],
+      "properties": {
+        "blank_index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Position of this blank within its chain event (0-indexed)"
+        },
+        "event_field": {
+          "type": "string",
+          "description": "Which field of the event is blanked (e.g., 'participants', 'location', 'objects')"
+        },
+        "entity_type": {
+          "type": "string",
+          "enum": ["person", "location", "object", "event", "time"],
+          "description": "What type of entity the player must select"
+        },
+        "entity_field": {
+          "type": "string",
+          "description": "Which field of the entity to display/match (e.g., 'name', 'alias', 'address')"
+        },
+        "correct_value": {
+          "type": "string",
+          "description": "The entity ID that is the correct answer"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "description": "References to evidence IDs that can reveal this blank (min 2 for solvability)"
+        }
+      }
+    },
+
+    "Evidence": {
+      "type": "object",
+      "description": "A piece of discoverable evidence",
+      "required": ["id", "type", "discovery_method", "reveals"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^evi_[0-9]{3}$",
+          "description": "Unique evidence identifier (e.g., evi_001)"
+        },
+        "type": {
+          "$ref": "#/$defs/EvidenceType"
+        },
+        "source_event": {
+          "type": ["string", "null"],
+          "description": "Reference to event ID that created this evidence"
+        },
+        "discovery_method": {
+          "$ref": "#/$defs/DiscoveryMethod",
+          "description": "How this evidence can be discovered"
+        },
+        "location": {
+          "type": ["string", "null"],
+          "description": "Reference to location ID where evidence is found"
+        },
+        "reveals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Reveal"
+          },
+          "description": "What information this evidence provides"
+        }
+      }
+    },
+
+    "EvidenceType": {
+      "type": "string",
+      "enum": [
+        "physical",
+        "testimony",
+        "document",
+        "digital",
+        "forensic"
+      ],
+      "description": "Category of evidence"
+    },
+
+    "DiscoveryMethod": {
+      "type": "string",
+      "enum": ["examine_scene", "interview", "forensics", "search_records", "surveillance", "search_warrant"],
+      "description": "How evidence can be discovered"
+    },
+
+    "Reveal": {
+      "type": "object",
+      "description": "A piece of information revealed by evidence. When field is null, the evidence reveals the existence of the entity (adds it to the player's known entities) without revealing a specific field value. When field is specified, value contains what the player learns about that field.",
+      "required": ["entity_type", "entity_id"],
+      "properties": {
+        "entity_type": {
+          "type": "string",
+          "enum": ["person", "location", "object", "event"]
+        },
+        "entity_id": {
+          "type": "string",
+          "description": "Reference to the entity this reveals information about"
+        },
+        "field": {
+          "type": ["string", "null"],
+          "description": "Specific field revealed. Use null when evidence only reveals that an entity exists (e.g., learning a location is relevant to the case) without providing specific field data."
+        },
+        "value": {
+          "description": "The actual value revealed (type varies by field). Can be null when field is null (existence-only reveal)."
+        }
+      }
+    }
+
+  }
+}

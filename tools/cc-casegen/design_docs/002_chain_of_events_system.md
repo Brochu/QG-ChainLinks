@@ -28,6 +28,19 @@ Each blank is filled by selecting entries from the Information Matrix (PEOPLE, L
 
 ## Chain Extraction Process
 
+**Causation-Based Extraction (Preferred)**
+
+With `ParentEventId` tracking in the simulation (see doc 001), chain extraction becomes straightforward:
+1. Start from the crime event (CrimeCommitted)
+2. Walk backward through parent links to build causal chain
+3. Result is naturally coherent narrative
+
+This approach replaces heuristic-based extraction for events that have causal links populated.
+
+**Fallback: Class-Based Extraction**
+
+For events without causal links, use the original approach:
+
 **Step 1: Gather Chain Events**
 - Select all events with `Class: primary_crime`
 - Order chronologically
@@ -130,6 +143,7 @@ These are tuning levers for later difficulty adjustments.
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-01-19 | Causation-based chain extraction preferred | Walk ParentEventId links from crime backward for coherent narrative |
 | 2026-01-18 | Extract chain from primary_crime events | Post-hoc extraction simpler than tagging during simulation |
 | 2026-01-18 | Solvability constraint: evidence_count >= 2 per blank | Ensures every blank has discoverable answer |
 | 2026-01-18 | Chain length: 5-8 events | Balance between trivial and overwhelming |

@@ -204,9 +204,11 @@ Link them via fields if needed later. Keep separate for now.
 | Description | string | What happened |
 | Objects | ref→OBJECTS[] | Items involved in the event |
 | Source | ref→PEOPLE or OBJECTS | How we know about this (witness, document, recording) |
+| ParentEventId | ref→EVENT (nullable) | Causal link - what event triggered this one (null for root events) |
 
 **Design notes:**
 - StartTime/EndTime as separate fields handles both instant events and ranges
+- ParentEventId enables causal chain tracking - derived from actor memory at decision time during simulation (see Causation Tracking section below)
 - Participants vs Witnesses distinction is important:
   - Crime: perpetrator = participant, bystander = witness
   - Alibi: claimant = participant, verifier = witness
@@ -290,10 +292,35 @@ Link them via fields if needed later. Keep separate for now.
 
 ---
 
+## Causation Tracking (Simulation Design Note)
+
+Events can have a `ParentEventId` linking to the event that caused them. This enables:
+- Chain extraction by following causal links backward from crime
+- Narrative coherence - events have "why" not just "what"
+- Red herring identification - causal dead-ends
+
+**How to derive ParentEventId during simulation:**
+
+Each actor maintains a memory of recent events they experienced. When an actor takes an action that creates a new event, the simulation checks their memory to determine what triggered the action.
+
+Example:
+```
+Actor A's memory: [received_threat_E47, witnessed_argument_E32, ...]
+A takes action → simulation checks memory → parent_event_id = E47
+```
+
+The memory can be a simple list per actor. Events involving an actor get pushed to their memory. When they act, the most relevant recent memory entry becomes the parent.
+
+This is a simulation-level concern, not part of the export schema, but documented here because it affects how `ParentEventId` gets populated.
+
+---
+
 ## Decision Log
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-01-19 | ParentEventId field added to EVENTS | Tracks causal relationships between events |
+| 2026-01-19 | Causation derived from actor memory | Actors have memory stack; triggering event becomes parent |
 | 2026-01-18 | Session target: 25-35 min | Roguelike feel, low commitment per case |
 | 2026-01-18 | 4 entity types: PEOPLE, LOCATIONS, OBJECTS, EVENTS | Core elements needed for deduction |
 | 2026-01-18 | RELATIONSHIPS = field on PEOPLE | Cross-refs already needed, no separate type required |
@@ -302,7 +329,7 @@ Link them via fields if needed later. Keep separate for now.
 | 2026-01-18 | PEOPLE fields defined | 17 fields including physical descriptors, contact info, relationships |
 | 2026-01-18 | LOCATIONS fields defined | 7 fields, granularity at building/unit level |
 | 2026-01-18 | OBJECTS fields defined | 9 fields, vehicles can be dual-entry (object + location) |
-| 2026-01-18 | EVENTS fields defined | 11 fields, Participants vs Witnesses distinction |
+| 2026-01-18 | EVENTS fields defined | 12 fields (incl. ParentEventId), Participants vs Witnesses distinction |
 | 2026-01-18 | Event Type taxonomy: 7 categories, 34 types | Crime (incl. CrimeStalking), Movement, Interaction, Object Lifecycle, Discovery, State Change, Environmental |
 | 2026-01-18 | Investigation events excluded from matrix | Investigation is player action, not tracked data |
 | 2026-01-18 | Database tables mapped | actors→PEOPLE, locations→LOCATIONS, events→EVENTS, objects→NEW |
