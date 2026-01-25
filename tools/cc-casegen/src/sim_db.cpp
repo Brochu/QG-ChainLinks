@@ -166,6 +166,16 @@ void db_insert_location(sqlite3 *db, const location *loc) {
     sqlite3_finalize(stmt);
 }
 
+void db_update_location_owner(sqlite3 *db, i64 location_id, i64 owner_id) {
+    const char *sql = "UPDATE locations SET owner_id = ? WHERE id = ?";
+    sqlite3_stmt *stmt;
+    sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    sqlite3_bind_int64(stmt, 1, owner_id);
+    sqlite3_bind_int64(stmt, 2, location_id);
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+}
+
 void db_insert_person(sqlite3 *db, const person *p) {
     sqlite3_stmt *stmt;
     sqlite3_prepare_v2(db, sql_insert_person, -1, &stmt, nullptr);

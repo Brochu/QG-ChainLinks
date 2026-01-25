@@ -463,8 +463,7 @@ static void generate_relationships(world_ctx *ctx) {
         add_relationship(ctx, p1, p2, partner_type);
     }
 
-    // Employer/Employee (first person at each workplace is the employer)
-    // Track first employee at each location (employer)
+    // 6. Employer/Employee (first person at each workplace is the employer)
     i64 *workplace_employer = (i64 *)mem_arena_alloc(&ctx->_scratch,
         sizeof(i64) * ctx->num_locations, sizeof(void *)).p;
     for (i32 i = 0; i < ctx->num_locations; i++) {
@@ -478,9 +477,34 @@ static void generate_relationships(world_ctx *ctx) {
         if (workplace_employer[work_loc] < 0) {
             // First person at this workplace becomes employer
             workplace_employer[work_loc] = i;
+            // Employer owns the business
+            ctx->locations[work_loc].owner_id = ctx->people[i].id;
+            db_update_location_owner(ctx->db, ctx->locations[work_loc].id, ctx->people[i].id);
         } else {
             // Subsequent people are employees of the first person
             add_relationship(ctx, workplace_employer[work_loc], i, REL_EMPLOYER);
+        }
+    }
+
+    // 7. Residence ownership (oldest person at each residence owns it)
+    for (i32 loc = 0; loc < ctx->num_locations; loc++) {
+        if (ctx->locations[loc].type != LOC_RESIDENCE) continue;
+
+        i32 oldest_idx = -1;
+        i32 oldest_age = -1;
+
+        for (i32 i = 0; i < ctx->num_people; i++) {
+            if (ctx->people[i].home_location_id != ctx->locations[loc].id) continue;
+
+            if (ctx->people[i].age > oldest_age) {
+                oldest_age = ctx->people[i].age;
+                oldest_idx = i;
+            }
+        }
+
+        if (oldest_idx >= 0) {
+            ctx->locations[loc].owner_id = ctx->people[oldest_idx].id;
+            db_update_location_owner(ctx->db, ctx->locations[loc].id, ctx->people[oldest_idx].id);
         }
     }
 
