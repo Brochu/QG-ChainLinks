@@ -196,7 +196,6 @@ void name_gen_names(name_gen *gen, u32 num) {
     while (gen->num_names < num) {
         attempts++;
         i32 len = name_gen_create(gen, name);
-        if (len < 0) continue;
 
         if (name_gen_validate(name, len)) {
             gen->names[gen->num_names++] = alloc_name(&gen->_mem, name, len);
@@ -223,7 +222,7 @@ void name_gen_district(name_gen *gen, u32 num) {
     while (gen->num_names < num) {
         attempts++;
         i32 len = name_gen_create(gen, name);
-        if (len < 0 || !name_gen_validate(name, len)) continue;
+        if (!name_gen_validate(name, len)) continue;
 
         // 33% chance suffix, 25% chance prefix, rest just base name
         i32 roll = rand_int(12);
@@ -272,7 +271,7 @@ void name_gen_street(name_gen *gen, u32 num) {
     while (gen->num_names < num) {
         attempts++;
         i32 len = name_gen_create(gen, name);
-        if (len < 0 || !name_gen_validate(name, len)) continue;
+        if (!name_gen_validate(name, len)) continue;
 
         // Always add a street suffix
         i32 suffix_idx = rand_weighted_index(rand_float01(), suffix_weights, num_suffixes);

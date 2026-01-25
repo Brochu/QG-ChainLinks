@@ -312,51 +312,79 @@ static void generate_people(world_ctx *ctx) {
         archetype_counts[ARCHETYPE_AVERAGE]);
 }
 
-static void add_relationship(world_ctx *ctx, i64 p1, i64 p2, relationship_type type, i32 strength = -1) {
-    if (ctx->num_relationships >= ctx->num_people * 4) return;  // Safety limit
-
-    relationship *r = &ctx->relationships[ctx->num_relationships++];
-    r->person1_id = p1;
-    r->person2_id = p2;
-    r->type = type;
-
-    if (strength < 0) {
-        switch (type) {
-            case REL_SPOUSE:
-            case REL_SIBLING:
-                strength = rand_int_min(60, 100);  // Family bonds are strong
-                break;
-            case REL_EX_SPOUSE:
-            case REL_EX_PARTNER:
-                strength = rand_int_min(20, 60);   // Complicated history
-                break;
-            case REL_FRIEND:
-            case REL_PARTNER:
-                strength = rand_int_min(40, 80);
-                break;
-            case REL_COLLEAGUE:
-                strength = rand_int_min(20, 50);   // Acquaintances
-                break;
-            case REL_RIVAL:
-                strength = rand_int_min(50, 90);   // Strong negative
-                break;
-            case REL_DEBTOR:
-            case REL_CREDITOR:
-                strength = rand_int_min(30, 70);   // Depends on debt size
-                break;
-            default:
-                strength = rand_int_min(30, 70);
-                break;
+static bool has_relationship(world_ctx *ctx, i64 p1, i64 p2, relationship_type type) {
+    for (i32 i = 0; i < ctx->num_relationships; i++) {
+        relationship *r = &ctx->relationships[i];
+        if (r->person1_id == p1 && r->person2_id == p2 && r->type == type) {
+            return true;
         }
     }
-    r->strength = strength;
+    return false;
+}
 
-    db_insert_relationship(ctx->db, r);
+static relationship_type get_reverse_type(relationship_type type) {
+    switch (type) {
+        case REL_DEBTOR:   return REL_CREDITOR;
+        case REL_CREDITOR: return REL_DEBTOR;
+        case REL_EMPLOYER: return REL_EMPLOYEE;
+        case REL_EMPLOYEE: return REL_EMPLOYER;
+        default:           return type;  // Symmetric types stay the same
+    }
+}
+
+static i32 generate_relationship_strength(relationship_type type) {
+    switch (type) {
+        case REL_SPOUSE:
+            return rand_int_min(60, 100);  // Strong bond
+        case REL_EX_SPOUSE:
+        case REL_EX_PARTNER:
+            return rand_int_min(20, 60);   // Complicated history
+        case REL_FRIEND:
+        case REL_PARTNER:
+            return rand_int_min(40, 80);
+        case REL_RIVAL:
+            return rand_int_min(50, 90);   // Strong negative
+        case REL_DEBTOR:
+        case REL_CREDITOR:
+            return rand_int_min(30, 70);   // Depends on debt size
+        case REL_EMPLOYER:
+        case REL_EMPLOYEE:
+            return rand_int_min(30, 60);   // Professional relationship
+        default:
+            return rand_int_min(30, 70);
+    }
+}
+
+static void add_relationship(world_ctx *ctx, i64 p1, i64 p2, relationship_type type, i32 strength = -1) {
+    if (ctx->num_relationships >= ctx->num_people * 8 - 1) return;  // Safety limit (need room for 2)
+
+    // Skip if relationship already exists
+    if (has_relationship(ctx, p1, p2, type)) return;
+
+    if (strength < 0) {
+        strength = generate_relationship_strength(type);
+    }
+
+    // Add forward relationship (p1 -> p2)
+    relationship *r1 = &ctx->relationships[ctx->num_relationships++];
+    r1->person1_id = p1;
+    r1->person2_id = p2;
+    r1->type = type;
+    r1->strength = strength;
+    db_insert_relationship(ctx->db, r1);
+
+    // Add reverse relationship (p2 -> p1)
+    relationship *r2 = &ctx->relationships[ctx->num_relationships++];
+    r2->person1_id = p2;
+    r2->person2_id = p1;
+    r2->type = get_reverse_type(type);
+    r2->strength = strength;  // Same strength for both directions
+    db_insert_relationship(ctx->db, r2);
 }
 
 static void generate_relationships(world_ctx *ctx) {
-    // Allocate space for relationships (max ~4 per person)
-    i32 max_rels = ctx->num_people * 4;
+    // Allocate space for relationships (max ~8 per person, bidirectional)
+    i32 max_rels = ctx->num_people * 8;
     ctx->relationships = (relationship *)mem_arena_alloc(&ctx->_scratch,
         sizeof(relationship) * max_rels, sizeof(void *)).p;
     ctx->num_relationships = 0;
@@ -364,8 +392,6 @@ static void generate_relationships(world_ctx *ctx) {
     // Track who has relationships
     bool *has_spouse = (bool *)mem_arena_alloc(&ctx->_scratch, sizeof(bool) * ctx->num_people, 1).p;
     memset(has_spouse, 0, sizeof(bool) * ctx->num_people);
-
-    //TODO: Should we add reverse relationships in all/most cases?
 
     // 1. Family clusters (~12% married)
     i32 target_marriages = ctx->num_people / 8;
@@ -381,29 +407,16 @@ static void generate_relationships(world_ctx *ctx) {
             if (abs(ctx->people[i].age - ctx->people[j].age) > 15) continue;
             if (ctx->people[i].sex == ctx->people[j].sex && rand_int(5) != 0) continue;  // 20% same-sex
 
-            //TODO: Move people so they live in the same residence?
-            //TODO: Portion of the relationships start as REL_EX_SPOUSE
-            add_relationship(ctx, i, j, REL_SPOUSE);
+            // ~20% of marriages are divorced (ex-spouse)
+            relationship_type spouse_type = (rand_int(5) == 0) ? REL_EX_SPOUSE : REL_SPOUSE;
+            add_relationship(ctx, i, j, spouse_type);
             has_spouse[i] = has_spouse[j] = true;
             marriages++;
             break;
         }
     }
-    //TODO: Selecting siblings, ones that don't have spouse
 
-    // 2. Colleagues (same workplace)
-    for (i32 i = 0; i < ctx->num_people; i++) {
-        if (ctx->people[i].work_location_id < 0) continue;
-
-        for (i32 j = i + 1; j < ctx->num_people; j++) {
-            if (ctx->people[j].work_location_id != ctx->people[i].work_location_id) continue;
-            if (rand_int(3) != 0) continue;  // Only 33% become close colleagues
-
-            add_relationship(ctx, i, j, REL_COLLEAGUE);
-        }
-    }
-
-    // 3. Friends (random, same neighborhood)
+    // Friends (random)
     i32 target_friendships = ctx->num_people / 4;
     for (i32 f = 0; f < target_friendships; f++) {
         i32 p1 = rand_int(ctx->num_people);
@@ -413,7 +426,7 @@ static void generate_relationships(world_ctx *ctx) {
         add_relationship(ctx, p1, p2, REL_FRIEND);
     }
 
-    // 4. Rivals (~5% of people have rivals)
+    // Rivals (~5% of people have rivals)
     i32 target_rivals = ctx->num_people / 20;
     for (i32 r = 0; r < target_rivals; r++) {
         i32 p1 = rand_int(ctx->num_people);
@@ -423,7 +436,7 @@ static void generate_relationships(world_ctx *ctx) {
         add_relationship(ctx, p1, p2, REL_RIVAL);
     }
 
-    // 5. Debtor/Creditor (~8% of people have debts)
+    // Debtor/Creditor (~8% of people have debts)
     i32 target_debts = ctx->num_people / 12;
     for (i32 d = 0; d < target_debts; d++) {
         i32 debtor = rand_int(ctx->num_people);
@@ -434,23 +447,42 @@ static void generate_relationships(world_ctx *ctx) {
         if (ctx->people[creditor].income < 5 && rand_int(2) == 0) continue;
 
         add_relationship(ctx, debtor, creditor, REL_DEBTOR);
-        //TODO: Should we add REL_CREDITOR with reverse people ids?
     }
 
-    // 6. Ex-partners (~6% of adults)
-    i32 target_exes = ctx->num_people / 16;
-    for (i32 e = 0; e < target_exes; e++) {
+    // Partners and ex-partners (~10% of adults)
+    i32 target_partners = ctx->num_people / 10;
+    for (i32 e = 0; e < target_partners; e++) {
         i32 p1 = rand_int(ctx->num_people);
         i32 p2 = rand_int(ctx->num_people);
         if (p1 == p2) continue;
-        if (ctx->people[p1].age < 25 || ctx->people[p2].age < 25) continue;
+        if (ctx->people[p1].age < 20 || ctx->people[p2].age < 20) continue;
         if (has_spouse[p1] && rand_int(3) != 0) continue;  // Married people less likely
 
-        //TODO: Some odds to be REL_PARTNER instead
-        add_relationship(ctx, p1, p2, REL_EX_PARTNER);
+        // ~40% are current partners, ~60% are ex-partners
+        relationship_type partner_type = (rand_int(5) < 2) ? REL_PARTNER : REL_EX_PARTNER;
+        add_relationship(ctx, p1, p2, partner_type);
     }
 
-    //TODO: Find REL_EMPLOYER/REL_EMPLOYEE relations, need to validate working at same location id
+    // Employer/Employee (first person at each workplace is the employer)
+    // Track first employee at each location (employer)
+    i64 *workplace_employer = (i64 *)mem_arena_alloc(&ctx->_scratch,
+        sizeof(i64) * ctx->num_locations, sizeof(void *)).p;
+    for (i32 i = 0; i < ctx->num_locations; i++) {
+        workplace_employer[i] = -1;
+    }
+
+    for (i32 i = 0; i < ctx->num_people; i++) {
+        i64 work_loc = ctx->people[i].work_location_id;
+        if (work_loc < 0) continue;
+
+        if (workplace_employer[work_loc] < 0) {
+            // First person at this workplace becomes employer
+            workplace_employer[work_loc] = i;
+        } else {
+            // Subsequent people are employees of the first person
+            add_relationship(ctx, workplace_employer[work_loc], i, REL_EMPLOYER);
+        }
+    }
 
     printf("[WORLD] Generated %d relationships\n", ctx->num_relationships);
 }
@@ -596,8 +628,8 @@ void world_print_summary(world_ctx *ctx) {
     printf("\n--- Sample Relationships ---\n");
     i32 rel_sample = std::min(5, ctx->num_relationships);
     static const char *rel_names[] = {
-        "spouse", "ex_spouse", "partner", "ex_partner", "parent", "child", "sibling",
-        "friend", "colleague", "employer", "employee", "rival", "neighbor", "debtor", "creditor"
+        "spouse", "ex_spouse", "partner", "ex_partner",
+        "friend", "employer", "employee", "rival", "debtor", "creditor"
     };
     for (i32 i = 0; i < rel_sample; i++) {
         relationship *r = &ctx->relationships[i];
