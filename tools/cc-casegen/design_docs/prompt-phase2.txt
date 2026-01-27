@@ -1,0 +1,21 @@
+  Looking at @design_docs\005_implementation_phases.md I want to discuss and plan for the second phase (event simulation)
+  If possible I would prefer you create the plan file locally in this @design_docs\ folder
+
+  The goal of this simulation phase is to use the outputs of the first pass, series of actors, locations, objects and relationships and simulate these elements as if they are part of normal life in a city. The actor's needs should drive their decisions. The actors should all have stats like impulsivity and morality etc and archetypes. The
+  goal is to simulate the city for a given amount of time and record all the events happening. I would also prefer if we could track value changes to actor's stats, relationship's strengths etc be tracked in a way they can be searched meaning we should store changes as entried in the database as much as possible. we would like to be able
+  to observe stats changes as the simulation goes on. Time tracking will also be very important, events and stats changes need to be timestamped so we can order things on a timeline.
+
+  The final goal is that at the end of the simulation we could have 3-5 good crimes that were generated so we can pick from so that this case can be selected to be sent to the game afterwards (after going through the next stages)
+
+  Evidence needs to also be tracked during the simulation so that we can have trails to follow when the player will try to investigate the crime.
+
+  We need to track for each event the parent event that could have caused the current event. In order to achieve this, we will need to have some sort of memory on the different actors. When an actor decides to take an action based on an event in their memory, the event used to make this decision should be the parent of the events created
+  as a result of this decision. We need to be able to track causations between events created during the simulation.
+
+  I also think we would need to change the fundamental way the actors behave after committing a crime. I was already thinking we could have one state machine detailing all the different states the actors could be in (with possibility of tracking some memory of recent events they were involved in) and then each actor could have their own
+  instead of it running. We could have a state in there that represents a fugitive. An actor that committed a crime would then switch to fugitive mode and try to flee or conceal their crime (creating more evidence or deteriorating existing evidence). Of course they could be successful or unsuccessful in their attempt either having
+  positive outcome (hiding their tracks) of negative outcome (creating more evidence).
+
+  If an actor wants to purchase things, make sure to create the related objects so they can be tracked afterwards, the object itself and the reciept for the purchase.
+
+  If needed, it is possible to add new relationships to be considered in the remaining time of the simulation.
