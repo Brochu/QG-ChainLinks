@@ -8,7 +8,24 @@
       "Bash(\"C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen\\\\casegen.exe\" -size small -seed 12345)",
       "Bash(cmd.exe /c \"casegen.exe -size small -seed 12345\")",
       "Bash(cmd //c \"casegen.exe -size small -seed 12345 -db simulation.db\")",
-      "Bash(build.bat)"
+      "Bash(build.bat)",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen && build.bat\")",
+      "Bash(cmd.exe /c \"C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen\\\\build.bat\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; .\\\\build.bat\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; .\\\\casegen.exe --size 0 --seed 12345\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; .\\\\build.bat; if \\($? { .\\\\casegen.exe --size 0 --seed 12345 }\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; .\\\\casegen.exe --size 2 --seed 42\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; .\\\\casegen.exe --size 0 --seed 12345 --db test_world.db\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; Remove-Item -ErrorAction SilentlyContinue no_save_test.db; .\\\\casegen.exe --size 0 --seed 999; if \\(Test-Path no_save_test.db\\) { Write-Host ''DB was saved \\(unexpected\\)'' } else { Write-Host ''No DB saved \\(correct\\)'' }\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; .\\\\build.bat; if \\($LASTEXITCODE -eq 0\\) { .\\\\casegen.exe --size 0 --seed 12345 --db test.db }\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; .\\\\casegen.exe --size 0 --seed 12345 --db test.db\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; .\\\\casegen.exe --size 1 --seed 42\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; .\\\\casegen.exe --size 2 --seed 12345 --db test.db\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; sqlite3.exe test.db ''SELECT DISTINCT address FROM locations LIMIT 15;''\")",
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Users\\\\alexb\\\\Documents\\\\QG-ChainLinks\\\\tools\\\\cc-casegen''; sqlite3.exe test.db ''SELECT name FROM districts;''\")",
+      "Bash(cmd.exe /c \"build.bat\")",
+      "Bash(cmd.exe /c \"build.bat 2>&1\")",
+      "Bash(sqlite3:*)"
     ]
   }
 }
