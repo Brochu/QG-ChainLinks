@@ -305,22 +305,6 @@ Events automatically generate evidence based on rules:
 
 <!-- TODO: Expand this table with more complete event→evidence mappings -->
 <!--
-    // Interaction (7)
-    EVT_DIRECT_CONVERSATION, EVT_PHONE_CALL, EVT_MESSAGE_SENT,
-    EVT_ARGUMENT, EVT_TRANSACTION, EVT_THREAT, EVT_BETRAYAL,
-
-    // Object (6)
-    EVT_OBJECT_CREATED, EVT_OBJECT_MOVED, EVT_OBJECT_USED,
-    EVT_OBJECT_DESTROYED, EVT_OBJECT_DISCOVERED, EVT_OBJECT_MODIFIED,
-
-    // Discovery (5)
-    EVT_BODY_FOUND, EVT_BREAK_IN_REPORTED, EVT_MISSING_PERSON_REPORTED,
-    EVT_ANONYMOUS_TIP, EVT_SUSPICIOUS_ACTIVITY_REPORTED,
-
-    // State Changes (7)
-    EVT_FINANCIAL_CHANGE, EVT_RELATIONSHIP_STATUS_CHANGE, EVT_EMPLOYMENT_CHANGE,
-    EVT_EMOTIONAL_STATE, EVT_INJURY, EVT_SCHEDULE_CHANGE, EVT_IDENTITY_ASSUMED
-
     enum evidence_type : i8 {
         EVID_PHYSICAL,
         EVID_TESTIMONIAL,
@@ -384,20 +368,69 @@ Events automatically generate evidence based on rules:
 | EVT\_ROUTINE\_DEVIATION           | Testimonial        | 30%         | Coworker noticed {actor} acting unusual                                      |
 |                                   |                    |             |                                                                              |
 | EVT\_DIRECT\_CONVERSATION         | Testimonial        | 40%         | Witness saw {actor1} talking to {actor2}                                     |
+| EVT\_DIRECT\_CONVERSATION         | Digital            | 20%         | Security camera audio captured conversation between {actor1} and {actor2}    |
 | EVT\_PHONE\_CALL                  | Digital            | 95%         | Phone records show call from {caller} to {receiver} at {time}                |
-| EVT\_PHONE\_CALL                  | Digital (tower)    | 80%         | Cell tower places {caller} near {location} at {time}                         |
+| EVT\_PHONE\_CALL                  | Digital            | 80%         | Cell tower places {caller} near {location} at {time}                         |
+| EVT\_PHONE\_CALL                  | Testimonial        | 25%         | Witness saw {caller} on phone and overheard part of conversation             |
+| EVT\_PHONE\_CALL                  | Documentary        | 80%         | Phone billing records show call details from {caller} to {receiver}          |
+| EVT\_PHONE\_CALL                  | Digital            | 35%         | Voicemail recording left by {caller}: "{content}"                            |
+| EVT\_PHONE\_CALL                  | Digital            | 15%         | Security camera audio captured {caller}'s side of conversation               |
+| EVT\_PHONE\_CALL                  | Forensic           | 20%         | Voice analysis confirms {caller}'s voice on recovered recording              |
 | EVT\_MESSAGE\_SENT                | Digital            | 90%         | Text message from {sender} to {receiver}: "{content}"                        |
+| EVT\_MESSAGE\_SENT                | Forensic           | 20%         | Linguistic analysis confirms message author is {actor}                       |
+| EVT\_MESSAGE\_SENT                | Digital            | 40%         | Screenshot saved by {receiver} shows message                                 |
+| EVT\_MESSAGE\_SENT                | Digital            | 35%         | Draft version of message found on {actor}'s device                           |
+| EVT\_MESSAGE\_SENT                | Documentary        | 30%         | Printed copy of message found in {receiver}'s possession                     |
+| EVT\_MESSAGE\_SENT                | Digital            | 25%         | Cloud sync logs show message created by {actor} at {time}                    |
 | EVT\_ARGUMENT                     | Testimonial        | 60%         | Witness heard {actor1} and {actor2} arguing                                  |
+| EVT\_ARGUMENT                     | Digital            | 15%         | Security camera footage captures heated exchange between {actor1} and {actor2} |
+| EVT\_ARGUMENT                     | Forensic           | 30%         | DNA from {actor1} found on {actor2}'s clothing/possession                    |
+| EVT\_ARGUMENT                     | Forensic           | 25%         | DNA evidence at scene suggests physical altercation between {actor1} and {actor2} |
+| EVT\_ARGUMENT                     | Physical           | 40%         | Broken/displaced objects consistent with struggle                            |
+| EVT\_ARGUMENT                     | Testimonial        | 35%         | Nearby residents heard raised voices/yelling                                 |
+| EVT\_ARGUMENT                     | Digital            | 10%         | Smart home device (doorbell/Alexa) audio recorded argument                   |
+| EVT\_ARGUMENT                     | Forensic           | 20%         | Clothing fibers exchanged between {actor1} and {actor2}                      |
+| EVT\_ARGUMENT                     | Testimonial        | 45%         | Witness noticed {actor1}/{actor2} visibly shaken immediately after           |
 | EVT\_TRANSACTION                  | Documentary        | 85%         | Receipt shows {actor} purchased {object} at {location}                       |
 | EVT\_TRANSACTION                  | Testimonial        | 50%         | Clerk remembers selling {object} to {actor}                                  |
+| EVT\_TRANSACTION                  | Digital            | 25%         | Security camera footage shows {actor} purchasing {object}                    |
+| EVT\_TRANSACTION                  | Digital            | 90%         | Credit/bank card transaction record from {actor} at {location}               |
+| EVT\_TRANSACTION                  | Documentary        | 75%         | Bank statement showing transaction with {vendor}                             |
+| EVT\_TRANSACTION                  | Physical           | 60%         | Serial numbered {object} traced back to {actor}'s purchase                   |
+| EVT\_TRANSACTION                  | Forensic           | 30%         | Fingerprints on currency/payment device match {actor}                        |
+| EVT\_TRANSACTION                  | Testimonial        | 20%         | Other customer witnessed {actor} buying {object}                             |
 | EVT\_THREAT                       | Testimonial        | 70%         | {target} told police about threat from {actor}                               |
 | EVT\_THREAT                       | Digital            | 50%         | Threatening message from {actor} to {target}                                 |
+| EVT\_THREAT                       | Documentary        | 60%         | Written threat letter/note sent to {target}                                  |
+| EVT\_THREAT                       | Digital            | 85%         | Threatening email/text/social media message from {actor} to {target}         |
+| EVT\_THREAT                       | Digital            | 40%         | Voicemail recording of verbal threat from {actor}                            |
+| EVT\_THREAT                       | Testimonial        | 45%         | Witness overheard {actor} threatening {target}                               |
+| EVT\_THREAT                       | Forensic           | 25%         | Handwriting analysis confirms {actor} wrote threat note                      |
+| EVT\_THREAT                       | Physical           | 35%         | Damaged/vandalized property accompanying threat message                      |
+| EVT\_THREAT                       | Documentary        | 25%         | Prior police report filed by {target} regarding {actor}'s behavior           |
+| EVT\_BETRAYAL                     | Testimonial        | 15%         | {betrayer} confessed to betraying {betrayed}                                 |
+| EVT\_BETRAYAL                     | Digital            | 10%         | Recorded call captures {betrayer} admitting betrayal to {recipient}          |
+| EVT\_BETRAYAL                     | Documentary        | 40%         | Written confession or notice from {betrayer} regarding betrayal              |
+| EVT\_BETRAYAL                     | Testimonial        | 45%         | Third party witnessed {betrayer}'s betrayal of {betrayed}                    |
+| EVT\_BETRAYAL                     | Documentary        | 75%         | Financial records show {betrayer} diverted funds/assets from {betrayed}      |
+| EVT\_BETRAYAL                     | Digital            | 60%         | Email/thread shows {betrayer} coordinating with {recipient} against {betrayed} |
+| EVT\_BETRAYAL                     | Digital            | 25%         | Deleted messages recovered showing betrayal plot                             |
+| EVT\_BETRAYAL                     | Physical           | 50%         | Documents/items exchanged between {betrayer} and {recipient} found           |
+| EVT\_BETRAYAL                     | Forensic           | 20%         | {betrayer}'s fingerprints/DNA found on {betrayed}'s secure documents/property |
 |                                   |                    |             |                                                                              |
+    //EVT_OBJECT_CREATED, EVT_OBJECT_MOVED, EVT_OBJECT_USED,
+    //EVT_OBJECT_DESTROYED, EVT_OBJECT_DISCOVERED, EVT_OBJECT_MODIFIED,
 | EVT\_OBJECT\_CREATED              | Documentary        | 85%         | Purchase record for {object}                                                 |
 | EVT\_OBJECT\_MOVED                | Forensic           | 50%         | Fingerprints on {object}                                                     |
 | EVT\_OBJECT\_DESTROYED            | Physical (partial) | 70%         | Partially destroyed {object} found                                           |
 | EVT\_OBJECT\_MODIFIED             | Forensic           | 60%         | Tool marks/modifications on {object}                                         |
 |                                   |                    |             |                                                                              |
+    //EVT_BODY_FOUND, EVT_BREAK_IN_REPORTED, EVT_MISSING_PERSON_REPORTED,
+    //EVT_ANONYMOUS_TIP, EVT_SUSPICIOUS_ACTIVITY_REPORTED,
+| EVT\_BODY\_FOUND                  | Testimonial        | 90%         | Discoverer {actor} describes finding the scene                               |
+
+    //EVT_FINANCIAL_CHANGE, EVT_RELATIONSHIP_STATUS_CHANGE, EVT_EMPLOYMENT_CHANGE,
+    //EVT_EMOTIONAL_STATE, EVT_INJURY, EVT_SCHEDULE_CHANGE, EVT_IDENTITY_ASSUMED
 | EVT\_FINANCIAL\_CHANGE            | Documentary        | 90%         | Bank records show {change\_type}                                             |
 | EVT\_RELATIONSHIP\_STATUS\_CHANGE | Testimonial        | 50%         | Friend knew about {relationship\_change}                                     |
 | EVT\_EMPLOYMENT\_CHANGE           | Documentary        | 95%         | Employment records show {change\_type}                                       |
