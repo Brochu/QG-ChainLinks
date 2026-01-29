@@ -416,14 +416,53 @@ Events automatically generate evidence based on rules:
 | EVT\_BETRAYAL                     | Digital            | 60%         | Email/thread shows {betrayer} coordinating with {recipient} against {betrayed} |
 | EVT\_BETRAYAL                     | Digital            | 25%         | Deleted messages recovered showing betrayal plot                             |
 | EVT\_BETRAYAL                     | Physical           | 50%         | Documents/items exchanged between {betrayer} and {recipient} found           |
-| EVT\_BETRAYAL                     | Forensic           | 20%         | {betrayer}'s fingerprints/DNA found on {betrayed}'s secure documents/property |
-|                                   |                    |             |                                                                              |
-    //EVT_OBJECT_CREATED, EVT_OBJECT_MOVED, EVT_OBJECT_USED,
-    //EVT_OBJECT_DESTROYED, EVT_OBJECT_DISCOVERED, EVT_OBJECT_MODIFIED,
+| EVT\_BETRAYAL                     | Forensic           | 20%         | {betrayer}'s fingerprints/DNA found on {betrayed}'s secure documents/property|
+
 | EVT\_OBJECT\_CREATED              | Documentary        | 85%         | Purchase record for {object}                                                 |
+| EVT\_OBJECT\_CREATED              | Digital            | 45%         | Security camera footage shows {actor} acquiring {object}                     |
+| EVT\_OBJECT\_CREATED              | Forensic           | 20%         | Fingerprints from {actor} found on packaging materials                       |
+| EVT\_OBJECT\_CREATED              | Forensic           | 35%         | DNA from {actor} found on packaging materials                                |
+| EVT\_OBJECT\_CREATED              | Testimonial        | 50%         | Clerk remembers selling {object} to {actor}                                  |
+| EVT\_OBJECT\_CREATED              | Physical           | 35%         | Packaging/assembly materials found in {actor}'s trash/premises               |
+| EVT\_OBJECT\_CREATED              | Forensic           | 40%         | Tool marks on {object} consistent with assembly by {actor}                   |
 | EVT\_OBJECT\_MOVED                | Forensic           | 50%         | Fingerprints on {object}                                                     |
-| EVT\_OBJECT\_DESTROYED            | Physical (partial) | 70%         | Partially destroyed {object} found                                           |
-| EVT\_OBJECT\_MODIFIED             | Forensic           | 60%         | Tool marks/modifications on {object}                                         |
+| EVT\_OBJECT\_MOVED                | Forensic           | 30%         | DNA from {actor} found on {object}                                           |
+| EVT\_OBJECT\_MOVED                | Physical           | 25%         | {object} found in location inconsistent with expected placement              |
+| EVT\_OBJECT\_MOVED                | Digital            | 40%         | Security camera shows {actor} carrying {object} to {location}                |
+| EVT\_OBJECT\_MOVED                | Testimonial        | 35%         | Witness saw {actor} transporting {object}                                    |
+| EVT\_OBJECT\_MOVED                | Documentary        | 75%         | Shipping/moving company records for {object} transport                       |
+| EVT\_OBJECT\_MOVED                | Forensic           | 20%         | Trace evidence on {object} matches destination location                      |
+| EVT\_OBJECT\_MOVED                | Forensic           | 25%         | Disturbance patterns (dust/depressions) at original location                 |
+| EVT\_OBJECT\_MOVED                | Physical           | 35%         | Object found wrapped/concealed for transport                                 |
+| EVT\_OBJECT\_USED                 | Forensic           | 40%         | Fingerprints on {object} confirm handled by {actor}                          |
+| EVT\_OBJECT\_USED                 | Forensic           | 30%         | DNA from {actor} found on {object} grips/surface                             |
+| EVT\_OBJECT\_USED                 | Digital            | 20%         | Security camera footage shows {actor} operating {object}                     |
+| EVT\_OBJECT\_USED                 | Forensic           | 45%         | Wear patterns/tool marks on {object} consistent with use by {actor}          |
+| EVT\_OBJECT\_USED                 | Testimonial        | 40%         | Witness observed {actor} using {object}                                      |
+| EVT\_OBJECT\_USED                 | Physical           | 50%         | {object} shows physical changes (fired/blunted/consumed) indicating use      |
+| EVT\_OBJECT\_USED                 | Documentary        | 80%         | Equipment check-out/logs record {actor} using {object} at {time}             |
+| EVT\_OBJECT\_DESTROYED            | Physical           | 70%         | Partially destroyed {object} found                                           |
+| EVT\_OBJECT\_DESTROYED            | Physical           | 45%         | Fragments/remnants of {object} found in trash/disposal site                  |
+| EVT\_OBJECT\_DESTROYED            | Testimonial        | 20%         | Witness observed {actor} destroying {object}                                 |
+| EVT\_OBJECT\_DESTROYED            | Documentary        | 25%         | Certificate or receipt confirming {object} destruction                       |
+| EVT\_OBJECT\_DESTROYED            | Forensic           | 40%         | Tool marks on fragments consistent with destruction method                   |
+| EVT\_OBJECT\_DESTROYED            | Digital            | 15%         | Photo/video captured {actor} destroying {object}                             |
+| EVT\_OBJECT\_DESTROYED            | Testimonial        | 35%         | Neighbor/resident heard sounds of destruction (breaking/burning)             |
+| EVT\_OBJECT\_DESTROYED            | Physical           | 30%         | Burn marks/scorch patterns at destruction site                               |
+| EVT\_OBJECT\_DISCOVERED           | Physical           | 95%         | {object} recovered at {location} by discoverer                               |
+| EVT\_OBJECT\_DISCOVERED           | Testimonial        | 70%         | {discoverer} describes circumstances of finding {object}                     |
+| EVT\_OBJECT\_DISCOVERED           | Forensic           | 40%         | Soil/debris on {object} indicates burial/concealment duration                |
+| EVT\_OBJECT\_DISCOVERED           | Forensic           | 25%         | Disturbance patterns at discovery site show how {object} was hidden          |
+| EVT\_OBJECT\_DISCOVERED           | Testimonial        | 30%         | Search party member recalls {discoverer} acting suspicious when finding      |
+| EVT\_OBJECT\_DISCOVERED           | Forensic           | 15%         | {discoverer}'s fingerprints on {object} indicating handling/moving           |
+| EVT\_OBJECT\_MODIFIED             | Forensic           | 60%         | Tool marks show {object} was altered using specific instruments              |
+| EVT\_OBJECT\_MODIFIED             | Physical           | 85%         | Visible modifications (paint, filing, removed parts) detected on {object}    |
+| EVT\_OBJECT\_MODIFIED             | Documentary        | 50%         | Receipt from hardware store for modification supplies                        |
+| EVT\_OBJECT\_MODIFIED             | Digital            | 40%         | Search history shows {actor} researched how to modify {object}               |
+| EVT\_OBJECT\_MODIFIED             | Forensic           | 30%         | {actor}'s DNA/fingerprints found in crevices of modified area                |
+| EVT\_OBJECT\_MODIFIED             | Testimonial        | 35%         | Mechanic/craftsman noticed {actor} making modifications to {object}          |
+| EVT\_OBJECT\_MODIFIED             | Physical           | 45%         | Serial number or identifying marks partially filed off {object}              |
+| EVT\_OBJECT\_MODIFIED             | Forensic           | 50%         | Paint/chemical composition matches materials found in {actor}'s workshop     |
 |                                   |                    |             |                                                                              |
     //EVT_BODY_FOUND, EVT_BREAK_IN_REPORTED, EVT_MISSING_PERSON_REPORTED,
     //EVT_ANONYMOUS_TIP, EVT_SUSPICIOUS_ACTIVITY_REPORTED,
