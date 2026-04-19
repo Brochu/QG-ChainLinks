@@ -1,0 +1,15 @@
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\bin\Debug\net9.0\CaseGenV3.exe
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\bin\Debug\net9.0\CaseGenV3.deps.json
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\bin\Debug\net9.0\CaseGenV3.runtimeconfig.json
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\bin\Debug\net9.0\CaseGenV3.dll
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\bin\Debug\net9.0\CaseGenV3.pdb
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\obj\Debug\net9.0\CaseGenV3.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\obj\Debug\net9.0\CaseGenV3.AssemblyInfoInputs.cache
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\obj\Debug\net9.0\CaseGenV3.AssemblyInfo.cs
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\obj\Debug\net9.0\CaseGenV3.csproj.CoreCompileInputs.cache
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\obj\Debug\net9.0\CaseGenV3.sourcelink.json
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\obj\Debug\net9.0\CaseGenV3.dll
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\obj\Debug\net9.0\refint\CaseGenV3.dll
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\obj\Debug\net9.0\CaseGenV3.pdb
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\obj\Debug\net9.0\CaseGenV3.genruntimeconfig.cache
+C:\Users\alexb\Documents\QG-ChainLinks\tools\casegen_v3\src\CaseGenV3\obj\Debug\net9.0\ref\CaseGenV3.dll
