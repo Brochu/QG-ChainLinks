@@ -1248,7 +1248,137 @@ A case that passes §5 validation but feels flat in playtest indicates a tuning 
 
 ---
 
-## 8. Open / Deferred
+## 8. Layer 5: Interaction-driven output schemas
+
+The generator's output has to be shaped by how the player will actually interact with the case. The game will use an orbit-camera scene view for locations, evidence inspection with facet reveal, and a witness question / interrogation system. Those three surfaces dictate three output schemas the generator must emit alongside the case structure.
+
+Derived from the playtest of case 01 (Holloway & Reed), which ran as free-form text-sim. The sim was valuable for stress-testing the case skeleton, but it papered over interaction constraints the real game will have. These constraints bound what the generator produces and — importantly — prevent the generator from outputting a "rich skeleton with no meat" that requires runtime improvisation to feel alive.
+
+### 8.1 Core principle: generate data, not prose
+
+Do not generate free-form text at case-generation time. Generate **structured data**. A thin template layer produces player-facing lines at presentation time.
+
+- Avoids model-dependence and runtime text-gen cost
+- Keeps the generator's output auditable and diffable
+- Makes the same case presentable in different skins (noun sets, personality phrasings) without regenerating structure
+- Prevents the "hollow skeleton" failure mode where data is structurally correct but produces flat or nonsensical prose when rendered
+
+Templates can be authored by personality tag, by event type, by facet set. Texture (specific nouns, flavor objects, peripheral characters) is a *skin* applied over data, not a product of generation.
+
+### 8.2 Evidence access modes (two surfaces)
+
+Our sim blurred evidence discovery into a single "player asks, oracle answers" loop. The real game separates evidence into two access modes because they use different interaction surfaces.
+
+**Scene-spatial evidence** — physically present at a location. Surfaced via the orbit-camera scene view; player finds and clicks spatial anchors to reveal facets.
+
+Examples from case 01: body, wound, coffee cup, absent weapon, murder weapon in sharps bin, resignation letter in desk drawer, blood traces on clothing, fiber traces.
+
+**Institutional evidence** — exists in records systems, not scenes. Surfaced via a case dashboard / request system; player issues queries that return records. Not discoverable by looking.
+
+Examples from case 01: badge logs, interior keycode logs, email servers, phone records, calendar entries, subpoenaed third-party records, camera footage logs.
+
+Roughly half of case 01's evidence is institutional. A generator that only emits scene-anchored evidence would make institutional evidence invisible to the player or force it to be awkwardly narrated through NPC dialogue.
+
+### 8.3 Scene layer schema
+
+Per place in the case, emit a list of spatial evidence items with anchor points and facet maps.
+
+Minimum shape per scene-spatial evidence item:
+- `evidence_id`
+- `place_id` — which location the player has to be viewing
+- `anchor` — position / region in the scene where the player clicks (abstract until the art layer exists)
+- `visibility_condition` — default, or conditional (e.g. "only after lights are turned on")
+- `facets_on_inspect` — the facets revealed when examined
+- `tier` (per §6.9 Pass 7) — early / mid / late
+
+### 8.4 Institutional layer schema
+
+Per institutional evidence item, emit:
+- `evidence_id`
+- `query_surface` — which dashboard tool returns this (badge logs / email / phone / subpoena / IT request / lab results / etc.)
+- `prerequisite_leads` — what the player must already know before this item is available or meaningful
+- `gate_type` — see §8.4.1 below
+- `facets_on_reveal`
+- `tier`
+
+#### 8.4.1 Gate types for institutional evidence
+
+Three patterns of lead prerequisite. Every critical-path institutional item should have at least one reachable gate chain.
+
+**Hard gate.** Item is not available until a specific lead is known. The query option doesn't exist in the UI until the prerequisite fires.
+- *Example: subpoenaing David Aronson's calendar isn't possible until the player knows Theo went to his attorney's that night.*
+
+**Soft gate.** Query is always available but returns a firehose until context narrows it. The filter required to make results readable is the real gate.
+- *Example: "pull all interior keycode logs for the week" is always an option, but produces noise until the player is looking for Tuesday 21:00–23:00 specifically. Lazy play → noise; focused play → signal.*
+
+**Authority gate.** Requires a procedural step (warrant, subpoena, formal request) that the player initiates and may have to wait out. Natural pacing lever without artificial time limits.
+
+Generator must validate: every critical-path item (items that lock the killer or clear the red herring) has at least one gate chain that is reachable from the evidence surfaced in Early and Mid tiers.
+
+### 8.5 Witness layer schema
+
+Per witness × per entity the witness has any knowledge of, emit a tuple:
+
+- `witness_id`
+- `entity_id` — the topic (Person, Place, Object, Event, Thread, or Relationship)
+- `facets_known` — volunteered on first ask
+- `facets_withheld` — held until an unlock condition fires
+- `facets_never_released` — unreachable through interrogation at all; must be proven independently
+- `unlock_conditions` — for the `withheld` bucket only; list of conditions that move facets from `withheld` to `known`
+
+Absence is the default, not a stored state. If the player asks about an entity not in any of the three buckets for that witness, the system emits a default "don't know / wasn't there" response. No per-witness × per-entity × per-facet negative cells.
+
+#### 8.5.1 Unlock condition types
+
+- Present evidence X to the witness (Phoenix Wright style contradiction lever)
+- Interview after having interviewed witness Y (cross-reference pressure)
+- Confront with a contradiction in their own earlier statement
+- Formal procedural pressure (warrant, subpoena, hostile-witness interview)
+
+#### 8.5.2 The `never_released` bucket is important
+
+Some facets must be unreachable through interrogation, no matter what evidence is presented. Otherwise the killer is always one successful interrogation away from confession, which collapses the game.
+
+For the killer specifically: commission-adjacent facets (the act itself, the weapon handling, arrival at the commission location) should be marked `never_released`. The player must prove these through independent evidence — physical, institutional, or witness testimony from *other* people.
+
+Mapped to case 01: Sloane's `never_released` facets include the X-Acto theft, the 21:35 office entry, and her merger knowledge. No interrogation path releases these. The player must surface them via E13 (keycode log), E15 (weapon in sharps bin), and E24 (Ines's emails).
+
+### 8.6 Interrogation system — not a dialogue system
+
+The interrogation UX is a **view over bounded-perspective data**, not generated prose. Two interaction models, with the hybrid being the target.
+
+**Topic menu (LA Noire / Phoenix Wright / Disco Elysium lite).** Player builds a notebook of known entities. Pick a witness + pick a topic → witness responds with whatever facets they have for that entity in `facets_known`.
+
+**Evidence presentation (Phoenix Wright core loop).** When the witness gives a default response on a topic, the player can present a piece of evidence. If that evidence matches an `unlock_condition` for a facet in `facets_withheld`, the facet moves to `facets_known` and the witness releases it.
+
+The target is the hybrid: free topic selection + evidence presentation mid-topic to unlock withheld facets. This maps cleanly onto our entity model — entities **are** the topic graph; facets **are** the releases; withholds **are** the unlock gates.
+
+Dialogue is produced by a thin template layer per §8.1:
+- Personality-tagged phrasing variants (four per personality axis value is probably enough)
+- Facet-slotted templates per event type
+- A small bank of authored reveal lines per archetype (confession, evasion, partial admission)
+
+### 8.7 What this layer costs in the generator
+
+This is new output surface, not new generation logic. The retrograde + skeleton process from §4–§6 is unchanged. After the case is generated:
+
+- Place each evidence item on either the Scene layer or the Institutional layer
+- For institutional items, compute prerequisite leads and gate type
+- For each witness, for each entity they have any experience with, compute the `known / withheld / never_released` partition from their event participation (from Pass 8 bounded-perspective data, §6.9)
+
+All three schemas are **derivable** from data already produced by §4–§6. No new generation decisions — just a shape-transform pass that formats the case for the interaction surfaces.
+
+### 8.8 Relationship to earlier layers
+
+- **§3 (Entity types) supplies the topic graph** for the interrogation system — Persons, Places, Objects, Events, Threads, Relationships are all topics.
+- **§6.9 Pass 8 (bounded-perspective testimony trim) populates the witness layer** — the `known / withheld` partition comes from the facets each participant had access to per event.
+- **§6.9 Pass 9 (`who_acted` omission) drives identity-inference pressure** that only pays off through the question system — the player has to cross-reference witnesses against institutional records and scene evidence to close identity.
+- **§5.5 (narrative tension constraints) is what makes the witness layer interesting** — without competing theories, the question system has nothing to play on.
+- **§7 (narrative tension principles) is why `never_released` exists** — without it, interrogation collapses the arc.
+
+---
+
+## 9. Open / Deferred
 
 - **Concrete threshold values** — "target accuracy" for solvability, red-herring suspicion thresholds, exact `who_acted` omission percentage (30–50% range). Tuning parameters, not structural. Calibrate empirically once a playable case exists.
 - **Evidence staging heuristic details** — the early/mid/late tier rules in §6.9 are directional; the exact placement algorithm will need tuning against a reference case.
@@ -1263,7 +1393,7 @@ A case that passes §5 validation but feels flat in playtest indicates a tuning 
 
 ---
 
-## 9. Guiding Principles (summary)
+## 10. Guiding Principles (summary)
 
 1. **Every attribute earns its place or is cut** — drives generation or is player-visible
 2. **Constrained enums over free text** — anywhere the generator branches
@@ -1273,6 +1403,8 @@ A case that passes §5 validation but feels flat in playtest indicates a tuning 
 6. **Every rule must answer "what does this do that existing rules don't?"** — or it's a variation, not a new rule
 7. **Validity ≠ compellingness** — a case that passes §5.1–5.4 but not §5.5 is solvable but flat. Enforce narrative tension constraints as hard constraints, not soft goals.
 8. **Two theories, each with a contradiction** — if the player can't hold two competing suspects in mind at the midgame, the case is underbuilt.
+9. **Generate data; let a thin template layer produce text.** Free-form prose generation at case-build time is out of scope. Texture is a presentation-layer skin over structured output.
+10. **Interaction surfaces shape output, not logic.** Scene layer, institutional layer, and witness layer are shape-transforms over data the retrograde process already produced — not new generation decisions.
 
 ---
 
