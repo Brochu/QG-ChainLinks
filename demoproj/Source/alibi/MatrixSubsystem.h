@@ -160,6 +160,8 @@ struct FDataPointInfo {
 	FDataPoint data;
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMatrixCellUpdated, FDataPoint, new_point);
+
 /// <summary>
 /// Information matrix subsystem. This will keep track of the information that was found by investigation
 /// Each data point needs to have a possibility of multiple conflicting information
@@ -210,6 +212,9 @@ public:
 
 	UFUNCTION(Category = "Alibi|Matrix")
 	TArray<int32> Matrix_GetAllEntityIds(EEntityType entity_type);
+
+	UPROPERTY(BlueprintAssignable)
+	FOnMatrixCellUpdated OnMatrixCellUpdated;
 
 private:
 	UPROPERTY(Transient)
