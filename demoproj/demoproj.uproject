@@ -17,6 +17,10 @@
 		{
 			"Name": "SkeletalMeshModelingTools",
 			"Enabled": false
+		},
+		{
+			"Name": "Inkpot",
+			"Enabled": true
 		}
 	]
 }
