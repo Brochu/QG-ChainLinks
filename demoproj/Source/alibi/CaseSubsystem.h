@@ -8,10 +8,11 @@
 
 USTRUCT()
 struct FLabResults {
+	GENERATED_BODY()
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEvidenceFound, int, evidence_idx);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParam(FOnLabRequestComplete, int, evidence_idx, FLabResults, results);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLabRequestComplete, int, evidence_idx, FLabResults, results);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTimeBudgetChanged, int, from, int, to);
 

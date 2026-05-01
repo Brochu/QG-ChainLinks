@@ -7,44 +7,60 @@
 #include "MatrixSubsystem.generated.h"
 
 UENUM(BlueprintType)
-enum class EEntityType : uint8 {
-	PERSON,
-	LOCATION,
-	OBJECT,
-	EVENT,
-};
+enum class EEntityType : uint8 { PERSON, LOCATION, OBJECT, EVENT, RELATION, };
 
+// PEOPLE ENTITIES ------------------------------------------------------------
 UENUM(BlueprintType)
 enum class EPersonInfoType : uint8 {
+	PER_ID,
 	PER_NAME,
 	PER_ALIAS,
 	PER_AGE,
-	PER_HEIGHT,
-	PER_BUILD,
-	PER_HAIR_COLOR,
-	PER_MARKS,
-	PER_ADDRESS,
+	PER_SEX,
+	PER_TRAITS, // map<string, string>
+	PER_RESIDENCE,
 	PER_PHONE,
 	PER_EMAIL,
 	PER_OCCUPATION,
-	PER_ROLE,
-	PER_ALIBI,
-	PER_CRIME_HISTORY,
+	PER_DECISION_STYLE, // 0=extreme impulsive; 1=mild impulsive; 2=mild calculating; 3=extreme calculating
+	PER_CONFLICT_STYLE, // 0=extreme confront; 1=mild confront; 2=mild secret; 3=extreme secret
 };
 
+UENUM(BlueprintType)
+enum class EColorTrait : uint8 { COL_BLACK, COL_WHITE, COL_BROWN, COL_BLONDE, COL_RED, COL_BLUE, COL_GREEN, COL_YELLOW, };
+UENUM(BlueprintType)
+enum class EBuildTrait : uint8 { BLD_SLIM, BLD_THIN, BLD_AVERAGE, BLD_ATHLETIC, BLD_MUSCULAR, BLD_STOCKY, BLD_HUSKY, BLD_HEAVYSET, };
+// ----------------------------------------------------------------------------
+
+// LOCATIONS ENTITIES ---------------------------------------------------------
 UENUM(BlueprintType)
 enum class ELocationInfoType : uint8 {
-	LOC_NAME,
-	LOC_ADDRESS,
+	LOC_ID,
 	LOC_TYPE,
+	LOC_NAME_ADDRESS,
 	LOC_OWNER,
 	LOC_RESIDENTS,
-	LOC_ACCESS_CONTROL,
+	LOC_ACCESS_LEVEL,
+	LOC_SECURITY,
 	LOC_OP_HOURS,
+	LOC_CAPACITY,
+	LOC_CONNECTED_TO, // Is it really important to have this information in the matrix? Cannot really be wrong information, should it be in CaseSubsystem in a map
 };
 
 UENUM(BlueprintType)
+enum class ELocationType : uint8 { LOCTYPE_RESIDENCE, LOCTYPE_COMMERCIAL, LOCTYPE_OUTDOOR, LOCTYPE_TRANSPORT, LOCTYPE_INDUSTRIAL, };
+UENUM(BlueprintType)
+enum class EAccessLevel : uint8 { ACCESS_PUBLIC, ACCESS_SEMIPUBLIC, ACCESS_PRIVATE, ACCESS_RESTRICTED, };
+UENUM(BlueprintType)
+enum class ESecurityLevel : uint8 { SEC_NONE, SEC_LOW, SEC_HIGH, };
+UENUM(BlueprintType)
+enum class ELocationCapacity : uint8 { CAP_LOW, CAP_MEDIUM, CAP_HIGH, };
+// ----------------------------------------------------------------------------
+
+// OBJECTS ENTITIES -----------------------------------------------------------
+UENUM(BlueprintType)
 enum class EObjectInfoType : uint8 {
+	OBJ_ID,
 	OBJ_NAME,
 	OBJ_TYPE,
 	OBJ_SERIAL_NUM,
@@ -53,20 +69,57 @@ enum class EObjectInfoType : uint8 {
 	OBJ_MATERIAL,
 	OBJ_CONDITION,
 	OBJ_OWNER,
-	OBJ_LOCATION,
+	OBJ_PORTABILITY,
+	OBJ_ORIGIN,
 };
 
+// TODO: need to define more enums for physical traits
+// ----------------------------------------------------------------------------
+
+// EVENTS ENTITIES ------------------------------------------------------------
 UENUM(BlueprintType)
 enum class EEventInfoType : uint8 {
+	EVT_ID,
 	EVT_TYPE,
 	EVT_DATE_START,
 	EVT_DATE_END,
 	EVT_LOCATION,
 	EVT_PARTICIPANTS,
-	EVT_WITNESSES,
-	EVT_DESCRIPTION,
-	EVT_STATUS,
+	EVT_PARENTS, // parent events
+	EVT_VISIBILITY,
 };
+
+UENUM(BlueprintType)
+enum class EEventVisibility : uint8 { VIS_PUBLIC, VIS_SEMIPUBLIC, VIS_PRIVATE, VIS_SECRET, };
+// ----------------------------------------------------------------------------
+
+// RELATIONS ENTITIES ---------------------------------------------------------
+UENUM(BlueprintType)
+enum class ERelationsInfoType : uint8 {
+	REL_ID,
+	REL_TYPE,
+	REL_PERSONA,
+	REL_PERSONB,
+};
+
+UENUM(BlueprintType)
+enum class ERelationType : uint8 {
+	RELTYPE_SPOUSE,
+	RELTYPE_EX_PARTNER,
+	RELTYPE_ROMANTIC_PARTNER,
+	RELTYPE_SIBLING,
+	RELTYPE_PARENT,
+	RELTYPE_CHILD,
+	RELTYPE_FRIEND,
+	RELTYPE_ACQUAINTANCE,
+	RELTYPE_NEIGHBOR,
+	RELTYPE_COWORKER,
+	RELTYPE_EMPLOYER,
+	RELTYPE_CREDITOR,
+	RELTYPE_RIVAL,
+	RELTYPE_BLACKMAILER,
+};
+// ----------------------------------------------------------------------------
 
 USTRUCT()
 struct FDataKey {
@@ -86,6 +139,8 @@ struct FDataKey {
 		};
 		uint64 key;
 	};
+
+	FDataKey() : key(0) { }
 };
 
 /// <summary>
@@ -95,7 +150,9 @@ USTRUCT(BlueprintType)
 struct FDataPoint {
 	GENERATED_BODY()
 
-	FString value;
+	FString str_value;
+	int int_value;
+
 	int64 timestamp;
 };
 
