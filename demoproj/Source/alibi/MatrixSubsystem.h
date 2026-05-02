@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "AlibiEntityDefinitions.h"
 #include "MatrixSubsystem.generated.h"
 
 //TODO: Split the entites struct and definitions to a separate file so they can be included in Case and Matrix subsystems
