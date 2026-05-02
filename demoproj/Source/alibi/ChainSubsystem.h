@@ -7,6 +7,7 @@
 #include "MatrixSubsystem.h"
 #include "ChainSubsystem.generated.h"
 
+//TODO: Restructure this to match new case file
 USTRUCT(BlueprintType)
 struct FChainBlank {
     GENERATED_BODY()

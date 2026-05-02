@@ -6,6 +6,8 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "MatrixSubsystem.generated.h"
 
+//TODO: Split the entites struct and definitions to a separate file so they can be included in Case and Matrix subsystems
+
 UENUM(BlueprintType)
 enum class EEntityType : uint8 { PERSON, LOCATION, OBJECT, EVENT, RELATION, };
 
@@ -100,6 +102,7 @@ enum class ERelationsInfoType : uint8 {
 	REL_TYPE,
 	REL_PERSONA,
 	REL_PERSONB,
+	//TODO: Fill in the rest of attributes
 };
 
 UENUM(BlueprintType)
