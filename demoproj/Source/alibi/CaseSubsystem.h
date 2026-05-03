@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "AlibiEntityDefinitions.h"
 #include "CaseSubsystem.generated.h"
 
 USTRUCT()
@@ -36,4 +37,16 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnTimeBudgetChanged OnTimeBudgetChanged;
+
+	UPROPERTY(Transient)
+	TArray<FCasePerson> case_people;
+
+	UPROPERTY(Transient)
+	TArray<FCaseLocation> case_locations;
+
+	UPROPERTY(Transient)
+	TArray<FCaseEvent> case_events;
+
+	UPROPERTY(Transient)
+	TArray<FCaseRelation> case_relationship;
 };

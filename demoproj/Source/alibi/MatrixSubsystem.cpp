@@ -19,11 +19,11 @@ static FDataKey _Matrix_CreateKey(EEntityType entity_type, int32 entity_id, uint
 	case EEntityType::LOCATION:
 		key.location_info_type = (ELocationInfoType)info_type_id;
 		break;
-	case EEntityType::OBJECT:
-		key.object_info_type = (EObjectInfoType)info_type_id;
-		break;
 	case EEntityType::EVENT:
 		key.event_info_type = (EEventInfoType)info_type_id;
+		break;
+	case EEntityType::RELATION:
+		key.relation_info_type = (ERelationInfoType)info_type_id;
 		break;
 	}
 
@@ -33,11 +33,11 @@ static FDataKey _Matrix_CreateKey(EEntityType entity_type, int32 entity_id, uint
 	return key;
 }
 
-static int32 _Matrix_ApplyDataPoint(FDataEntry &entry, EReliabilityCategory reliability, const FDataSource &src, const FDataPoint &point) {
+static int32 _Matrix_ApplyDataPoint(FDataEntry &entry, int32 evidence_id, const FDataPoint &point) {
 	for (int32 i = 0; i < entry.forks.Num(); i++) {
 		FDataFork& b = entry.forks[i];
-		if (b.source.src_type == src.src_type && b.source.src_id == src.src_id) {
-			b.reliability = reliability;
+		if (b.evidence_id == evidence_id) {
+			b.evidence_id = evidence_id;
 			b.history.Add(point);
 			return i;
 		}
@@ -45,8 +45,7 @@ static int32 _Matrix_ApplyDataPoint(FDataEntry &entry, EReliabilityCategory reli
 
 	entry.forks.Emplace();
 	FDataFork &b = entry.forks[entry.forks.Num()-1];
-	b.reliability = reliability;
-	b.source = src;
+	b.evidence_id = evidence_id;
 	b.history.Add(point);
 
 	return entry.forks.Num() - 1;
@@ -56,28 +55,28 @@ int32 UMatrixSubsystem::Matrix_NewPersonDataPoint(EPersonInfoType info_type, FDa
 	FDataKey k = _Matrix_CreateKey(EEntityType::PERSON, info.entity_id, (uint8)info_type);
 	FDataEntry &entry = sparse_entries[k.key];
 
-	return _Matrix_ApplyDataPoint(entry, info.reliability, info.source, info.data);
+	return _Matrix_ApplyDataPoint(entry, info.evidence_id, info.data);
 }
 
 int32 UMatrixSubsystem::Matrix_NewLocationDataPoint(ELocationInfoType info_type, FDataPointInfo info) {
 	FDataKey k = _Matrix_CreateKey(EEntityType::LOCATION, info.entity_id, (uint8)info_type);
 	FDataEntry &entry = sparse_entries[k.key];
 
-	return _Matrix_ApplyDataPoint(entry, info.reliability, info.source, info.data);
-}
-
-int32 UMatrixSubsystem::Matrix_NewObjectDataPoint(EObjectInfoType info_type, FDataPointInfo info) {
-	FDataKey k = _Matrix_CreateKey(EEntityType::OBJECT, info.entity_id, (uint8)info_type);
-	FDataEntry &entry = sparse_entries[k.key];
-
-	return _Matrix_ApplyDataPoint(entry, info.reliability, info.source, info.data);
+	return _Matrix_ApplyDataPoint(entry, info.evidence_id, info.data);
 }
 
 int32 UMatrixSubsystem::Matrix_NewEventDataPoint(EEventInfoType info_type, FDataPointInfo info) {
 	FDataKey k = _Matrix_CreateKey(EEntityType::EVENT, info.entity_id, (uint8)info_type);
 	FDataEntry &entry = sparse_entries[k.key];
 
-	return _Matrix_ApplyDataPoint(entry, info.reliability, info.source, info.data);
+	return _Matrix_ApplyDataPoint(entry, info.evidence_id, info.data);
+}
+
+int32 UMatrixSubsystem::Matrix_NewRelationDataPoint(ERelationInfoType info_type, FDataPointInfo info) {
+	FDataKey k = _Matrix_CreateKey(EEntityType::RELATION, info.entity_id, (uint8)info_type);
+	FDataEntry &entry = sparse_entries[k.key];
+
+	return _Matrix_ApplyDataPoint(entry, info.evidence_id, info.data);
 }
 
 // =============================

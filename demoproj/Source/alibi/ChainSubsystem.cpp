@@ -216,8 +216,7 @@ FChainEvaluation UChainSubsystem::Chain_EvaluateCase() {
                             const FDataFork& selected_fork = entry.forks[blank.player_fork_index];
                             const FDataFork& correct_fork = entry.forks[blank_eval.correct_fork];
 
-                            if (selected_fork.source.src_type == correct_fork.source.src_type &&
-                                selected_fork.source.src_id == correct_fork.source.src_id) {
+                            if (selected_fork.evidence_id == correct_fork.evidence_id) {
                                 // Same source, different data - partial credit
                                 blank_eval.bIsCorrectEntry = true;
                                 blank_eval.score_earned = step.step_weight * 0.7f;
