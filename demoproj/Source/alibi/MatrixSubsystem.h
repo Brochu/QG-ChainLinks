@@ -103,7 +103,10 @@ enum class ERelationsInfoType : uint8 {
 	REL_TYPE,
 	REL_PERSONA,
 	REL_PERSONB,
-	//TODO: Fill in the rest of attributes
+    REL_VALENCE,
+    REL_INTENSITY,
+    REL_PUBLICITY,
+    REL_STARTEDAT,
 };
 
 UENUM(BlueprintType)
@@ -123,6 +126,13 @@ enum class ERelationType : uint8 {
 	RELTYPE_RIVAL,
 	RELTYPE_BLACKMAILER,
 };
+
+UENUM(BlueprintType)
+enum class ERelationValence : uint8 { VAL_POSITIVE, VAL_NEUTRAL, VAL_NEGATIVE, VAL_COMPLEX, };
+UENUM(BlueprintType)
+enum class ERelationIntensity : uint8 { INT_LOW, INT_MEDIUM, INT_HIGH, };
+UENUM(BlueprintType)
+enum class ERelationPublicity : uint8 { PUB_PUBLIC, PUB_PRIVATE, PUB_SECRET, };
 // ----------------------------------------------------------------------------
 
 USTRUCT()
