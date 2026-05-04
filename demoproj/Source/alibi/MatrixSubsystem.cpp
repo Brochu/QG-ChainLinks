@@ -8,7 +8,7 @@ void UMatrixSubsystem::Matrix_InitNewCase() {
 	// Setup the default data for the case
 }
 
-static FDataKey _Matrix_CreateKey(EEntityType entity_type, int32 entity_id, uint8 info_type_id) {
+FDataKey UMatrixSubsystem::Matrix_CreateKey(EEntityType entity_type, int32 entity_id, uint8 info_type_id) {
 	FDataKey key {};
 	key.entity_type = entity_type;
 
@@ -33,56 +33,30 @@ static FDataKey _Matrix_CreateKey(EEntityType entity_type, int32 entity_id, uint
 	return key;
 }
 
-static int32 _Matrix_ApplyDataPoint(FDataEntry &entry, int32 evidence_id, const FDataPoint &point) {
+int32 UMatrixSubsystem::Matrix_NewDataPoint(FDataPointInfo info) {
+	FDataEntry& entry = sparse_entries[info.entity_key.key];
+
 	for (int32 i = 0; i < entry.forks.Num(); i++) {
 		FDataFork& b = entry.forks[i];
-		if (b.evidence_id == evidence_id) {
-			b.evidence_id = evidence_id;
-			b.history.Add(point);
+		if (b.evidence_id == info.evidence_id) {
+			b.evidence_id = info.evidence_id;
+			b.history.Add(info.data);
 			return i;
 		}
 	}
 
 	entry.forks.Emplace();
 	FDataFork &b = entry.forks[entry.forks.Num()-1];
-	b.evidence_id = evidence_id;
-	b.history.Add(point);
+	b.evidence_id = info.evidence_id;
+	b.history.Add(info.data);
 
 	return entry.forks.Num() - 1;
-}
-
-int32 UMatrixSubsystem::Matrix_NewPersonDataPoint(EPersonInfoType info_type, FDataPointInfo info) {
-	FDataKey k = _Matrix_CreateKey(EEntityType::PERSON, info.entity_id, (uint8)info_type);
-	FDataEntry &entry = sparse_entries[k.key];
-
-	return _Matrix_ApplyDataPoint(entry, info.evidence_id, info.data);
-}
-
-int32 UMatrixSubsystem::Matrix_NewLocationDataPoint(ELocationInfoType info_type, FDataPointInfo info) {
-	FDataKey k = _Matrix_CreateKey(EEntityType::LOCATION, info.entity_id, (uint8)info_type);
-	FDataEntry &entry = sparse_entries[k.key];
-
-	return _Matrix_ApplyDataPoint(entry, info.evidence_id, info.data);
-}
-
-int32 UMatrixSubsystem::Matrix_NewEventDataPoint(EEventInfoType info_type, FDataPointInfo info) {
-	FDataKey k = _Matrix_CreateKey(EEntityType::EVENT, info.entity_id, (uint8)info_type);
-	FDataEntry &entry = sparse_entries[k.key];
-
-	return _Matrix_ApplyDataPoint(entry, info.evidence_id, info.data);
-}
-
-int32 UMatrixSubsystem::Matrix_NewRelationDataPoint(ERelationInfoType info_type, FDataPointInfo info) {
-	FDataKey k = _Matrix_CreateKey(EEntityType::RELATION, info.entity_id, (uint8)info_type);
-	FDataEntry &entry = sparse_entries[k.key];
-
-	return _Matrix_ApplyDataPoint(entry, info.evidence_id, info.data);
 }
 
 // =============================
 
 FDataPoint UMatrixSubsystem::Matrix_GetCurrentValue(EEntityType entity_type, int32 entity_id, uint8 info_type_id, int32 fork_index) {
-	FDataKey k = _Matrix_CreateKey(entity_type, entity_id, info_type_id);
+	FDataKey k = Matrix_CreateKey(entity_type, entity_id, info_type_id);
 	FDataEntry *entry = sparse_entries.Find(k.key);
 
 	if (!entry || entry->forks.Num() == 0) {
@@ -96,7 +70,7 @@ FDataPoint UMatrixSubsystem::Matrix_GetCurrentValue(EEntityType entity_type, int
 }
 
 FDataEntry UMatrixSubsystem::Matrix_GetDataEntry(EEntityType entity_type, int32 entity_id, uint8 info_type_id) {
-	FDataKey k = _Matrix_CreateKey(entity_type, entity_id, info_type_id);
+	FDataKey k = Matrix_CreateKey(entity_type, entity_id, info_type_id);
 	FDataEntry *entry = sparse_entries.Find(k.key);
 
 	if (!entry) {
@@ -107,7 +81,7 @@ FDataEntry UMatrixSubsystem::Matrix_GetDataEntry(EEntityType entity_type, int32 
 }
 
 TArray<FDataPoint> UMatrixSubsystem::Matrix_GetDataHistory(EEntityType entity_type, int32 entity_id, uint8 info_type_id, int32 fork_index) {
-	FDataKey k = _Matrix_CreateKey(entity_type, entity_id, info_type_id);
+	FDataKey k = Matrix_CreateKey(entity_type, entity_id, info_type_id);
 	FDataEntry *entry = sparse_entries.Find(k.key);
 
 	if (!entry || entry->forks.Num() == 0) {
@@ -121,7 +95,7 @@ TArray<FDataPoint> UMatrixSubsystem::Matrix_GetDataHistory(EEntityType entity_ty
 }
 
 TArray<FDataPoint> UMatrixSubsystem::Matrix_GetAllForksLatest(EEntityType entity_type, int32 entity_id, uint8 info_type_id) {
-	FDataKey k = _Matrix_CreateKey(entity_type, entity_id, info_type_id);
+	FDataKey k = Matrix_CreateKey(entity_type, entity_id, info_type_id);
 	FDataEntry *entry = sparse_entries.Find(k.key);
 
 	if (!entry || entry->forks.Num() == 0) {
@@ -154,7 +128,7 @@ TArray<FDataEntry> UMatrixSubsystem::Matrix_GetAllDataForEntity(EEntityType enti
 // =============================
 
 int32 UMatrixSubsystem::Matrix_GetForkCount(EEntityType entity_type, int32 entity_id, uint8 info_type_id) {
-	FDataKey k = _Matrix_CreateKey(entity_type, entity_id, info_type_id);
+	FDataKey k = Matrix_CreateKey(entity_type, entity_id, info_type_id);
 	FDataEntry *entry = sparse_entries.Find(k.key);
 
 	if (!entry) {

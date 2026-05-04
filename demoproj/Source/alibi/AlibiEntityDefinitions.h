@@ -45,7 +45,7 @@ struct FCasePerson {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	int id;
+	int32 id;
 
 	UPROPERTY()
 	FString name;
@@ -54,7 +54,7 @@ struct FCasePerson {
 	FString alias;
 
 	UPROPERTY()
-	int age;
+	int32 age;
 
 	UPROPERTY()
 	ESex sex;
@@ -69,7 +69,7 @@ struct FCasePerson {
 	EBuildTrait physical_build;
 
 	UPROPERTY()
-	int loc_residence;
+	int32 loc_residence;
 
 	UPROPERTY()
 	FString phone;
@@ -121,7 +121,7 @@ struct FCaseLocation {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	int id;
+	int32 id;
 
 	UPROPERTY()
 	ELocationType type;
@@ -130,10 +130,10 @@ struct FCaseLocation {
 	FString name_address;
 
 	UPROPERTY()
-	int owner;
+	int32 owner;
 
 	UPROPERTY()
-	TArray<int> residents;
+	TArray<int32> residents;
 
 	UPROPERTY()
 	EAccessLevel access_level;
@@ -148,7 +148,7 @@ struct FCaseLocation {
 	ELocationCapacity capacity;
 
 	UPROPERTY()
-	TArray<int> connected_to;
+	TArray<int32> connected_to;
 };
 // ----------------------------------------------------------------------------
 
@@ -168,6 +168,26 @@ enum class EEventInfoType : uint8 {
 };
 
 UENUM(BlueprintType)
+enum class EEventType : uint8 {
+	ETYPE_MEETING,
+	ETYPE_ARGUMENT,
+	ETYPE_THREAT,
+
+	ETYPE_MOVEMENT,
+	ETYPE_OBJ_ACQUISITION,
+	ETYPE_TRANSACTION,
+
+	ETYPE_COMM_CALL,
+	ETYPE_COMM_TEXT,
+	ETYPE_COMM_WRITTEN,
+
+	ETYPE_VIOLENCE,
+	ETYPE_COMMIT,
+
+	ETYPE_OBJ_DISPOSAL,
+	ETYPE_DISCOVERY,
+};
+UENUM(BlueprintType)
 enum class EEventVisibility : uint8 { VIS_PUBLIC, VIS_SEMIPUBLIC, VIS_PRIVATE, VIS_SECRET, };
 
 /// <summary>
@@ -178,10 +198,10 @@ struct FCaseEvent {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	int id;
+	int32 id;
 
 	UPROPERTY()
-	FString type;
+	EEventType type;
 
 	UPROPERTY()
 	FDateTime date_start;
@@ -190,13 +210,13 @@ struct FCaseEvent {
 	FDateTime date_end;
 
 	UPROPERTY()
-	int location;
+	int32 location;
 
 	UPROPERTY()
-	TArray<int> participants;
+	TArray<int32> participants;
 
 	UPROPERTY()
-	TArray<int> parents;
+	TArray<int32> parents;
 
 	UPROPERTY()
 	EEventVisibility visibility;
@@ -251,16 +271,16 @@ struct FCaseRelation {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	int id;
+	int32 id;
 
 	UPROPERTY()
 	ERelationType type;
 
 	UPROPERTY()
-	int person_a;
+	int32 person_a;
 
 	UPROPERTY()
-	int person_b;
+	int32 person_b;
 
 	UPROPERTY()
 	ERelationValence valence;

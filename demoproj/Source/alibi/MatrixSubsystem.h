@@ -13,6 +13,14 @@
 UENUM(BlueprintType)
 enum class EEntityType : uint8 { PERSON, LOCATION, EVENT, RELATION, };
 
+USTRUCT(BlueprintType)
+struct FEntityRef {
+	GENERATED_BODY()
+
+	EEntityType entity_type;
+	int32 entity_id;
+};
+
 USTRUCT()
 struct FDataKey {
 	GENERATED_BODY()
@@ -20,6 +28,7 @@ struct FDataKey {
 	union {
 		struct {
 			EEntityType entity_type;
+			int32 entity_id;
 			union {
 				EPersonInfoType person_info_type;
 				ELocationInfoType location_info_type;
@@ -27,7 +36,6 @@ struct FDataKey {
 				ERelationInfoType relation_info_type;
 			};
 			int16 pad0;
-			int32 entity_id;
 		};
 		uint64 key;
 	};
@@ -43,7 +51,7 @@ struct FDataPoint {
 	GENERATED_BODY()
 
 	FString str_value;
-	int int_value;
+	int32 int_value;
 
 	int64 timestamp;
 };
@@ -53,7 +61,7 @@ struct FDataPointInfo {
 	GENERATED_BODY()
 
 	int32 evidence_id;
-	int32 entity_id;
+	FDataKey entity_key;
 	FDataPoint data;
 };
 
@@ -95,16 +103,10 @@ public:
 	void Matrix_InitNewCase();
 
 	UFUNCTION(Category = "Alibi|Matrix")
-	int32 Matrix_NewPersonDataPoint(EPersonInfoType info_type, FDataPointInfo info);
+	static FDataKey Matrix_CreateKey(EEntityType entity_type, int32 entity_id, uint8 info_type_id);
 
 	UFUNCTION(Category = "Alibi|Matrix")
-	int32 Matrix_NewLocationDataPoint(ELocationInfoType info_type, FDataPointInfo info);
-
-	UFUNCTION(Category = "Alibi|Matrix")
-	int32 Matrix_NewEventDataPoint(EEventInfoType info_type, FDataPointInfo info);
-
-	UFUNCTION(Category = "Alibi|Matrix")
-	int32 Matrix_NewRelationDataPoint(ERelationInfoType info_type, FDataPointInfo info);
+	int32 Matrix_NewDataPoint(FDataPointInfo info);
 
 	// =============================
 
