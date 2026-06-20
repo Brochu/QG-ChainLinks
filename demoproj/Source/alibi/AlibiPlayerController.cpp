@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "AlibiPlayerController.h"
+#include "AlibiTxtBasedCheats.h"
+#include "GameFramework/CheatManager.h"
 #include "Framework/Application/SlateApplication.h"
 
 AAlibiPlayerController::AAlibiPlayerController() {
@@ -9,10 +11,19 @@ AAlibiPlayerController::AAlibiPlayerController() {
 
 void AAlibiPlayerController::BeginPlay() {
 	Super::BeginPlay();
+	EnableCheats();
 }
 
 void AAlibiPlayerController::Tick(float dt) {
 	Super::Tick(dt);
+}
+void AAlibiPlayerController::EnableCheats() {
+	Super::EnableCheats();
+
+	if (CheatManager) {
+		UAlibiTxtBasedCheats *ext = NewObject<UAlibiTxtBasedCheats>(CheatManager);
+		CheatManager->AddCheatManagerExtension(ext);
+	}
 }
 
 FVector2f AAlibiPlayerController::CalcCameraMoveMults() {

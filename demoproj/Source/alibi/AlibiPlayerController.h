@@ -18,6 +18,7 @@ public:
 	AAlibiPlayerController();
 
 	virtual void Tick(float dt) override;
+	virtual void EnableCheats() override;
 
 	UFUNCTION(BlueprintCallable)
 	FVector2f CalcCameraMoveMults();
