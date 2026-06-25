@@ -1,0 +1,43 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build all",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [ "-nologo", "config.xml", "-t:all" ],
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build qg",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [ "-nologo", "config.xml", "-t:qg" ],
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build chain",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [ "-nologo", "config.xml", "-t:chain" ],
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [ "-nologo", "config.xml", "-t:clean" ],
+            "problemMatcher": []
+        },
+        {
+            "label": "run qg",
+            "type": "shell",
+            "command": "./run.bat",
+            "dependsOn": "build all",
+            "problemMatcher": []
+        }
+    ]
+}
