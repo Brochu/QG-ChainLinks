@@ -1,0 +1,117 @@
+# mazize.case — authoring source (v0: metadata + locations + actions)
+# Ink knots referenced here (case_intro, loc_victim_house, int_cassandra) are
+# placeholders to be authored in Ink later.
+
+[case]
+name    = Three in the Desert
+desc    = Three relatives vanish from a NM property; a burned car turns up 200 yards away.
+intro   = case_intro          # opening-narration Ink knot
+version = 0
+
+# ── LOCATIONS ──────────────────────────────────────────────
+[location]
+id    = victim_house
+name  = Frank's House (121 Noal Rd)
+type  = RESIDENCE
+desc  = Cluttered home, boxes stacked everywhere. Both Subarus gone.
+links = burned_car, cassandra_home
+ink   = loc_victim_house
+
+[location]
+id    = burned_car
+name  = Burned Subaru, desert wash
+type  = TRANSPORT
+desc  = Flipped, torched vehicle ~200 yards from the house.
+links = victim_house
+
+[location]
+id    = cassandra_home
+name  = Cassandra's Residence (7 Morningside)
+type  = RESIDENCE
+desc  = Neighbors mention a long-haired man and the missing green Subaru.
+links = victim_house, super8_motel
+
+[location]
+id    = super8_motel
+name  = Super 8 Motel, Hernando MS
+type  = COMMERCIAL
+desc  = 1,000 miles away. A phone ping led here.
+links = cassandra_home
+
+# ── ACTIONS ────────────────────────────────────────────────
+# victim_house
+[action]
+id       = search_living_room
+location = victim_house
+label    = Search the living room
+reveal   = Boxes packed in a hurry, stacked like a barricade. Feels staged.
+grants   = saw_staging
+
+[action]
+id       = search_kitchen
+location = victim_house
+label    = Search the kitchen
+reveal   = A live .22 round sits on the floor by the cabinets.
+grants   = found_round
+
+[action]
+id       = luminol_kitchen
+location = victim_house
+label    = Luminol sweep the kitchen
+reveal   = Blue-star lights up high-velocity spatter across the walls — someone cleaned house.
+requires = found_round
+grants   = blood_evidence
+
+[action]
+id       = inspect_documents
+location = victim_house
+label    = Inspect the paperwork in the boxes
+reveal   = Bills and credit cards still in Frank's name — and he's been dead a year.
+grants   = financial_docs
+
+# burned_car
+[action]
+id       = examine_remains
+location = burned_car
+label    = Examine the remains
+reveal   = Three badly burned bodies. One has a clear gunshot wound to the head.
+grants   = three_victims, gunshot_wound
+
+[action]
+id       = cast_tracks
+location = burned_car
+label    = Cast the tracks around the car
+reveal   = Fresh tire tracks and two distinct sets of shoe impressions lead away.
+grants   = two_sets_prints
+
+# cassandra_home
+[action]
+id       = canvass_neighbors
+location = cassandra_home
+label    = Canvass the neighbors
+reveal   = A long-haired man lived here for months, drove the green Subaru. One mentions a hatch under the washer.
+grants   = saw_green_subaru, basement_tip
+
+[action]
+id       = interview_cassandra
+location = cassandra_home
+label    = Interview Cassandra
+ink      = int_cassandra
+grants   = cassandra_statement
+
+[action]
+id       = search_basement
+location = cassandra_home
+label    = Search under the washer
+reveal   = A hatch drops to a crawlspace: totes and duffels, no dust. A victim's documents and live .22 ammo.
+requires = basement_tip
+hidden   = true
+
+# super8_motel
+[action]
+id       = confront_cassandra
+location = super8_motel
+label    = Confront Cassandra with the evidence
+reveal   = She slips — refers to the family as dead before you ever said so.
+requires = blood_evidence, three_victims
+grants   = cassandra_slip

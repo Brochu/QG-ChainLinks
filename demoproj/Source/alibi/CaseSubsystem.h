@@ -54,6 +54,23 @@ struct FLabResults {
 	GENERATED_BODY()
 };
 
+USTRUCT()
+struct FCaseData {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FText name;
+
+	UPROPERTY()
+	FText desc;
+
+	UPROPERTY()
+	FName intro_knot;
+
+	UPROPERTY()
+	int32 version;
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEvidenceFound, int32, evidence_idx);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLabRequestComplete, int32, evidence_idx, FLabResults, results);
 
@@ -81,6 +98,9 @@ public:
 	FOnTimeBudgetChanged OnTimeBudgetChanged;
 
 	UPROPERTY(Transient)
+	FCaseData current_case;
+
+	UPROPERTY(Transient)
 	TArray<FCasePerson> case_people;
 
 	UPROPERTY(Transient)
@@ -91,4 +111,7 @@ public:
 
 	UPROPERTY(Transient)
 	TArray<FCaseRelation> case_relationship;
+
+	UFUNCTION()
+	void load_case_file(FString case_path);
 };
