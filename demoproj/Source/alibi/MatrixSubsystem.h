@@ -7,8 +7,8 @@
 #include "AlibiEntityDefinitions.h"
 #include "MatrixSubsystem.generated.h"
 
-//TODO: Rethink out OBJECTs and EVIDENCEs releate to each other and how they are stored alongside the matrix
-//      We don't want evidence in the matrix as they are unlocked and used a requirements for others, they won't be corrected / updated as the case progresses
+//TODO: Rethink out OBJECTs and CLUEs releate to each other and how they are stored alongside the matrix
+//      We don't want clues in the matrix as they are unlocked and used a requirements for others, they won't be corrected / updated as the case progresses
 
 UENUM(BlueprintType)
 enum class EEntityType : uint8 { PERSON, LOCATION, EVENT, RELATION, };
@@ -60,7 +60,7 @@ USTRUCT(BlueprintType)
 struct FDataPointInfo {
 	GENERATED_BODY()
 
-	int32 evidence_id;
+	int32 clue_id;
 	FDataKey entity_key;
 	FDataPoint data;
 };
@@ -72,7 +72,7 @@ USTRUCT(BlueprintType)
 struct FDataFork {
 	GENERATED_BODY()
 
-	int32 evidence_id;
+	int32 clue_id;
 	TArray<FDataPoint> history;
 };
 
@@ -137,7 +137,7 @@ public:
 	FOnMatrixCellUpdated OnMatrixCellUpdated;
 
 	UPROPERTY(Transient)
-	TArray<int32> discovered_evidence;
+	TArray<int32> discovered_clues;
 
 private:
 	UPROPERTY(Transient)

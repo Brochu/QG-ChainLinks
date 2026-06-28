@@ -1,3 +1,5 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -295,3 +297,43 @@ struct FCaseRelation {
 	FDateTime started_at;
 };
 // ----------------------------------------------------------------------------
+
+UENUM(BlueprintType)
+enum class EClueType : uint8 { CLUE_TESTIMONY, CLUE_PHYSICAL_TRACE, CLUE_RECORD, CLUE_DERIVED_SIGNAL, };
+UENUM(BlueprintType)
+enum class EReliabilityCategory : uint8 { RLY_DISPROVEN, RLY_UNRELIABLE, RLY_QUESTIONABLE, RLY_RELIABLE, RLY_VERIFIED, };
+
+/// <summary>
+/// Represents one clue item between two persons of the case
+/// </summary>
+USTRUCT(BlueprintType)
+struct FCaseClue {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int32 id;
+
+	UPROPERTY()
+	EClueType type;
+
+	UPROPERTY()
+	FString name;
+
+	UPROPERTY()
+	FString description;
+
+	UPROPERTY()
+	int32 found_at;
+
+	//UPROPERTY()
+	//TArray<FEntityRef> linked_to;
+
+	UPROPERTY()
+	int32 origin_event;
+
+	UPROPERTY()
+	EReliabilityCategory reliability;
+
+	//UPROPERTY()
+	//TArray<FDataPointInfo> matrix_updates;
+};

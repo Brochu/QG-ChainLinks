@@ -38,8 +38,8 @@ int32 UMatrixSubsystem::Matrix_NewDataPoint(FDataPointInfo info) {
 
 	for (int32 i = 0; i < entry.forks.Num(); i++) {
 		FDataFork& b = entry.forks[i];
-		if (b.evidence_id == info.evidence_id) {
-			b.evidence_id = info.evidence_id;
+		if (b.clue_id == info.clue_id) {
+			b.clue_id = info.clue_id;
 			b.history.Add(info.data);
 			return i;
 		}
@@ -47,7 +47,7 @@ int32 UMatrixSubsystem::Matrix_NewDataPoint(FDataPointInfo info) {
 
 	entry.forks.Emplace();
 	FDataFork &b = entry.forks[entry.forks.Num()-1];
-	b.evidence_id = info.evidence_id;
+	b.clue_id = info.clue_id;
 	b.history.Add(info.data);
 
 	return entry.forks.Num() - 1;

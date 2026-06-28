@@ -21,11 +21,11 @@ public:
     // =============================
 
     UFUNCTION(Category = "Alibi|Chain")
-    void Chain_LoadCase(FString case_id, FString case_name);
+    void chain_init(FString case_id, FString case_name);
 
     UFUNCTION(Category = "Alibi|Chain")
-    void Chain_ClearCase();
+    void chain_clear();
 
     UFUNCTION(Category = "Alibi|Chain")
-    bool Chain_HasActiveCase();
+    bool chain_is_active();
 };

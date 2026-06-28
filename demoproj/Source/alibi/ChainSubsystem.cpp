@@ -4,12 +4,12 @@
 #include "ChainSubsystem.h"
 #include "MatrixSubsystem.h"
 
-void UChainSubsystem::Chain_LoadCase(FString case_id, FString case_name) {
+void UChainSubsystem::chain_init(FString case_id, FString case_name) {
 }
 
-void UChainSubsystem::Chain_ClearCase() {
+void UChainSubsystem::chain_clear() {
 }
 
-bool UChainSubsystem::Chain_HasActiveCase() {
+bool UChainSubsystem::chain_is_active() {
 	return false;
 }
