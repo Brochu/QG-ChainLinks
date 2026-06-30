@@ -19,12 +19,6 @@ FDataKey UMatrixSubsystem::Matrix_CreateKey(EEntityType entity_type, int32 entit
 	case EEntityType::LOCATION:
 		key.location_info_type = (ELocationInfoType)info_type_id;
 		break;
-	case EEntityType::EVENT:
-		key.event_info_type = (EEventInfoType)info_type_id;
-		break;
-	case EEntityType::RELATION:
-		key.relation_info_type = (ERelationInfoType)info_type_id;
-		break;
 	}
 
 	key.pad0 = 0;

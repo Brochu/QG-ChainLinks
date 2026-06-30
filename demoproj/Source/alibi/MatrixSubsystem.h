@@ -32,8 +32,6 @@ struct FDataKey {
 			union {
 				EPersonInfoType person_info_type;
 				ELocationInfoType location_info_type;
-				EEventInfoType event_info_type;
-				ERelationInfoType relation_info_type;
 			};
 			int16 pad0;
 		};

@@ -5,8 +5,8 @@
 [case]
 name    = Three in the Desert
 desc    = Three relatives vanish from a NM property; a burned car turns up 200 yards away.
-intro   = case_intro          # opening-narration Ink knot
-version = 0
+intro   = case_intro
+version = 1
 
 # ── LOCATIONS ──────────────────────────────────────────────
 [location]

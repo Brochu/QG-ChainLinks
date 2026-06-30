@@ -46,8 +46,14 @@ public:
 	UPROPERTY(Transient)
 	FCaseData current_case;
 
+	UPROPERTY(Transient)
+	TArray<FCaseLocation> locations;
+
+	UPROPERTY(Transient)
+	TArray<FCaseAction> actions;
+
 	UPROPERTY(SaveGame)
-	int32 actions_used = 0;
+	int32 action_points = 0;
 
 	UFUNCTION(BlueprintCallable)
 	void load_case_file(FString case_path);

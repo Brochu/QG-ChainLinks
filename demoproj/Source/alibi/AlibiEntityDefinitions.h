@@ -108,12 +108,6 @@ enum class ELocationInfoType : uint8 {
 
 UENUM(BlueprintType)
 enum class ELocationType : uint8 { LOCTYPE_RESIDENCE, LOCTYPE_COMMERCIAL, LOCTYPE_OUTDOOR, LOCTYPE_TRANSPORT, LOCTYPE_INDUSTRIAL, };
-UENUM(BlueprintType)
-enum class EAccessLevel : uint8 { ACCESS_PUBLIC, ACCESS_SEMIPUBLIC, ACCESS_PRIVATE, ACCESS_RESTRICTED, };
-UENUM(BlueprintType)
-enum class ESecurityLevel : uint8 { SEC_NONE, SEC_LOW, SEC_HIGH, };
-UENUM(BlueprintType)
-enum class ELocationCapacity : uint8 { CAP_LOW, CAP_MEDIUM, CAP_HIGH, };
 
 /// <summary>
 /// Represents one location of the case
@@ -123,217 +117,54 @@ struct FCaseLocation {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	int32 id;
+	FName id;
+
+	UPROPERTY()
+	FName name;
 
 	UPROPERTY()
 	ELocationType type;
 
 	UPROPERTY()
-	FString name_address;
+	FText desc;
 
 	UPROPERTY()
-	int32 owner;
+	TArray<FName> links;
 
 	UPROPERTY()
-	TArray<int32> residents;
-
-	UPROPERTY()
-	EAccessLevel access_level;
-
-	UPROPERTY()
-	ESecurityLevel security;
-
-	UPROPERTY()
-	FString op_hours;
-
-	UPROPERTY()
-	ELocationCapacity capacity;
-
-	UPROPERTY()
-	TArray<int32> connected_to;
+	FName ink;
 };
 // ----------------------------------------------------------------------------
 
 /// <summary>
-/// All possible matrix attributes for events in the case
+/// Represents one action the player can choose
 /// </summary>
-UENUM(BlueprintType)
-enum class EEventInfoType : uint8 {
-	EVT_ID,
-	EVT_TYPE,
-	EVT_DATE_START,
-	EVT_DATE_END,
-	EVT_LOCATION,
-	EVT_PARTICIPANTS,
-	EVT_PARENTS, // parent events
-	EVT_VISIBILITY,
-};
-
-UENUM(BlueprintType)
-enum class EEventType : uint8 {
-	ETYPE_MEETING,
-	ETYPE_ARGUMENT,
-	ETYPE_THREAT,
-
-	ETYPE_MOVEMENT,
-	ETYPE_OBJ_ACQUISITION,
-	ETYPE_TRANSACTION,
-
-	ETYPE_COMM_CALL,
-	ETYPE_COMM_TEXT,
-	ETYPE_COMM_WRITTEN,
-
-	ETYPE_VIOLENCE,
-	ETYPE_COMMIT,
-
-	ETYPE_OBJ_DISPOSAL,
-	ETYPE_DISCOVERY,
-};
-UENUM(BlueprintType)
-enum class EEventVisibility : uint8 { VIS_PUBLIC, VIS_SEMIPUBLIC, VIS_PRIVATE, VIS_SECRET, };
-
-/// <summary>
-/// Represents one event of the case
-/// </summary>
-USTRUCT(BlueprintType)
-struct FCaseEvent {
+USTRUCT()
+struct FCaseAction {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	int32 id;
+	FName id;
 
 	UPROPERTY()
-	EEventType type;
+	FName loc_id;
 
 	UPROPERTY()
-	FDateTime date_start;
+	FText label;
 
 	UPROPERTY()
-	FDateTime date_end;
+	FName ink_knot;
 
 	UPROPERTY()
-	int32 location;
+	FText reveals;
 
 	UPROPERTY()
-	TArray<int32> participants;
+	TArray<FName> require;
 
 	UPROPERTY()
-	TArray<int32> parents;
+	TArray<FName> grants;
 
 	UPROPERTY()
-	EEventVisibility visibility;
+	bool hidden;
 };
 // ----------------------------------------------------------------------------
-
-/// <summary>
-/// All possible matrix attributes for relations in the case
-/// </summary>
-UENUM(BlueprintType)
-enum class ERelationInfoType : uint8 {
-	REL_ID,
-	REL_TYPE,
-	REL_PERSONA,
-	REL_PERSONB,
-    REL_VALENCE,
-    REL_INTENSITY,
-    REL_PUBLICITY,
-    REL_STARTEDAT,
-};
-
-UENUM(BlueprintType)
-enum class ERelationType : uint8 {
-	RELTYPE_SPOUSE,
-	RELTYPE_EX_PARTNER,
-	RELTYPE_ROMANTIC_PARTNER,
-	RELTYPE_SIBLING,
-	RELTYPE_PARENT,
-	RELTYPE_CHILD,
-	RELTYPE_FRIEND,
-	RELTYPE_ACQUAINTANCE,
-	RELTYPE_NEIGHBOR,
-	RELTYPE_COWORKER,
-	RELTYPE_EMPLOYER,
-	RELTYPE_CREDITOR,
-	RELTYPE_RIVAL,
-	RELTYPE_BLACKMAILER,
-};
-
-UENUM(BlueprintType)
-enum class ERelationValence : uint8 { VAL_POSITIVE, VAL_NEUTRAL, VAL_NEGATIVE, VAL_COMPLEX, };
-UENUM(BlueprintType)
-enum class ERelationIntensity : uint8 { INT_LOW, INT_MEDIUM, INT_HIGH, };
-UENUM(BlueprintType)
-enum class ERelationPublicity : uint8 { PUB_PUBLIC, PUB_PRIVATE, PUB_SECRET, };
-
-/// <summary>
-/// Represents one relation between two persons of the case
-/// </summary>
-USTRUCT(BlueprintType)
-struct FCaseRelation {
-	GENERATED_BODY()
-
-	UPROPERTY()
-	int32 id;
-
-	UPROPERTY()
-	ERelationType type;
-
-	UPROPERTY()
-	int32 person_a;
-
-	UPROPERTY()
-	int32 person_b;
-
-	UPROPERTY()
-	ERelationValence valence;
-
-	UPROPERTY()
-	ERelationIntensity intensity;
-
-	UPROPERTY()
-	ERelationPublicity publicity;
-
-	UPROPERTY()
-	FDateTime started_at;
-};
-// ----------------------------------------------------------------------------
-
-UENUM(BlueprintType)
-enum class EClueType : uint8 { CLUE_TESTIMONY, CLUE_PHYSICAL_TRACE, CLUE_RECORD, CLUE_DERIVED_SIGNAL, };
-UENUM(BlueprintType)
-enum class EReliabilityCategory : uint8 { RLY_DISPROVEN, RLY_UNRELIABLE, RLY_QUESTIONABLE, RLY_RELIABLE, RLY_VERIFIED, };
-
-/// <summary>
-/// Represents one clue item between two persons of the case
-/// </summary>
-USTRUCT(BlueprintType)
-struct FCaseClue {
-	GENERATED_BODY()
-
-	UPROPERTY()
-	int32 id;
-
-	UPROPERTY()
-	EClueType type;
-
-	UPROPERTY()
-	FString name;
-
-	UPROPERTY()
-	FString description;
-
-	UPROPERTY()
-	int32 found_at;
-
-	//UPROPERTY()
-	//TArray<FEntityRef> linked_to;
-
-	UPROPERTY()
-	int32 origin_event;
-
-	UPROPERTY()
-	EReliabilityCategory reliability;
-
-	//UPROPERTY()
-	//TArray<FDataPointInfo> matrix_updates;
-};
