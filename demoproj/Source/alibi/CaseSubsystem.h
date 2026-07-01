@@ -55,6 +55,9 @@ public:
 	UPROPERTY(SaveGame)
 	int32 action_points = 0;
 
+	UPROPERTY(SaveGame)
+	int32 active_locid = 0;
+
 	UFUNCTION(BlueprintCallable)
 	void load_case_file(FString case_path);
 };

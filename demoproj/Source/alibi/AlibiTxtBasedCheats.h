@@ -8,7 +8,7 @@
 
 class UCaseSubsystem;
 class UChainSubsystem;
-class UMatrixSubsystem;
+//class UMatrixSubsystem;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTxtCheats, Log, All);
 
@@ -35,5 +35,5 @@ private:
 
 	UCaseSubsystem *_case_system;
 	UChainSubsystem *_chain_system;
-	UMatrixSubsystem *_matrix_system;
+	//UMatrixSubsystem *_matrix_system;
 };

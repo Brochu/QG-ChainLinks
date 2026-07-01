@@ -19,7 +19,7 @@ void UAlibiTxtBasedCheats::AddedToCheatManager_Implementation() {
 	UGameInstance* inst = UGameplayStatics::GetGameInstance(GetWorld());
 	_case_system = inst->GetSubsystem<UCaseSubsystem>();
 	_chain_system = inst->GetSubsystem<UChainSubsystem>();
-	_matrix_system = inst->GetSubsystem<UMatrixSubsystem>();
+	//_matrix_system = inst->GetSubsystem<UMatrixSubsystem>();
 }
 
 void UAlibiTxtBasedCheats::RemovedFromCheatManager_Implementation() {
@@ -27,7 +27,7 @@ void UAlibiTxtBasedCheats::RemovedFromCheatManager_Implementation() {
 
 	_case_system = nullptr;
 	_chain_system = nullptr;
-	_matrix_system = nullptr;
+	//_matrix_system = nullptr;
 }
 
 void UAlibiTxtBasedCheats::ExploreLocation() {
@@ -39,8 +39,14 @@ void UAlibiTxtBasedCheats::ExploreLocation() {
 	if (_chain_system) {
 		MessageConsole(TEXT(" VALID CHAIN SUBSYSTEM ! "));
 	}
-	if (_matrix_system) {
-		MessageConsole(TEXT(" VALID MATRIX SUBSYSTEM ! "));
+	FCaseLocation loc = _case_system->locations[_case_system->active_locid];
+	for (int32 i = 0; i < _case_system->actions.Num(); i++) {
+		FCaseAction &act = _case_system->actions[i];
+
+		if (act.loc_id == loc.id) {
+			//TODO: Keep working here to list locations, move and list actions at active location IDX
+			MessageConsole(FString::Format(TEXT("%s"), { *act.label.ToString() }));
+		}
 	}
 }
 

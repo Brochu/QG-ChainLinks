@@ -178,6 +178,9 @@ void UCaseSubsystem::load_case_file(FString case_path) {
 	current_case.desc = FText::FromString("");
 	current_case.intro_knot = "";
 	current_case.version = 0;
+	locations.Empty();
+	actions.Empty();
+
 	size_t position = 0;
 	parse_metadata(current_case, file, position);
 
