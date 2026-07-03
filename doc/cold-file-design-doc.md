@@ -1,6 +1,8 @@
 # COLD FILE — Game Design Document (Working Title)
-### A 1990s FBI deduction game · Vertical slice design · v1.0 — **LOCKED for slice implementation**
+### A 1990s FBI deduction game · Vertical slice design · v2.0 — **LOCKED for slice implementation**
 
+> **v2.0 changes (format-sync with Case File Data Inventory v2.0, driven by first authoring experience):** hotspots dissolved — everything interactable is an action, inspectables are cost-0 INSPECT actions (§2, §6); prereq DSL replaced by flat fact lists + three conventions (§5.3); trigger system replaced by the `schedule` list — all other effects live at their effect site (§5.5); map zones & travel costs cut for the slice (§4.1, §12); availability expressed as an absolute block range + optional `blocks_of_day` (§5.3); one ink file per case, knot-only references; tuning targets moved to validator config.
+>
 > **v1.0 changes:** all costs are whole blocks — PHONE_FAX costs 1 block and covers up to two requests (§4.1, §6); STAKEOUT deferred from the slice verb set (§6, §12); manual board linking cut — player expression on the board is annotations + CLEARED/DOUBTED/KEY tags (§5.4, §12). Open questions pruned to post-slice topics. Changes past this point require unlocking the doc.
 >
 > **v0.3 changes (simplification pass):** time is the only spendable resource; lab queue capacity replaces lab credits (§4.3); warrants & PD favor cut (§4.4); link system reduced to contradictions, rest deferred (§5.2); glossary replaces entity list (§5.1); prose delegated to ink (§9.1); tri-state action visibility (§5.3); epilogue reduced to outcome tiers + derived review (§7.3); open questions updated (§11). Deferred features tracked in §12.
@@ -29,8 +31,8 @@ The player is an FBI investigator in the mid-1990s assigned to a single case. Th
 Each location is a **self-contained 3D diorama** on a neutral backdrop:
 
 - **Camera:** orbit around a fixed pivot, with zoom and limited vertical tilt. Optionally 2–3 preset "focus pivots" per diorama (e.g., the desk, the body, the doorway) the player can snap between.
-- **Interaction:** mouse raycast onto hotspots. Hotspots are either *inspectables* (free flavor + minor facts) or *actions* (cost time, produce evidence).
-- **Discovery through orbiting:** some hotspots are only visible from certain angles (a note taped under a drawer, a bullet hole visible only from the window side). The camera itself is an investigative verb. Use sparingly — 2–3 per diorama, never for critical-path evidence without a secondary route (validator-enforced via the `hidden_reveal` flag).
+- **Interaction:** mouse raycast onto action points. Everything clickable is an **action** in the data — free inspectables are simply cost-0 INSPECT actions, so one record type, one visibility system, and one staging binding cover the whole game. The staging file maps each `action_id` to its 3D position in the diorama.
+- **Discovery through orbiting:** some action points are only visible from certain angles (a note taped under a drawer, a bullet hole visible only from the window side). The camera itself is an investigative verb. Use sparingly — 2–3 per diorama, never for critical-path evidence without a secondary route (validator-enforced via the action's `hidden_reveal` flag; the angle itself lives in staging).
 - **Diorama state changes:** dioramas can change between visits (a cleaned-up crime scene, a suspect's packed suitcase) to telegraph the passage of time and the cost of delay.
 - **UI layer:** the case file, evidence board, map, and reconstruction board are full-screen 2D interfaces styled as period paperwork — manila folders, typewritten reports, fax printouts, Polaroids.
 
@@ -43,7 +45,7 @@ Scope for the slice: **5–7 dioramas**, each roughly the size of a room or stor
 ```
 Field Office (hub)
   └─ Review case file / evidence board
-  └─ Choose a location on the map  ──► travel costs time
+  └─ Choose a location on the map
         └─ Orbit diorama, inspect freely
         └─ Take costed actions ──► gain facts / evidence / new leads
   └─ New facts unlock new actions & locations
@@ -64,8 +66,8 @@ The hub is the **Field Office**, itself a diorama. It's where phone/fax actions 
 
 - The case has a **deadline: 10 in-game days** (tunable).
 - Each day has **3 action blocks** (morning / afternoon / evening).
-- Travel between locations costs blocks by map zone (same town: 0–1, neighboring county: 1, out of state: a full day). The 90s lack of remote access is *felt*.
-- Some actions are **time-gated**: a witness only at the diner in the evening, the coroner's office closed after the afternoon block.
+- Travel is free in the slice — map zones and travel costs are cut (§12); distance is expressed narratively and through delayed remote requests instead. (Flatter re-add if ever wanted: a single `travel_cost` integer per location.)
+- Some actions are **time-bounded**: an absolute availability range in blocks (`available: [from, to]`, `-1` = end of case) covers "only from day 5" and "gone after day 7" alike; an optional `blocks_of_day` filter covers recurring windows like a witness who is only at the diner in the evenings.
 
 **Why time blocks instead of abstract points:** they create scheduling puzzles ("I can hit the motel and the pawn shop today, but the coroner closes at 5"), they justify the deadline narratively (the Bureau reassigns you), and they make delayed results meaningful.
 
@@ -147,7 +149,13 @@ Contradiction {
 
 ### 5.3 Unlock rules & action visibility
 
-Actions, locations, and dialogue topics have prerequisites in a deliberately tiny shared expression format: **AND/OR/NOT over fact IDs, plus `contradiction_active(id)` and `day >= n`.** No scripting — everything stays analyzable by the validator.
+Every prerequisite in the format — action prereqs, location unlocks, diorama state switches — is a **flat list of fact IDs with AND semantics**. There is no expression DSL; the loader's entire conditional logic is "is this list a subset of discovered facts." Three conventions replace the lost operators:
+
+- **OR** → the *shared knowledge-fact idiom*: every alternative route produces the **same fact**; gate on that one fact. This names the inference explicitly, which is better authoring, not just a workaround.
+- **Time conditions** → the `available` block range (and optional `blocks_of_day`), never a prerequisite.
+- **"Contradiction active"** → require both of the contradiction's facts (active ≡ both discovered). Interview-side leverage gating stays in ink via `contradictionActive()`.
+
+Some facts will exist mainly as knowledge markers under this idiom; if they clutter the evidence board, an `internal: true` display flag is the sanctioned fix — one boolean, not a DSL.
 
 Actions have a **tri-state visibility** derived from prereqs plus an authored `hidden` boolean:
 
@@ -173,13 +181,15 @@ Tags are pure player state — they never gate content or change truth. But the 
 
 The case file is a **static authored universe**; the save is a diff: discovered fact IDs, active contradictions, player tags, board layout, clock, blocks-spent counter, pending/lab queues, ink state, reconstruction draft, location state indices. Nothing in the case file mutates at runtime.
 
-When a fact is discovered (by action, or a delayed result maturing):
+Timed, unprompted beats (the day-3 discovery that happens regardless of player activity) live in a flat **`schedule` list** — `{at_block, delivers, pager}` — the sole survivor of the old trigger system; everything else triggers once did now lives at its effect site (unlocks in `unlock_rule`s, enables in prereqs, state changes in `states[].when`, discovery pagers in `pending_label`). Scheduled facts then drive unlocks like any other fact.
+
+When a fact is discovered (by action, schedule, or a delayed result maturing):
 
 ```
 append fact ID to discovered set
   → evaluate dormant contradictions (activate if both ends discovered)
   → evaluate unlock rules (action visibility, locations, dialogue topics)
-  → evaluate world triggers (diorama states, character moves, scripted beats)
+  → evaluate diorama state switches (each state's own fact list)
   → UI reaction: card animates onto board, threads draw,
      doubted-tag payoffs surface, journal entry written,
      pager buzz if delivered mid-block
@@ -205,7 +215,7 @@ A small, legible verb set reused across dioramas:
 
 | Verb | Cost | Notes |
 |---|---|---|
-| **Inspect** | free | Orbit and click; flavor + minor facts; teaches the diorama |
+| **Inspect** | 0 blocks | A real action record with cost 0; flavor + minor facts; teaches the diorama |
 | **Search** (drawer, vehicle, room) | 1 block | Often locked/secret behind fact prereqs (§5.3) |
 | **Collect sample → Lab** | 1 block + lab queue slot + delay | Choose *which* test; queue capacity 2 forces sequencing (§4.3) |
 | **Interview** | 1 block | Ink-driven topics (§9.1); leverage via facts or active contradictions; re-enabled when new facts tagged with that character appear |
@@ -271,8 +281,8 @@ Authored content is minimal: **one short ink knot per outcome tier.** Everything
 2. **The burned motel unit** (crime scene; bulldozed by day 7 if neglected)
 3. **Motel office & clerk's counter**
 4. **Victim's farmhouse** (the locked study is a fact-gated SEARCH action)
-5. **Roadside diner** (witnesses, time-gated)
-6. **Pawn shop two counties over** (unlocked by evidence; travel-expensive)
+5. **Roadside diner** (witnesses, evening `blocks_of_day`)
+6. **Pawn shop two counties over** (unlocked by evidence; distance expressed narratively — no travel cost in the slice)
 
 **Designed tensions:** one honest-but-wrong witness statement (with inspectable observation conditions), one forged document, one red-herring suspect with a genuine alibi resolution, one recontextualizing lab result around day 5–6 — exactly one per case, as authoring law.
 
@@ -286,13 +296,13 @@ The case is fully authored on paper (every fact, action, prereq, contradiction, 
 
 **The case is data; the engine is a player for that data.** Three-file separation:
 
-1. **Case logic file (JSON)** — glossary, facts, contradictions, locations/hotspots, actions, triggers, reconstruction, grading. JSON is the authoring source of truth *permanently*; a binary compile target ships later, produced by the build step, never hand-edited.
+1. **Case logic file (JSON)** — meta, glossary, facts, contradictions, locations, actions, interviews, schedule, reconstruction, outcome tiers. Field-level schema lives in the **Case File Data Inventory v2.0**, which is the format authority. JSON is the authoring source of truth *permanently*; a binary compile target ships later, produced by the build step, never hand-edited.
 2. **Ink files** — all long-form prose: briefing, interviews, document texts, outcome memos. Engine↔ink contract kept tiny and stable: `hasFact(id)`, `contradictionActive(id)`, `discoverFact(id)`, `day()`, `spendBlock()`. Each interview declares a **fact manifest** in the logic file; the validator cross-checks it against the ink source's `discoverFact` calls so reachability analysis survives scripting. (Inkpot for UE; ink runtimes exist for custom engines.)
-3. **Staging file (per engine)** — binds logic IDs to presentation: diorama assets, hotspot 3D positions and reveal angles, portraits, audio.
+3. **Staging file (per engine)** — binds logic IDs to presentation: diorama assets per location state, action 3D positions and reveal angles, portraits, audio, block-of-day labels.
 
-The runtime is: a diorama renderer (orbit camera + raycast picking), a rules evaluator (expressions, clock, queues, triggers), an ink runtime, and 2D UI screens. No character controller, no physics, no AI navigation.
+The runtime is: a diorama renderer (orbit camera + raycast picking), a rules evaluator (fact-list subset checks, clock, lab/pending queues, schedule), an ink runtime, and 2D UI screens. No character controller, no physics, no AI navigation, no scripting.
 
-**The validator is the second program built** (after the loader). It enforces the authoring laws: no dangling IDs; fact connection-density ≥2; every contradiction resolvable; critical path reachable within the block budget; expiring critical actions have alternates; hidden-reveal hotspots never sole route to critical facts; manifest↔ink consistency; glossary coverage of every reconstruction answer and decoy; economy targets.
+**The validator is the second program built** (after the loader), with its targets in its own config — identical for every case, never stored in case files. It enforces the authoring laws: no dangling IDs; every fact producible; fact connection-density ≥2; every contradiction resolvable; critical path reachable within the block budget; bounded-availability critical actions have alternates; `hidden_reveal` never the sole route to critical facts; manifest↔ink consistency; glossary coverage of every reconstruction answer and decoy; `pending_label` wherever `delay > 0`; economy targets.
 
 ### 9.2 Engine recommendation
 
@@ -316,7 +326,7 @@ Build a **text/debug version first**: locations as lists, actions as buttons, fa
 2. **Loader + validator (1 week).** Case file parses; all authoring laws checked. The paper case becomes the first test input.
 3. **Systems prototype (2–4 weeks).** Debug-UI full loop, ink integrated in a text panel. Tune the economy against `tuning_targets`.
 4. **Reconstruction & review (1–2 weeks).** The board, decoys, grading, derived review.
-5. **First diorama + camera (2 weeks).** One location art-passed; staging file format proven; hotspot readability rules established.
+5. **First diorama + camera (2 weeks).** One location art-passed; staging file format proven; action-point readability rules established.
 6. **Vertical slice (4–8 weeks).** All 6 dioramas, period UI skin, sound pass.
 
 ---

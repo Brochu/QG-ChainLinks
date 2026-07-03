@@ -1,156 +1,199 @@
-# COLD FILE — Case File Data Inventory (v1.0 — locked with design doc v1.0)
-### Everything a case file must contain, before we argue about structure
+# COLD FILE — Case File Data Inventory (v2.0)
+### The authoritative field-level schema for case logic files
 
-> **v0.2 changes (post-review):** entities replaced by derived set + glossary (§2); links reduced to CONTRADICTS only, rest deferred (§4); warrants cut; PD favor cut pending confirmation (§1); interviews delegated to ink with a lintable manifest (§7); epilogue reduced to outcome tiers + derived review (§11); actions use flat `produces` + tri-state visibility (§6); binary format noted as compile target (§13).
+> **v2.0 (flattening pass, driven by first authoring experience):** hotspots dissolved into actions — inspectables are cost-0 INSPECT actions (§7); triggers replaced by the `schedule` list (§9); prereq DSL replaced by flat fact lists + three conventions (§4); map zones cut; `time_gate`/`expires` replaced by `available` block range + optional `blocks_of_day`; one ink file per case, knot-only references; tuning targets moved to validator config; every stored field now has its own table row.
+>
+> Supersedes v1.0. **Where this document and design doc v1.0 disagree on data format, this document wins** (design doc pending sync).
 
-Guiding principle from the design doc: **the case file is a static authored universe; the save file is a diff against it.** This inventory covers authored data only — runtime state is listed at the end for contrast, but lives in the save.
+**Principles.** The case file is a static authored universe; the save is a diff against it. Case logic is engine-agnostic and playable with zero art; the staging file (per engine) binds `action_id` → diorama position/reveal-angle and `location_id`/state → assets. Prose lives in one ink file per case. JSON is the authoring source of truth permanently; binary is a compile target. Keys starting with `_` are authoring notes, stripped by the compiler, ignored by the validator's reference checks.
 
-Second principle: **separate case logic from staging.** The case file must be playable by the text/debug prototype with zero art. Asset bindings (diorama meshes, hotspot 3D positions, portraits, audio) live in a parallel *staging file* referencing logic IDs.
-
-Third principle (new): **prose lives in ink.** Briefings, interviews, document texts, and outcome memos are ink files; the case file holds IDs, rules, costs, and short labels. Ink already being external text does half the localization split for later.
-
----
-
-## 1. Case metadata
-
-| Field | Purpose |
-|---|---|
-| `case_id`, `title`, `setting` (date, region) | Identity & flavor |
-| `deadline_days`, `blocks_per_day` | The clock (10 × 3 in the slice) |
-| `briefing_ink` | Ink knot for the opening; delivers starting facts via manifest |
-| `starting_facts`, `starting_locations` | Discovered/unlocked at case start |
-| `starting_resources` | None — **time blocks are the only spendable resource.** Forensic access is throttled structurally instead: `lab_queue_capacity` (slice: 2) caps concurrent lab requests; extra submissions queue behind active ones, their delay clocks not starting until a slot frees. Throttles the FORENSIC tier (the only never-wrong facts) without a second currency, and turns lab use into a sequencing decision. *(PD favor and lab credits: cut, see Deferred)* |
-| `tuning_targets` | Economy numbers for the validator (target ~60% action affordability), not read by the game |
-
-## 2. Glossary (replaces the entity list)
-
-The entity *set* is derived at runtime from the tags of discovered facts — dropdowns and board anchors only ever contain nouns the player has actually encountered. The glossary is a pure lookup table so display data isn't duplicated across facts:
-
-| Field | Purpose |
-|---|---|
-| `tag_id` | The key used inside fact tags |
-| `kind` | PERSON / PLACE / OBJECT / VEHICLE / ORG — used for reconstruction slot filtering |
-| `display_name` | Board and dropdown text |
-
-**Times** are flat authored `time_token`s (`~9 PM`, `after the rain`...) in the same glossary with kind TIME. The game matches tokens; it never does time math.
-
-Validator rule: every glossary entry must appear in ≥1 fact's tags; every reconstruction answer and decoy must be introducible through some discoverable fact.
-
-## 3. Facts
-
-| Field | Purpose |
-|---|---|
-| `fact_id`, `text` | The claim, as shown on the card |
-| `tags` | Glossary tag IDs (entities + time tokens) |
-| `reliability` | TESTIMONY / DOCUMENT / FORENSIC |
-| `conditions` | Observation metadata, testimony only (dark, distance, obstruction...) — visible on the card; powers fair invalidation |
-
-Facts do **not** store their source action — actions declare what they produce (single direction of reference).
-
-## 4. Contradictions (the surviving link type)
-
-Reduced from the four-type link system: `CORROBORATES` lost both its consumers when warrants and the authored epilogue were cut; `SUPERSEDES`/`REINTERPRETS` were presentational only (the keystone recontextualization works with no data — the player holds both cards and sees it). **Deferred, not deleted** — revisit if playtesting shows the flip moment needs presentational support.
-
-| Field | Purpose |
-|---|---|
-| `contradiction_id` | Identity |
-| `facts` | The two fact IDs (symmetric — no direction) |
-| `resolution_actions` | Action ID(s) that resolve the tension — validator enforces ≥1 |
-
-Activates when both facts are discovered. Consumers: board red thread (no explanation given), interview leverage (confrontation topics may require an active contradiction involving that character), validator resolvability check.
-
-## 5. Locations
-
-| Field | Purpose |
-|---|---|
-| `location_id`, `name` | Identity |
-| `map_zone` | Travel cost via a small zone-to-zone table |
-| `unlock_rule` | Prereq expression (§9), or unlocked at start |
-| `states` | Ordered named states (`crime_scene_fresh`, `bulldozed`) with activating trigger |
-| `hotspots` | Logic level: each is an `inspectable` (free, yields fact IDs) or an `action_id` reference; per-state visibility; `hidden_reveal: true` flags angle-discovery hotspots so the validator enforces "never critical-path without a secondary route" (the angle itself is staging data) |
-
-## 6. Actions
-
-| Field | Purpose |
-|---|---|
-| `action_id`, `verb` | Fixed vocabulary for the slice: SEARCH / COLLECT / INTERVIEW / CANVASS / PHONE_FAX (STAKEOUT deferred; vocabulary grows with future cases) |
-| `location_id` | Where it lives (PHONE_FAX at the Field Office) |
-| `label` | Text shown to the used when hovering this action |
-| `cost` | Whole blocks only (1, 2...). PHONE_FAX covers up to two requests per block. COLLECT actions additionally occupy a lab queue slot for their delay duration |
-| `prerequisites` | Expression (§9) |
-| `hidden` | Authored data is just the `hidden` boolean; the states fall out of prereq evaluation |
-| `locked_hint` | Optional short label shown on locked actions — the tease is itself a deduction motivator |
-| `time_gate` | Allowed blocks-of-day and/or day range |
-| `expires` | Optional day/trigger after which it's gone; validator checks expiring critical-path actions have alternates |
-| `delay` | Blocks-spent before results mature (0 = immediate); maturity = pager event |
-| `produces` | **Flat** fact ID list — no conditional branching. Variation is authored as multiple actions differing in prereqs/visibility |
-| `pending_label` | In-fiction delay line + pager headline at maturity |
-| `repeatable` | Almost always false |
-
-## 7. Interviews (ink integration)
-
-Interviews are actions (`verb: INTERVIEW`) whose payload is an ink reference:
-
-| Field | Purpose |
-|---|---|
-| `character` | Glossary tag ID |
-| `knot` | The script that owns all flow and prose |
-| `fact_manifest` | **Every fact ID the ink script can produce.** The validator cross-checks this against `discoverFact(...)` calls in the ink source; reachability analysis stays intact even though flow logic lives in script |
-| `re_interview` | Available again whenever the manifest contains undiscovered facts whose ink-side gates could now open (cheap approximation: re-enable when any new fact tagged with this character is discovered) |
-
-Engine↔ink contract (external functions): `hasFact(id)`, `contradictionActive(id)`, `discoverFact(id)`, `day()`, `spendBlock()` if a script needs it. Keep the surface tiny and stable — it's effectively part of the case format.
-
-## 8. World triggers & schedules
-
-| Field | Purpose |
-|---|---|
-| `trigger_id` | Identity |
-| `when` | Day/block reached, OR prereq expression satisfied, OR blocks-spent count |
-| `effects` | Change location state; retarget a character's interview action; enable/expire actions; deliver an unprompted fact (SAC phone call pattern) |
-
-Recurring schedules (waitress works evenings) are just `time_gate` on interview actions; triggers are for one-shot changes.
-
-## 9. Prerequisite expressions (shared mini-format)
-
-Used by unlock rules, action prereqs, and triggers: **AND/OR/NOT over fact IDs, plus `contradiction_active(id)` and `day >= n`.** No scripting — everything stays analyzable by the validator. Anything needing more expressiveness becomes a trigger or a second action.
-
-## 10. Reconstruction
-
-| Field | Purpose |
-|---|---|
-| `events[]` | `event_id`, band (BEFORE/DURING/AFTER), ordered slot templates |
-| `slots` | Kind (ACTOR / VERB / OBJECT / PLACE / TIME / MOTIVE); correct glossary ID or phrase; accepted alternates with partial-credit weights; decoy pool ("all discovered PERSONs" is the default pool rule) |
-| `verb_list`, `motive_list` | Authored phrase pools for non-entity slots |
-| `grading` | Per-event and per-slot weights; score→outcome tier thresholds |
-| `supports` | Per-slot fact IDs that justify the answer — powers the derived post-game review |
-
-## 11. Outcomes (reduced epilogue)
-
-| Field | Purpose |
-|---|---|
-| `outcome_tiers` | Threshold + one ink knot per tier (Case Closed / Plea Bargain / Mistrial / Unsolved) |
-| *(derived)* | Post-game review generated from data: player timeline vs. true timeline, per-slot `supports` facts marked had / missed / ignored; undiscovered-fact teasers labeled by producing action |
-
-## 12. What is NOT in the case file (save state)
-
-Discovered fact set · active contradictions · player tags (CLEARED/DOUBTED/KEY), board layout, annotations · clock (day, block) · blocks-spent counter, pending-results queue, lab queue occupancy · interview/ink state (ink's own save blob) · reconstruction draft · location current-state index.
-
-## 13. Format & pipeline decisions (settled)
-
-1. **Validator is the second program built** (after the loader): dangling IDs, fact connection-density ≥2, contradictions resolvable, critical path reachable within block budget, expiring critical actions have alternates, manifest↔ink cross-check, glossary coverage.
-2. **Text embedded / in ink for now**; string tables when localization becomes real (ink localization approach TBD — investigate).
-3. **No conditional `produces`** — multiple actions + tri-state visibility instead.
-4. **JSON is the authoring source of truth, permanently.** Binary is a compile target for shipping, produced by the build step, never hand-edited. The validator runs on JSON.
+**Field table legend:** R = required, O = optional.
 
 ---
 
-## Deferred (cut from slice, kept on record)
+## 1. Root object
 
-- Link types `CORROBORATES`, `SUPERSEDES`, `REINTERPRETS`
-- Warrants & judge rules (fact-gated locked actions cover the need)
-- PD favor resource (confirmed cut)
-- Lab credits (replaced by lab queue capacity; re-add only if playtests show forensic brute-forcing)
-- Authored per-gap/per-error epilogue lines (derived review replaces them)
-- Conditional action outcomes
-- STAKEOUT verb
-- Fractional block costs
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `schema_version` | string | R | Format version, e.g. `"2.0"` |
+| `meta` | object | R | §2 |
+| `glossary` | array | R | §3 |
+| `facts` | array | R | §4 |
+| `contradictions` | array | R | §5 |
+| `locations` | array | R | §6 |
+| `actions` | array | R | §7 |
+| `interviews` | array | R | §8 |
+| `schedule` | array | R (may be empty) | §9 |
+| `reconstruction` | object | R | §10 |
+| `outcome_tiers` | array | R | §11 |
+
+## 2. `meta`
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `case_id` | string | R | Stable identifier, kebab-case |
+| `title` | string | R | Player-facing case title |
+| `setting.date` | string | R | In-fiction date (era: mid-1990s) |
+| `setting.region` | string | R | In-fiction region |
+| `deadline_days` | int | R | Case length in days |
+| `blocks_per_day` | int | R | Action blocks per day (slice: 3). Absolute block index = `day * blocks_per_day + block`, 0-based |
+| `ink_file` | string | R | The single ink file for this case; all knot references resolve inside it |
+| `briefing_knot` | string | R | Ink knot played at case start |
+| `starting_facts` | string[] | R | Fact IDs discovered at start |
+| `starting_locations` | string[] | R | Location IDs unlocked at start |
+| `lab_queue_capacity` | int | R | Max concurrent lab (COLLECT) requests; further submissions queue, delay clock paused |
+
+*(Removed in v2.0: `starting_resources` wrapper, `tuning_targets` — targets live in the validator's own config, identical for every case; `block_labels` — presentation, staging file.)*
+
+## 3. `glossary[]` — the noun universe
+
+The runtime entity set is **derived**: it is exactly the tags of discovered facts. The glossary is a lookup table only.
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `tag_id` | string | R | Key used in fact `tags` and reconstruction slots |
+| `kind` | enum | R | `PERSON` `PLACE` `OBJECT` `VEHICLE` `ORG` `TIME` |
+| `display_name` | string | R | Board / dropdown text |
+
+## 4. `facts[]`
+
+Facts are immutable and append-only.
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `fact_id` | string | R | `F-xxx` |
+| `text` | string | R | The claim as shown on the card |
+| `tags` | string[] | R | Glossary tag IDs referenced by the claim |
+| `reliability` | enum | R | `TESTIMONY` `DOCUMENT` `FORENSIC` |
+| `conditions` | string[] | O | Observation metadata, TESTIMONY only (e.g. "dark", "~40m", "through window"); shown on the card; powers fair invalidation and rational `DOUBTED` tagging |
+
+**Prerequisite lists (used everywhere):** every `prerequisites` / `unlock_rule` / state-`when` field in this format is a **flat array of fact IDs, AND semantics** (`null` or `[]` = none). There is no expression DSL. Three conventions replace it:
+
+1. **OR** → the *shared knowledge-fact idiom*: author every alternative route to produce the **same fact**, gate on that one fact. (Names the inference explicitly — a feature, not a workaround.)
+2. **Time conditions** → the `available` block range on actions (§7), never a prereq.
+3. **"Contradiction active"** → list both of the contradiction's facts (active ≡ both discovered). Interview-side leverage uses ink's `contradictionActive()` instead.
+
+## 5. `contradictions[]`
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `contradiction_id` | string | R | `C-xx` |
+| `facts` | string[2] | R | The two mutually-exclusive fact IDs (symmetric) |
+| `resolution_actions` | string[] | R | Action ID(s) that resolve the tension; validator enforces ≥1 |
+
+Dormant until both facts discovered; activation draws the board's red thread. **No player-facing hint or explanation field exists** — the thread is a flag, never an answer.
+
+## 6. `locations[]`
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `location_id` | string | R | Stable ID (also the staging key) |
+| `name` | string | R | Player-facing name |
+| `unlock_rule` | string[] \| null | R | Fact list (AND); `null` = only via `starting_locations` |
+| `states` | array | R | Ordered diorama states, below; first entry is the initial state |
+
+`states[]`:
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `state_id` | string | R | Name referenced by actions' `location_states` and by staging |
+| `when` | string[] \| null | R | Fact list (AND) that switches the location to this state; `null` on the initial state. Later states win over earlier when multiple match |
+
+*(Removed in v2.0: `map_zone` and the root `map` object — no travel costs in the slice; `hotspots` — dissolved into actions, §7.)*
+
+## 7. `actions[]` — every interactable thing in the game
+
+Inspectables are actions too: verb `INSPECT`, cost 0. One record type, one visibility system, one staging binding.
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `action_id` | string | R | `A-xx`; staging binds this to a diorama position |
+| `verb` | enum | R | `INSPECT` `SEARCH` `COLLECT` `INTERVIEW` `CANVASS` `PHONE_FAX` |
+| `location_id` | string | R | Where it lives (`PHONE_FAX` at the field office) |
+| `label` | string | R | Player-facing description of what the action does |
+| `cost` | int | R | Whole blocks; `0` for INSPECT. One PHONE_FAX block covers up to two requests (engine rule) |
+| `prerequisites` | string[] \| null | R | Fact list (AND) |
+| `hidden` | bool | R | With prereqs, derives visibility: prereqs met → **unlocked**; unmet & `hidden:false` → **locked** (shown, unselectable); unmet & `hidden:true` → **secret** (invisible) |
+| `locked_hint` | string | O | Short tease shown on locked actions |
+| `available` | int[2] | R | Absolute block range `[from, to]`, inclusive; `-1` = end of case; `[0,-1]` = always. Replaces day-gating and expiry. Validator checks expiring critical-path actions have alternates |
+| `blocks_of_day` | int[] | O | Periodic filter (e.g. `[2]` = evenings only); absent = all blocks. The one thing a contiguous range can't express |
+| `location_states` | string[] | O | Diorama states this action exists in; absent = all states |
+| `hidden_reveal` | bool | O | Default `false`. Marks angle-only discovery (staging holds the angle); validator law: never the sole route to a critical-path fact |
+| `delay` | int | R | Blocks spent before results mature; `0` = immediate. Maturity = pager headline. COLLECT actions additionally occupy a lab queue slot for the delay (engine rule from verb — no per-action flag) |
+| `pending_label` | string | O | Required when `delay > 0`: in-fiction delay line + pager headline text |
+| `produces` | string[] | R (may be empty) | Flat fact ID list, unconditional. Variation = multiple actions. Empty for INTERVIEW (manifest owns it, §8) |
+| `repeatable` | bool | R | Almost always `false` |
+
+## 8. `interviews[]`
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `interview_id` | string | R | `IV-xx` |
+| `action_id` | string | R | The INTERVIEW-verb action this payload belongs to (single direction: interviews point at actions, never both ways) |
+| `character` | string | R | Glossary tag ID (PERSON) |
+| `knot` | string | R | Knot inside `meta.ink_file` |
+| `fact_manifest` | string[] | R | Every fact the ink knot can `discoverFact()`; validator cross-checks against the ink source |
+| `re_interview` | bool | R | If `true`, action re-enables whenever a new fact tagged with `character` is discovered (engine rule) |
+
+Engine↔ink contract (stable, part of this format): `hasFact(id)`, `contradictionActive(id)`, `discoverFact(id)`, `day()`, `spendBlock()`.
+
+## 9. `schedule[]` — timed unprompted delivery
+
+The sole survivor of the trigger system: things that happen at a *time* regardless of player activity. Everything else triggers used to do lives where its effect is (unlocks → `unlock_rule`s, enables → prereqs, state changes → `states[].when`, discovery pagers → `pending_label`).
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `at_block` | int | R | Absolute block index at which delivery fires |
+| `delivers` | string[] | R | Fact IDs discovered unprompted (they then drive unlocks/states/prereqs like any fact) |
+| `pager` | string | R | Pager headline shown at delivery |
+
+## 10. `reconstruction`
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `verb_list` | array | R | `{id, text}` phrase pool for VERB slots |
+| `motive_list` | array | R | `{id, text}` phrase pool for MOTIVE slots (decoy motives are just entries only used as decoys) |
+| `events` | array | R | Below |
+| `grading.assertion_weights` | object | R | `who / how / why / before_after / accessory` → weight, sums to 1.0 |
+| `grading.event_band_map` | object | R | Assertion type → event IDs it grades |
+
+`events[]`:
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `event_id` | string | R | `E-xx` |
+| `band` | enum | R | `BEFORE` `DURING` `AFTER` |
+| `template` | string | R | Sentence with slot placeholders, e.g. `"[ACTOR] [VERB] at [PLACE], [MOTIVE]."` |
+| `slots` | array | R | Below, in template order |
+
+`slots[]`:
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `kind` | enum | R | `ACTOR` `VERB` `OBJECT` `PLACE` `TIME` `MOTIVE` |
+| `answer` | string | R | Correct glossary ID (entity kinds) or phrase ID (VERB/MOTIVE) |
+| `alternates` | array | O | `{id, weight}` partial-credit answers, weight in (0,1) |
+| `decoy_pool` | string \| string[] | R | Explicit ID list, or a pool token: `discovered_persons` `discovered_places` `discovered_vehicles` `discovered_objects` `discovered_times` |
+| `supports` | string[] | R | Fact IDs justifying the answer; powers the derived post-game review (had / missed / ignored) |
+
+Validation on final submission only. Submission is ceremonial (signed memo), irreversible.
+
+## 11. `outcome_tiers[]` — single source for thresholds
+
+| Field | Type | R/O | Description |
+|---|---|---|---|
+| `tier` | string | R | `case_closed` `plea_bargain` `mistrial` `unsolved` |
+| `min` | float | R | Minimum score for this tier (list ordered descending; no duplicate threshold table anywhere else) |
+| `knot` | string | R | Outcome memo knot inside `meta.ink_file` |
+
+## 12. Save state (NOT in the case file)
+
+Discovered fact set · active contradictions · player tags (`CLEARED` `DOUBTED` `KEY`), board layout, annotations · clock (absolute block index) · pending-results list & lab-queue occupancy/order · fired schedule entries · ink state blob · reconstruction draft · per-location current state.
+
+## 13. Validator laws (run on JSON; config in the validator, not the case)
+
+No dangling IDs anywhere · every fact producible (action, schedule, or starting) · every glossary entry appears in ≥1 fact; every reconstruction answer/decoy introducible via some fact · fact connection-density ≥ 2 (shared tag / contradiction / prereq / supports) · every contradiction has ≥1 reachable resolution action · critical path reachable within the block budget · actions with bounded `available` on the critical path have alternates · `hidden_reveal` never the sole route to a critical fact · interview manifests ⊇ ink `discoverFact` calls · `pending_label` present wherever `delay > 0` · exactly one recontextualizing beat per case (checked by a human, flagged by convention) · economy targets (~60% affordability, ~4 facts/day) from validator config.
+
+## 14. Deferred (kept on record)
+
+Map zones / travel costs (flatter re-add: single `travel_cost` int per location) · link types `CORROBORATES` `SUPERSEDES` `REINTERPRETS` · warrants; PD favor; lab credits · STAKEOUT verb · prereq expression DSL (`any`/`not` — superseded by the shared knowledge-fact idiom) · trigger effects DSL · conditional action outcomes · fractional block costs · authored epilogue lines · manual board threads · mid-case inference puzzles.
