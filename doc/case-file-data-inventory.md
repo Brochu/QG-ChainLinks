@@ -75,9 +75,10 @@ Activates when both facts are discovered. Consumers: board red thread (no explan
 |---|---|
 | `action_id`, `verb` | Fixed vocabulary for the slice: SEARCH / COLLECT / INTERVIEW / CANVASS / PHONE_FAX (STAKEOUT deferred; vocabulary grows with future cases) |
 | `location_id` | Where it lives (PHONE_FAX at the Field Office) |
+| `label` | Text shown to the used when hovering this action |
 | `cost` | Whole blocks only (1, 2...). PHONE_FAX covers up to two requests per block. COLLECT actions additionally occupy a lab queue slot for their delay duration |
 | `prerequisites` | Expression (§9) |
-| `visibility` | Derived tri-state: **unlocked** (visible, selectable — prereqs met), **locked** (visible, not selectable — prereqs unmet, `hidden: false`), **secret** (invisible — prereqs unmet, `hidden: true`). Authored data is just the `hidden` boolean; the states fall out of prereq evaluation |
+| `hidden` | Authored data is just the `hidden` boolean; the states fall out of prereq evaluation |
 | `locked_hint` | Optional short label shown on locked actions — the tease is itself a deduction motivator |
 | `time_gate` | Allowed blocks-of-day and/or day range |
 | `expires` | Optional day/trigger after which it's gone; validator checks expiring critical-path actions have alternates |
@@ -93,7 +94,7 @@ Interviews are actions (`verb: INTERVIEW`) whose payload is an ink reference:
 | Field | Purpose |
 |---|---|
 | `character` | Glossary tag ID |
-| `ink_file` / `knot` | The script that owns all flow and prose |
+| `knot` | The script that owns all flow and prose |
 | `fact_manifest` | **Every fact ID the ink script can produce.** The validator cross-checks this against `discoverFact(...)` calls in the ink source; reachability analysis stays intact even though flow logic lives in script |
 | `re_interview` | Available again whenever the manifest contains undiscovered facts whose ink-side gates could now open (cheap approximation: re-enable when any new fact tagged with this character is discovered) |
 
