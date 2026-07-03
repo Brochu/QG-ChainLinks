@@ -12,15 +12,6 @@ FDataKey UMatrixSubsystem::Matrix_CreateKey(EEntityType entity_type, int32 entit
 	FDataKey key {};
 	key.entity_type = entity_type;
 
-	switch (entity_type) {
-	case EEntityType::PERSON:
-		key.person_info_type = (EPersonInfoType)info_type_id;
-		break;
-	case EEntityType::LOCATION:
-		key.location_info_type = (ELocationInfoType)info_type_id;
-		break;
-	}
-
 	key.pad0 = 0;
 	key.entity_id = entity_id;
 

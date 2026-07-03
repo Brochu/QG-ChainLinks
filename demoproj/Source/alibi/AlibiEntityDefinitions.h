@@ -5,166 +5,477 @@
 #include "CoreMinimal.h"
 #include "AlibiEntityDefinitions.generated.h"
 
-/// <summary>
-/// All possiblie matrix attributes for people in the case
-/// </summary>
-UENUM(BlueprintType)
-enum class EPersonInfoType : uint8 {
-	PER_ID,
-	PER_NAME,
-	PER_ALIAS,
-	PER_AGE,
-	PER_SEX,
-	PER_EYECOLOR,
-	PER_HAIRCOLOR,
-	PER_BUILD,
-	PER_RESIDENCE,
-	PER_PHONE,
-	PER_EMAIL,
-	PER_OCCUPATION,
-	PER_DECISION_STYLE,
-	PER_CONFLICT_STYLE,
-};
+// NOTE: the case-file `FCaseLocation` / `FCaseAction` structs now live in
+// CaseSubsystem.h (Case File Data Inventory v2.0). The old matrix-era versions
+// that used to sit here were removed to avoid a redefinition clash.
+// ----------------------------------------------------------------------------
 
-UENUM(BlueprintType)
-enum class ESex : uint8 { SEX_M, SEX_F, };
-UENUM(BlueprintType)
-enum class EEyeColor : uint8 { EYE_BLACK, EYE_BROWN, EYE_BLONDE, EYE_RED, EYE_BLUE, EYE_GREEN, EYE_YELLOW, };
-UENUM(BlueprintType)
-enum class EHairColor : uint8 { HAIR_BLACK, HAIR_WHITE, HAIR_BROWN, HAIR_BLONDE, HAIR_RED, };
-UENUM(BlueprintType)
-enum class EBuildTrait : uint8 { BLD_SLIM, BLD_THIN, BLD_AVERAGE, BLD_ATHLETIC, BLD_MUSCULAR, BLD_STOCKY, BLD_HUSKY, BLD_HEAVYSET, };
-UENUM(BlueprintType)
-enum class EDecisionStyle : uint8 { DEC_XTR_IMPULSIVE, DEC_MLD_IMPULSIVE, DEC_MLD_CALCULATING, DEC_XTR_CALCULATING, };
-UENUM(BlueprintType)
-enum class EConflictStyle : uint8 { CNF_XTR_CONFRONT, DEC_MLD_CONFRONT, DEC_MLD_SECRET, DEC_XTR_SECRET, };
+// ============================================================================
+//  COLD FILE case-logic schema (Case File Data Inventory v2.0).
+//  These structs mirror the JSON 1:1 so a case file deserializes straight into
+//  FCaseFile (e.g. via FJsonObjectConverter::JsonObjectStringToUStruct).
+//
+//  Parsing notes:
+//   - Field names match the JSON keys exactly (snake_case). FJsonObjectConverter
+//     matches property names case-insensitively.
+//   - The small closed-vocabulary strings are UENUMs; string import matches the
+//     enumerator name (which is spelled exactly as the JSON value).
+//   - JSON keys that may be `null` or absent (prerequisites, unlock_rule, when,
+//     blocks_of_day, location_states, conditions, alternates) map to TArrays that
+//     simply come back empty.
+//   - Two spots need a hand in the loader (called out at their fields):
+//     reconstruction `template` (C++ keyword) and slot `decoy_pool` (string|array).
+// ============================================================================
 
-/// <summary>
-/// Represents on person of the case
-/// </summary>
-USTRUCT(BlueprintType)
-struct FCasePerson {
+// ---- closed vocabularies ---------------------------------------------------
+UENUM()
+enum class EGlossaryKind : uint8 { PERSON, PLACE, OBJECT, VEHICLE, ORG, TIME };
+
+UENUM()
+enum class ECaseReliability : uint8 { TESTIMONY, DOCUMENT, FORENSIC };
+
+UENUM()
+enum class ECaseVerb : uint8 { INSPECT, SEARCH, COLLECT, INTERVIEW, CANVASS, PHONE_FAX };
+
+UENUM()
+enum class EReconBand : uint8 { BEFORE, DURING, AFTER };
+
+UENUM()
+enum class EReconSlotKind : uint8 { ACTOR, VERB, OBJECT, PLACE, TIME, MOTIVE };
+
+// ---- meta ------------------------------------------------------------------
+USTRUCT()
+struct FCaseSetting {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	int32 id;
+	FText date;
 
 	UPROPERTY()
-	FString name;
-
-	UPROPERTY()
-	FString alias;
-
-	UPROPERTY()
-	int32 age;
-
-	UPROPERTY()
-	ESex sex;
-
-	UPROPERTY()
-	EEyeColor eye_color;
-
-	UPROPERTY()
-	EHairColor hair_color;
-
-	UPROPERTY()
-	EBuildTrait physical_build;
-
-	UPROPERTY()
-	int32 loc_residence;
-
-	UPROPERTY()
-	FString phone;
-
-	UPROPERTY()
-	FString email;
-
-	UPROPERTY()
-	FString occupation;
-
-	UPROPERTY()
-	EDecisionStyle decision_personality;
-
-	UPROPERTY()
-	EConflictStyle conflict_personality;
-};
-// ----------------------------------------------------------------------------
-
-/// <summary>
-/// All possible matrix attributes for locations in the case
-/// </summary>
-UENUM(BlueprintType)
-enum class ELocationInfoType : uint8 {
-	LOC_ID,
-	LOC_TYPE,
-	LOC_NAME_ADDRESS,
-	LOC_OWNER,
-	LOC_RESIDENTS,
-	LOC_ACCESS_LEVEL,
-	LOC_SECURITY,
-	LOC_OP_HOURS,
-	LOC_CAPACITY,
+	FText region;
 };
 
-UENUM(BlueprintType)
-enum class ELocationType : uint8 { LOCTYPE_RESIDENCE, LOCTYPE_COMMERCIAL, LOCTYPE_OUTDOOR, LOCTYPE_TRANSPORT, LOCTYPE_INDUSTRIAL, };
+USTRUCT()
+struct FCaseMetadata {
+	GENERATED_BODY()
 
-/// <summary>
-/// Represents one location of the case
-/// </summary>
-USTRUCT(BlueprintType)
+	UPROPERTY()
+	FName case_id;
+
+	UPROPERTY()
+	FText title;
+
+	UPROPERTY()
+	FCaseSetting setting;
+
+	UPROPERTY()
+	int32 deadline_days = 0;
+
+	UPROPERTY()
+	int32 blocks_per_day = 0;
+
+	// The single ink file for this case; every knot reference resolves inside it.
+	UPROPERTY()
+	FName ink_file;
+
+	UPROPERTY()
+	FName briefing_knot;
+
+	UPROPERTY()
+	TArray<FName> starting_facts;
+
+	UPROPERTY()
+	TArray<FName> starting_locations;
+
+	UPROPERTY()
+	int32 lab_queue_capacity = 0;
+};
+
+// ---- glossary --------------------------------------------------------------
+USTRUCT()
+struct FCaseGlossaryEntry {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName tag_id;
+
+	UPROPERTY()
+	EGlossaryKind kind = EGlossaryKind::OBJECT;
+
+	UPROPERTY()
+	FText display_name;
+};
+
+// ---- facts -----------------------------------------------------------------
+USTRUCT()
+struct FCaseFact {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName fact_id;
+
+	UPROPERTY()
+	FText text;
+
+	UPROPERTY()
+	TArray<FName> tags;
+
+	UPROPERTY()
+	ECaseReliability reliability = ECaseReliability::TESTIMONY;
+
+	// TESTIMONY-only observation metadata; empty otherwise.
+	UPROPERTY()
+	TArray<FText> conditions;
+};
+
+// ---- contradictions --------------------------------------------------------
+USTRUCT()
+struct FCaseContradiction {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName contradiction_id;
+
+	// Exactly two, symmetric.
+	UPROPERTY()
+	TArray<FName> facts;
+
+	UPROPERTY()
+	TArray<FName> resolution_actions;
+};
+
+// ---- locations -------------------------------------------------------------
+USTRUCT()
+struct FCaseLocationState {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName state_id;
+
+	// Fact list (AND) that switches the location into this state; empty (JSON null)
+	// on the initial state. Later matching states win over earlier ones.
+	UPROPERTY()
+	TArray<FName> when;
+};
+
+USTRUCT()
 struct FCaseLocation {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	FName id;
+	FName location_id;
 
 	UPROPERTY()
-	FName name;
+	FText name;
 
+	// Fact list (AND); empty (JSON null) means reachable only via starting_locations.
 	UPROPERTY()
-	ELocationType type;
+	TArray<FName> unlock_rule;
 
+	// Ordered; states[0] is the initial state.
 	UPROPERTY()
-	FText desc;
-
-	UPROPERTY()
-	TArray<FName> links;
-
-	UPROPERTY()
-	FName ink;
+	TArray<FCaseLocationState> states;
 };
-// ----------------------------------------------------------------------------
 
-/// <summary>
-/// Represents one action the player can choose
-/// </summary>
+// ---- actions (every interactable thing, INSPECT included) -------------------
 USTRUCT()
 struct FCaseAction {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	FName id;
+	FName action_id;
 
 	UPROPERTY()
-	FName loc_id;
+	ECaseVerb verb = ECaseVerb::INSPECT;
+
+	UPROPERTY()
+	FName location_id;
 
 	UPROPERTY()
 	FText label;
 
 	UPROPERTY()
-	FName ink_knot;
+	int32 cost = 0;
+
+	// Fact list (AND); empty (JSON null) = no prerequisite.
+	UPROPERTY()
+	TArray<FName> prerequisites;
 
 	UPROPERTY()
-	FText reveals;
+	bool hidden = false;
 
 	UPROPERTY()
-	TArray<FName> require;
+	FText locked_hint;
+
+	// Absolute block range [from, to] inclusive; to == -1 means "end of case".
+	UPROPERTY()
+	TArray<int32> available;
+
+	// Optional periodic filter, e.g. [2] = evenings only; empty = every block.
+	UPROPERTY()
+	TArray<int32> blocks_of_day;
+
+	// Diorama states this action exists in; empty = all states.
+	UPROPERTY()
+	TArray<FName> location_states;
+
+	// Angle-only discovery (staging holds the angle). Never the sole route to a
+	// critical fact (validator law).
+	UPROPERTY()
+	bool hidden_reveal = false;
+
+	// Blocks spent before results mature; 0 = immediate. COLLECT additionally
+	// occupies a lab-queue slot for the delay (engine rule from the verb).
+	UPROPERTY()
+	int32 delay = 0;
+
+	// Required whenever delay > 0: in-fiction delay line + pager headline.
+	UPROPERTY()
+	FText pending_label;
+
+	// Flat, unconditional fact list; empty for INTERVIEW (its manifest owns output).
+	UPROPERTY()
+	TArray<FName> produces;
 
 	UPROPERTY()
-	TArray<FName> grants;
-
-	UPROPERTY()
-	bool hidden;
+	bool repeatable = false;
 };
-// ----------------------------------------------------------------------------
+
+// ---- interviews ------------------------------------------------------------
+USTRUCT()
+struct FCaseInterview {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName interview_id;
+
+	// The INTERVIEW-verb action this payload belongs to (single direction).
+	UPROPERTY()
+	FName action_id;
+
+	UPROPERTY()
+	FName character;
+
+	// Knot inside meta.ink_file.
+	UPROPERTY()
+	FName knot;
+
+	// Every fact the knot can discoverFact(); validator cross-checks the ink source.
+	UPROPERTY()
+	TArray<FName> fact_manifest;
+
+	UPROPERTY()
+	bool re_interview = false;
+};
+
+// ---- schedule (timed unprompted delivery) ----------------------------------
+USTRUCT()
+struct FCaseScheduleEntry {
+	GENERATED_BODY()
+
+	// Absolute block index = day * blocks_per_day + block (0-based).
+	UPROPERTY()
+	int32 at_block = 0;
+
+	UPROPERTY()
+	TArray<FName> delivers;
+
+	UPROPERTY()
+	FText pager;
+};
+
+// ---- reconstruction --------------------------------------------------------
+USTRUCT()
+struct FReconPhrase {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName id;
+
+	UPROPERTY()
+	FText text;
+};
+
+USTRUCT()
+struct FReconAlternate {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName id;
+
+	// Partial-credit weight in (0,1).
+	UPROPERTY()
+	float weight = 0.f;
+};
+
+USTRUCT()
+struct FReconSlot {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	EReconSlotKind kind = EReconSlotKind::ACTOR;
+
+	// Glossary ID (entity kinds) or phrase ID (VERB / MOTIVE).
+	UPROPERTY()
+	FName answer;
+
+	UPROPERTY()
+	TArray<FReconAlternate> alternates;
+
+	// JSON `decoy_pool` is EITHER a pool token ("discovered_persons", ...) OR an
+	// explicit id list. FJsonObjectConverter can't target one field with both
+	// shapes, so the loader splits it: set `decoy_pool_token` when the JSON value
+	// is a string, otherwise fill `decoy_pool_ids`. Exactly one is populated.
+	UPROPERTY()
+	FName decoy_pool_token;
+
+	UPROPERTY()
+	TArray<FName> decoy_pool_ids;
+
+	UPROPERTY()
+	TArray<FName> supports;
+};
+
+USTRUCT()
+struct FReconEvent {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName event_id;
+
+	UPROPERTY()
+	EReconBand band = EReconBand::BEFORE;
+
+	// JSON key is "template" (a C++ keyword). FJsonObjectConverter matches names
+	// case-insensitively, so "template" -> Template; a hand-rolled parser must map
+	// it explicitly.
+	UPROPERTY()
+	FText Template;
+
+	UPROPERTY()
+	TArray<FReconSlot> slots;
+};
+
+USTRUCT()
+struct FReconAssertionWeights {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	float who = 0.f;
+
+	UPROPERTY()
+	float how = 0.f;
+
+	UPROPERTY()
+	float why = 0.f;
+
+	UPROPERTY()
+	float before_after = 0.f;
+
+	UPROPERTY()
+	float accessory = 0.f;
+};
+
+USTRUCT()
+struct FReconEventBandMap {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<FName> who;
+
+	UPROPERTY()
+	TArray<FName> how;
+
+	UPROPERTY()
+	TArray<FName> why;
+
+	UPROPERTY()
+	TArray<FName> before_after;
+
+	UPROPERTY()
+	TArray<FName> accessory;
+};
+
+USTRUCT()
+struct FReconGrading {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FReconAssertionWeights assertion_weights;
+
+	UPROPERTY()
+	FReconEventBandMap event_band_map;
+};
+
+USTRUCT()
+struct FCaseReconstruction {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<FReconPhrase> verb_list;
+
+	UPROPERTY()
+	TArray<FReconPhrase> motive_list;
+
+	UPROPERTY()
+	TArray<FReconEvent> events;
+
+	UPROPERTY()
+	FReconGrading grading;
+};
+
+// ---- outcome tiers (single source for score thresholds) --------------------
+USTRUCT()
+struct FOutcomeTier {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName tier;
+
+	// Minimum score for this tier; list is ordered descending.
+	UPROPERTY()
+	float min = 0.f;
+
+	// Outcome-memo knot inside meta.ink_file.
+	UPROPERTY()
+	FName knot;
+};
+
+// ---- root ------------------------------------------------------------------
+USTRUCT()
+struct FCaseFile {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FString schema_version;
+
+	UPROPERTY()
+	FCaseMetadata meta;
+
+	UPROPERTY()
+	TArray<FCaseGlossaryEntry> glossary;
+
+	UPROPERTY()
+	TArray<FCaseFact> facts;
+
+	UPROPERTY()
+	TArray<FCaseContradiction> contradictions;
+
+	UPROPERTY()
+	TArray<FCaseLocation> locations;
+
+	UPROPERTY()
+	TArray<FCaseAction> actions;
+
+	UPROPERTY()
+	TArray<FCaseInterview> interviews;
+
+	UPROPERTY()
+	TArray<FCaseScheduleEntry> schedule;
+
+	UPROPERTY()
+	FCaseReconstruction reconstruction;
+
+	UPROPERTY()
+	TArray<FOutcomeTier> outcome_tiers;
+};

@@ -1,13 +1,14 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "_notes": {
-    "purpose": "COLD FILE case logic (authoring source of truth). Follows cold-file-design-doc.md v1.0 and case-file-data-inventory.md v1.0. Prose (briefing/interviews/documents/outcomes) lives in ink; this file holds IDs, rules, costs, and short labels only. Wholly fictional; any resemblance to real persons or events is unintended.",
-    "prereq_dsl": "A prerequisite expression is one of: a bare fact-id string (require discovered); {\"all\":[expr,...]} (AND); {\"any\":[expr,...]} (OR); {\"not\":expr}; {\"contradiction_active\":\"C-xx\"}; {\"day_gte\":n}. `null` means no prerequisite.",
-    "decoy_pool_tokens": "In reconstruction slots, decoy_pool may be an explicit list of glossary ids OR one of: discovered_persons | discovered_places | discovered_vehicles | discovered_objects | discovered_times (resolved at runtime from the discovered-fact tag set).",
-    "visibility": "Action visibility is derived: prereqs met => unlocked; prereqs unmet & hidden:false => locked (shown, with optional locked_hint); prereqs unmet & hidden:true => secret (invisible). Only `hidden` is authored.",
-    "action_expiry": "action.expires removes the action once satisfied. Accepts {\"day\": n}, a trigger id, OR a bare fact-id (the action is gone once that fact is discovered). Example: A-51 expires on F-100 — the voluntary interview closes the moment the arrest fact lands.",
-    "ink_contract": "external fns available to ink: hasFact(id), contradictionActive(id), discoverFact(id), day(), spendBlock(). Every fact an interview can emit is listed in fact_manifest for the validator to cross-check against discoverFact() calls.",
-    "underscore_keys": "Any key beginning with `_` (e.g. _note, _notes) is an authoring annotation and is stripped by the compiler; the engine never sees it."
+    "purpose": "COLD FILE case logic (authoring source of truth). Conforms to Case File Data Inventory v2.0 (the format authority). Prose lives in the single ink file named by meta.ink_file. Wholly fictional; any resemblance to real persons or events is unintended.",
+    "prerequisites": "Every `prerequisites` / `unlock_rule` / `states[].when` is a FLAT array of fact IDs with AND semantics (null or [] = none). No expression DSL. OR is authored via the shared knowledge-fact idiom: each alternative route produces the SAME fact, gate on that fact — e.g. F-005 (warrant grounds) is emitted by both the Boyd interview (forged note) and the Rhonda motel interview (her slip), and the second-search actions gate on F-005. Time conditions use action.available (and blocks_of_day), never prereqs. 'Contradiction active' as a gate = list both of its facts; interview-side leverage stays in ink via contradictionActive().",
+    "availability": "action.available = [from,to] absolute block range, inclusive; -1 = end of case; [0,-1] = always. Absolute block = day*blocks_per_day + block (0-based), so day 3 morning = block 9, day 5 morning = block 15. blocks_of_day is a periodic filter, e.g. [2] = evenings only.",
+    "schedule": "Timed unprompted deliveries only (the sole survivor of the old trigger system). Everything the triggers used to do now lives at its effect site: unlocks in unlock_rule, action-enables in prerequisites, diorama changes in states[].when, delayed-result pagers in pending_label.",
+    "inspect_and_reveal": "Inspectables are cost-0 INSPECT actions (one record type, one visibility system, one staging binding). hidden_reveal marks angle-only discovery; validator law: never the sole route to a critical fact (A-14 reveals F-010, but A-11 also produces it).",
+    "decoy_pool_tokens": "reconstruction slot decoy_pool = an explicit ID list OR a token: discovered_persons | discovered_places | discovered_vehicles | discovered_objects | discovered_times.",
+    "ink_contract": "external fns available to ink: hasFact(id), contradictionActive(id), discoverFact(id), day(), spendBlock(). Interview fact_manifest must be a superset of the knot's discoverFact() calls (validator cross-check).",
+    "underscore_keys": "Any key beginning with `_` is an authoring annotation, stripped by the compiler and ignored by the validator."
   },
 
   "meta": {
@@ -16,6 +17,7 @@
     "setting": { "date": "October 1995", "region": "Marrow County, Missouri (Ozarks); interstate flight to Oklahoma" },
     "deadline_days": 10,
     "blocks_per_day": 3,
+    "ink_file": "sawyer_ridge.ink",
     "briefing_knot": "briefing",
     "starting_facts": ["F-001", "F-002", "F-003", "F-004"],
     "starting_locations": ["field_office", "ridge_farm", "boyd_farm"],
@@ -78,13 +80,13 @@
     { "fact_id": "F-002", "text": "Wade Crane phoned the sheriff twice — first to ask for a welfare check on his grandmother Verna, then to cancel it hours later.", "reliability": "DOCUMENT", "tags": ["wade", "verna", "ridge_farm"] },
     { "fact_id": "F-003", "text": "Sawyer Ridge (40 acres) belonged to Wade's late grandfather, Ottis Crane.", "reliability": "DOCUMENT", "tags": ["ottis", "ridge_farm", "wade"] },
     { "fact_id": "F-004", "text": "A deputy's first pass found the farmhouse locked, half-packed with trip gear, and Dale's truck gone; he figured the family had left for deer camp.", "reliability": "TESTIMONY", "tags": ["ridge_farm", "dale_truck"], "conditions": ["scene appeared to be a trip in progress", "no bodies present", "went off what Wade had told dispatch"] },
+    { "fact_id": "F-005", "text": "There are grounds for a warrant to search the Sawyer Ridge house.", "reliability": "DOCUMENT", "tags": ["ridge_farm"] },
 
     { "fact_id": "F-007", "text": "Amos Pike, who runs the rural mail route, says he saw the Cranes loading up and heading off for deer camp around the 18th.", "reliability": "TESTIMONY", "tags": ["amos", "ridge_farm", "dale_truck", "t_oct18", "t_dusk"], "conditions": ["at dusk", "across the bottom field, ~300 yards", "assumed it was the annual deer camp"] },
 
     { "fact_id": "F-010", "text": "Three spent .30-30 rifle casings and a live round lie on the kitchen floor.", "reliability": "FORENSIC", "tags": ["ridge_farm", "casings_3030"] },
     { "fact_id": "F-011", "text": "Luminol reveals high-velocity blood spatter under the fresh paint, across the whole kitchen.", "reliability": "FORENSIC", "tags": ["ridge_farm", "fresh_paint", "bleach"] },
     { "fact_id": "F-012", "text": "Furniture was moved and the kitchen floor scrubbed with bleach and repainted to bury the spatter.", "reliability": "FORENSIC", "tags": ["ridge_farm", "fresh_paint", "bleach"] },
-    { "fact_id": "F-014", "text": "The house was staged after the killings to look like the family had left for deer camp.", "reliability": "DOCUMENT", "tags": ["ridge_farm", "dale_truck"] },
 
     { "fact_id": "F-020", "text": "A burned, overturned pickup sits in Kettle Hollow, a quarter mile from the house, holding three badly burned bodies.", "reliability": "FORENSIC", "tags": ["kettle_hollow", "dale_truck"] },
     { "fact_id": "F-021", "text": "Boot prints, drag marks, and tractor-tire tracks run from the barn down to the burned truck.", "reliability": "FORENSIC", "tags": ["kettle_hollow", "ridge_farm"] },
@@ -98,7 +100,7 @@
     { "fact_id": "F-033", "text": "Wade had filed a nuisance complaint claiming Dale was selling off Ottis's guns and timber with no right.", "reliability": "DOCUMENT", "tags": ["wade", "dale", "ottis", "nuisance_report", "ottis_guns"] },
 
     { "fact_id": "F-040", "text": "Boyd warns Wade is a liar, was seen at the farm packed and armed, left word the relatives had 'gone off,' and was raised on Ottis's guns.", "reliability": "TESTIMONY", "tags": ["wade", "boyd", "ridge_farm", "ottis_guns"], "conditions": ["Boyd is afraid of Wade"] },
-    { "fact_id": "F-041", "text": "Wade produced a note — 'Gone to your aunt's in Arkansas. —Dale' — but the hand isn't Dale's; Wade wrote it himself.", "reliability": "DOCUMENT", "tags": ["wade", "dale", "arkansas_note"], "conditions": ["fabricated document"] },
+    { "fact_id": "F-041", "text": "Wade produced a note — 'Gone to your aunt's in Arkansas. —Dale' — but the hand isn't Dale's; Wade wrote it himself.", "reliability": "DOCUMENT", "tags": ["wade", "dale", "arkansas_note"] },
     { "fact_id": "F-043", "text": "Lorraine names Rhonda Sisk — Wade's half-sister — as the one who's been with Wade and likely helping him.", "reliability": "TESTIMONY", "tags": ["rhonda", "wade", "lorraine"] },
 
     { "fact_id": "F-050", "text": "Rhonda claims she only reconnected with Wade recently and barely knew the family.", "reliability": "TESTIMONY", "tags": ["rhonda", "wade", "t_spring"], "conditions": ["self-serving", "keeps asking to leave"] },
@@ -143,75 +145,41 @@
     {
       "location_id": "field_office",
       "name": "Field Office",
-      "map_zone": "marrow",
       "unlock_rule": null,
-      "states": [{ "state_id": "default", "trigger": null }],
-      "hotspots": [
-        { "hotspot_id": "hs_board",  "kind": "inspectable", "produces": [], "states": ["default"] },
-        { "hotspot_id": "hs_teletype", "kind": "action", "action_id": "A-01", "states": ["default"] }
-      ]
+      "states": [{ "state_id": "default", "when": null }]
     },
     {
       "location_id": "ridge_farm",
       "name": "Sawyer Ridge Farmhouse",
-      "map_zone": "marrow",
       "unlock_rule": null,
       "states": [
-        { "state_id": "initial",       "trigger": null },
-        { "state_id": "second_search", "trigger": { "any": ["F-041", "F-053"] } }
-      ],
-      "hotspots": [
-        { "hotspot_id": "hs_road",   "kind": "action", "action_id": "A-22", "states": ["initial", "second_search"] },
-        { "hotspot_id": "hs_stove",  "kind": "inspectable", "produces": ["F-010"], "states": ["second_search"], "hidden_reveal": true, "_note": "Angle-only casing kicked under the stove; NOT the sole route to F-010 (A-11 also produces it)." },
-        { "hotspot_id": "hs_kitchen","kind": "action", "action_id": "A-11", "states": ["second_search"] },
-        { "hotspot_id": "hs_floor",  "kind": "action", "action_id": "A-12", "states": ["second_search"] }
+        { "state_id": "initial",       "when": null },
+        { "state_id": "second_search", "when": ["F-005"] }
       ]
     },
     {
       "location_id": "kettle_hollow",
       "name": "Kettle Hollow",
-      "map_zone": "marrow",
-      "unlock_rule": { "any": ["F-020", { "day_gte": 3 }] },
-      "states": [{ "state_id": "default", "trigger": null }],
-      "hotspots": [
-        { "hotspot_id": "hs_wreck",  "kind": "action", "action_id": "A-21", "states": ["default"] },
-        { "hotspot_id": "hs_bodies", "kind": "action", "action_id": "A-20", "states": ["default"] }
-      ]
+      "unlock_rule": ["F-020"],
+      "states": [{ "state_id": "default", "when": null }]
     },
     {
       "location_id": "boyd_farm",
       "name": "Boyd & Lorraine's Place",
-      "map_zone": "marrow",
       "unlock_rule": null,
-      "states": [{ "state_id": "default", "trigger": null }],
-      "hotspots": [
-        { "hotspot_id": "hs_boyd",    "kind": "action", "action_id": "A-30", "states": ["default"] },
-        { "hotspot_id": "hs_lorraine","kind": "action", "action_id": "A-31", "states": ["default"] },
-        { "hotspot_id": "hs_boyd_yard","kind": "action", "action_id": "A-70", "states": ["default"] }
-      ]
+      "states": [{ "state_id": "default", "when": null }]
     },
     {
       "location_id": "rhonda_place",
       "name": "Rhonda's House (Cutter's Mill)",
-      "map_zone": "cutters_mill",
-      "unlock_rule": "F-043",
-      "states": [{ "state_id": "default", "trigger": null }],
-      "hotspots": [
-        { "hotspot_id": "hs_neighbors", "kind": "action", "action_id": "A-40", "states": ["default"] },
-        { "hotspot_id": "hs_cellar",    "kind": "action", "action_id": "A-41", "states": ["default"] }
-      ]
+      "unlock_rule": ["F-043"],
+      "states": [{ "state_id": "default", "when": null }]
     },
     {
       "location_id": "blue_spruce",
       "name": "Blue Spruce Motor Lodge (Oklahoma)",
-      "map_zone": "oklahoma",
-      "unlock_rule": "F-080",
-      "states": [{ "state_id": "default", "trigger": null }],
-      "hotspots": [
-        { "hotspot_id": "hs_room", "kind": "action", "action_id": "A-50", "states": ["default"] },
-        { "hotspot_id": "hs_desk", "kind": "action", "action_id": "A-51", "states": ["default"] },
-        { "hotspot_id": "hs_lot",  "kind": "action", "action_id": "A-60", "states": ["default"] }
-      ]
+      "unlock_rule": ["F-080"],
+      "states": [{ "state_id": "default", "when": null }]
     }
   ],
 
@@ -219,165 +187,164 @@
     {
       "action_id": "A-01", "verb": "PHONE_FAX", "location_id": "field_office",
       "label": "Background check on Wade Crane (NCIC / DMV teletype)",
-      "cost": 1, "prerequisites": null, "hidden": false,
-      "delay": 2, "repeatable": false,
-      "produces": ["F-030", "F-031"],
-      "pending_label": "Teletype out to Louisiana & the Bureau — 'day or two for a reply.'"
+      "cost": 1, "prerequisites": null, "hidden": false, "available": [0, -1],
+      "delay": 2, "pending_label": "Teletype out to Louisiana & the Bureau — 'day or two for a reply.'",
+      "produces": ["F-030", "F-031"], "repeatable": false
     },
     {
       "action_id": "A-02", "verb": "PHONE_FAX", "location_id": "field_office",
       "label": "Pull probate & deed records for Sawyer Ridge",
-      "cost": 1, "prerequisites": null, "hidden": false,
-      "delay": 3, "repeatable": false,
-      "produces": ["F-130"],
-      "pending_label": "County recorder: title & probate search pending."
+      "cost": 1, "prerequisites": null, "hidden": false, "available": [0, -1],
+      "delay": 3, "pending_label": "County recorder: title & probate search pending.",
+      "produces": ["F-130"], "repeatable": false
     },
     {
       "action_id": "A-03", "verb": "PHONE_FAX", "location_id": "field_office",
       "label": "Retrieve the nuisance complaint Wade filed",
-      "cost": 1, "prerequisites": null, "hidden": false,
-      "delay": 1, "repeatable": false,
-      "produces": ["F-033"],
-      "pending_label": "Clerk of court: locating Wade's complaint."
+      "cost": 1, "prerequisites": null, "hidden": false, "available": [0, -1],
+      "delay": 1, "pending_label": "Clerk of court: locating Wade's complaint.",
+      "produces": ["F-033"], "repeatable": false
     },
     {
       "action_id": "A-04", "verb": "PHONE_FAX", "location_id": "field_office",
       "label": "Subpoena phone toll records & wire a BOLO teletype",
-      "cost": 1, "prerequisites": "F-043", "hidden": false,
+      "cost": 1, "prerequisites": ["F-043"], "hidden": false,
       "locked_hint": "Need a named subject before the phone company will move.",
-      "delay": 4, "repeatable": false,
-      "produces": ["F-080", "F-081"],
-      "pending_label": "Phone company legal desk: toll-record subpoena pending."
+      "available": [0, -1],
+      "delay": 4, "pending_label": "Phone company legal desk: toll-record subpoena pending.",
+      "produces": ["F-080", "F-081"], "repeatable": false
     },
     {
       "action_id": "A-05", "verb": "PHONE_FAX", "location_id": "field_office",
       "label": "Canvass by fax: old photos, pawn slips, store receipts",
-      "cost": 1, "prerequisites": "F-043", "hidden": false,
+      "cost": 1, "prerequisites": ["F-043"], "hidden": false,
       "locked_hint": "Nothing to cross-reference against yet.",
-      "delay": 3, "repeatable": false,
-      "produces": ["F-062", "F-063"],
-      "pending_label": "Pawn brokers & the general store faxing what they've got."
+      "available": [0, -1],
+      "delay": 3, "pending_label": "Pawn brokers & the general store faxing what they've got.",
+      "produces": ["F-062", "F-063"], "repeatable": false
     },
 
     {
       "action_id": "A-22", "verb": "CANVASS", "location_id": "ridge_farm",
       "label": "Canvass the ridge road & catch the mail carrier",
-      "cost": 1, "prerequisites": null, "hidden": false,
-      "delay": 0, "repeatable": false,
-      "produces": ["F-007"]
+      "cost": 1, "prerequisites": null, "hidden": false, "available": [0, -1],
+      "delay": 0, "produces": ["F-007"], "repeatable": false
     },
     {
       "action_id": "A-11", "verb": "SEARCH", "location_id": "ridge_farm",
       "label": "Search the kitchen (second, warranted search)",
-      "cost": 1, "prerequisites": { "any": ["F-041", "F-053"] }, "hidden": false,
+      "cost": 1, "prerequisites": ["F-005"], "hidden": false,
       "locked_hint": "There's more here I can't touch without cause for a warrant.",
-      "delay": 0, "repeatable": false,
-      "produces": ["F-010", "F-012"],
-      "result_text_note": "In-fiction: 'the warrant came through.'"
+      "available": [0, -1],
+      "delay": 0, "produces": ["F-010", "F-012"], "repeatable": false,
+      "_note": "In-fiction: 'the warrant came through.'"
     },
     {
       "action_id": "A-12", "verb": "COLLECT", "location_id": "ridge_farm",
       "label": "Luminol sweep of the kitchen floor",
-      "cost": 1, "prerequisites": { "any": ["F-041", "F-053"] }, "hidden": false,
+      "cost": 1, "prerequisites": ["F-005"], "hidden": false,
       "locked_hint": "Chemical sweep needs the warrant.",
-      "delay": 6, "repeatable": false,
-      "produces": ["F-011"],
-      "pending_label": "State lab: luminol / blood-pattern analysis pending."
+      "available": [0, -1],
+      "delay": 6, "pending_label": "State lab: luminol / blood-pattern analysis pending.",
+      "produces": ["F-011"], "repeatable": false
+    },
+    {
+      "action_id": "A-14", "verb": "INSPECT", "location_id": "ridge_farm",
+      "label": "Orbit the kitchen — a casing kicked under the stove",
+      "cost": 0, "prerequisites": null, "hidden": false, "available": [0, -1],
+      "location_states": ["second_search"], "hidden_reveal": true,
+      "delay": 0, "produces": ["F-010"], "repeatable": false,
+      "_note": "Angle-only secondary route to F-010; A-11 is the primary route (hidden_reveal law satisfied)."
     },
 
     {
       "action_id": "A-20", "verb": "COLLECT", "location_id": "kettle_hollow",
       "label": "Send the three bodies for autopsy",
-      "cost": 1, "prerequisites": "F-020", "hidden": false,
-      "delay": 6, "repeatable": false,
-      "produces": ["F-024", "F-025"],
-      "pending_label": "Medical examiner: autopsy & identification pending."
+      "cost": 1, "prerequisites": null, "hidden": false, "available": [0, -1],
+      "delay": 6, "pending_label": "Medical examiner: autopsy & identification pending.",
+      "produces": ["F-024", "F-025"], "repeatable": false
     },
     {
       "action_id": "A-21", "verb": "SEARCH", "location_id": "kettle_hollow",
       "label": "Process the burned-truck scene",
-      "cost": 1, "prerequisites": "F-020", "hidden": false,
-      "delay": 0, "repeatable": false,
-      "produces": ["F-021", "F-022"]
+      "cost": 1, "prerequisites": null, "hidden": false, "available": [0, -1],
+      "delay": 0, "produces": ["F-021", "F-022"], "repeatable": false
     },
 
     {
       "action_id": "A-30", "verb": "INTERVIEW", "location_id": "boyd_farm",
       "label": "Interview Boyd Reems",
-      "cost": 1, "prerequisites": null, "hidden": false,
-      "delay": 0, "repeatable": false
+      "cost": 1, "prerequisites": null, "hidden": false, "available": [0, -1],
+      "delay": 0, "produces": [], "repeatable": false
     },
     {
       "action_id": "A-31", "verb": "INTERVIEW", "location_id": "boyd_farm",
       "label": "Interview Lorraine Reems",
-      "cost": 1, "prerequisites": null, "hidden": false,
-      "delay": 0, "repeatable": false
+      "cost": 1, "prerequisites": null, "hidden": false, "available": [0, -1],
+      "delay": 0, "produces": [], "repeatable": false
     },
     {
       "action_id": "A-70", "verb": "SEARCH", "location_id": "boyd_farm",
       "label": "Check Boyd's yard & confirm his auction alibi",
-      "cost": 1, "prerequisites": { "any": ["F-052", "F-110"] }, "hidden": false,
+      "cost": 1, "prerequisites": ["F-052"], "hidden": false,
       "locked_hint": "No accusation against Boyd to test yet.",
-      "delay": 0, "repeatable": false,
-      "produces": ["F-090"]
+      "available": [0, -1],
+      "delay": 0, "produces": ["F-090"], "repeatable": false
     },
 
     {
       "action_id": "A-40", "verb": "CANVASS", "location_id": "rhonda_place",
       "label": "Canvass Rhonda's neighbors",
       "cost": 1, "prerequisites": null, "hidden": false,
-      "time_gate": { "blocks": ["evening"] },
-      "delay": 0, "repeatable": false,
-      "produces": ["F-060"]
+      "available": [0, -1], "blocks_of_day": [2],
+      "delay": 0, "produces": ["F-060"], "repeatable": false
     },
     {
       "action_id": "A-41", "verb": "SEARCH", "location_id": "rhonda_place",
       "label": "Search Rhonda's cellar",
-      "cost": 1, "prerequisites": { "any": ["F-060", "F-081"] }, "hidden": false,
+      "cost": 1, "prerequisites": ["F-060"], "hidden": false,
       "locked_hint": "Need probable cause for a warrant on the residence.",
-      "delay": 0, "repeatable": false,
-      "produces": ["F-071"]
+      "available": [0, -1],
+      "delay": 0, "produces": ["F-071"], "repeatable": false
     },
 
     {
       "action_id": "A-50", "verb": "INTERVIEW", "location_id": "blue_spruce",
       "label": "Interview Rhonda at the motel",
-      "cost": 1, "prerequisites": null, "hidden": false,
-      "delay": 0, "repeatable": false
+      "cost": 1, "prerequisites": null, "hidden": false, "available": [0, -1],
+      "delay": 0, "produces": [], "repeatable": false
     },
     {
       "action_id": "A-51", "verb": "INTERVIEW", "location_id": "blue_spruce",
       "label": "Interview Wade (voluntary walk-in)",
-      "cost": 1, "prerequisites": { "all": ["F-050", { "day_gte": 5 }] }, "hidden": true,
-      "delay": 0, "repeatable": false,
-      "expires": "F-100",
-      "_note": "Secret until Wade walks in (T-04). Expires once F-100 makes the arrest — he's no longer a voluntary interviewee."
+      "cost": 1, "prerequisites": ["F-050"], "hidden": true, "available": [15, -1],
+      "delay": 0, "produces": [], "repeatable": false,
+      "_note": "Secret until Rhonda's been interviewed (F-050); only from day 5 (block 15) does Wade walk in. v2.0 has no fact-expiry, so it simply stays after arrest — A-53 supersedes it in practice."
     },
     {
       "action_id": "A-60", "verb": "SEARCH", "location_id": "blue_spruce",
       "label": "Locate & process the green Bronco",
-      "cost": 1, "prerequisites": "F-060", "hidden": false,
+      "cost": 1, "prerequisites": ["F-060"], "hidden": false,
       "locked_hint": "Need to know which vehicle to hunt for.",
-      "delay": 0, "repeatable": false,
-      "produces": ["F-100"]
+      "available": [0, -1],
+      "delay": 0, "produces": ["F-100"], "repeatable": false
     },
 
     {
       "action_id": "A-52", "verb": "INTERVIEW", "location_id": "field_office",
       "label": "Confront Rhonda with the contradictions",
-      "cost": 1,
-      "prerequisites": { "all": [{ "any": [{ "contradiction_active": "C-02" }, { "contradiction_active": "C-03" }] }, "F-071"] },
-      "hidden": false,
-      "locked_hint": "She'll only crack once her story provably falls apart.",
-      "delay": 0, "repeatable": false
+      "cost": 1, "prerequisites": ["F-071"], "hidden": false,
+      "locked_hint": "She'll only crack once there's hard evidence in hand.",
+      "available": [0, -1],
+      "delay": 0, "produces": [], "repeatable": false,
+      "_note": "The 'needs an active contradiction' leverage lives in the ink knot via contradictionActive(C-02/C-03), not in this prereq."
     },
     {
       "action_id": "A-53", "verb": "INTERVIEW", "location_id": "field_office",
       "label": "Interrogate Wade (in custody)",
-      "cost": 1,
-      "prerequisites": { "all": ["F-100", "F-120"] },
-      "hidden": true,
-      "delay": 0, "repeatable": false,
+      "cost": 1, "prerequisites": ["F-100", "F-120"], "hidden": true,
+      "available": [0, -1],
+      "delay": 0, "produces": [], "repeatable": false,
       "_note": "Secret until Wade is arrested (F-100) AND you hold Rhonda's account (F-120) to leverage."
     }
   ],
@@ -386,7 +353,7 @@
     {
       "interview_id": "IV-boyd", "action_id": "A-30", "character": "boyd",
       "knot": "interview_boyd",
-      "fact_manifest": ["F-040", "F-041"],
+      "fact_manifest": ["F-040", "F-041", "F-005"],
       "re_interview": true
     },
     {
@@ -398,7 +365,7 @@
     {
       "interview_id": "IV-rhonda-motel", "action_id": "A-50", "character": "rhonda",
       "knot": "interview_rhonda_motel",
-      "fact_manifest": ["F-050", "F-051", "F-052", "F-053"],
+      "fact_manifest": ["F-050", "F-051", "F-052", "F-053", "F-005"],
       "re_interview": true
     },
     {
@@ -421,58 +388,11 @@
     }
   ],
 
-  "triggers": [
+  "schedule": [
     {
-      "trigger_id": "T-01",
-      "when": { "day_gte": 3 },
-      "effects": [
-        { "unlock_location": "kettle_hollow" },
-        { "deliver_facts": ["F-020", "F-023"] },
-        { "enable_actions": ["A-20", "A-21"] },
-        { "pager": "DISPATCH: BURNED TRUCK & THREE BODIES IN KETTLE HOLLOW. Statewide BOLO wired for Wade Crane." }
-      ]
-    },
-    {
-      "trigger_id": "T-02",
-      "when": "F-080",
-      "effects": [
-        { "unlock_location": "blue_spruce" },
-        { "pager": "Toll records + register: Rhonda's at the Blue Spruce Motor Lodge in Oklahoma." }
-      ]
-    },
-    {
-      "trigger_id": "T-03",
-      "when": "F-043",
-      "effects": [
-        { "unlock_location": "rhonda_place" },
-        { "enable_actions": ["A-04", "A-05"] }
-      ]
-    },
-    {
-      "trigger_id": "T-04",
-      "when": { "all": ["F-050", { "day_gte": 5 }] },
-      "effects": [
-        { "retarget_interview": { "interview_id": "IV-wade-voluntary", "location_id": "blue_spruce" } },
-        { "enable_actions": ["A-51"] },
-        { "pager": "Wade just walked into the Oklahoma sheriff's office and asked to talk. He's not detained." }
-      ]
-    },
-    {
-      "trigger_id": "T-05",
-      "when": "F-100",
-      "effects": [
-        { "expire_actions": ["A-51"] },
-        { "enable_actions": ["A-53"] },
-        { "pager": "PROBABLE CAUSE. Wade's papers were in the stolen Bronco — he's in custody now." }
-      ]
-    },
-    {
-      "trigger_id": "T-06",
-      "when": { "contradiction_active": "C-01" },
-      "effects": [
-        { "deliver_facts": ["F-014"] },
-        { "pager": "It clicks: nobody left for deer camp. The whole house was staged." }
-      ]
+      "at_block": 9,
+      "delivers": ["F-020", "F-023"],
+      "pager": "DISPATCH: BURNED TRUCK & THREE BODIES IN KETTLE HOLLOW. Statewide BOLO wired for Wade Crane."
     }
   ],
 
@@ -492,8 +412,8 @@
     "motive_list": [
       { "id": "m_land",    "text": "believed the ridge was rightfully his" },
       { "id": "m_pretext", "text": "to build a pretext against the relatives" },
-      { "id": "m_money",   "text": "for money / insurance", "decoy": true },
-      { "id": "m_revenge", "text": "revenge for being cut out of the will", "decoy": true },
+      { "id": "m_money",   "text": "for money / insurance" },
+      { "id": "m_revenge", "text": "revenge for being cut out of the will" },
       { "id": "m_cover",   "text": "to cover up what had happened" }
     ],
     "events": [
@@ -549,7 +469,7 @@
         "slots": [
           { "kind": "ACTOR", "answer": "wade", "alternates": [{ "id": "rhonda", "weight": 0.5 }], "decoy_pool": "discovered_persons", "supports": ["F-120", "F-063"] },
           { "kind": "VERB",  "answer": "v_cleaned", "decoy_pool": ["v_shot", "v_loaded"], "supports": ["F-011", "F-012"] },
-          { "kind": "PLACE", "answer": "ridge_farm", "decoy_pool": "discovered_places", "supports": ["F-011", "F-014"] }
+          { "kind": "PLACE", "answer": "ridge_farm", "decoy_pool": "discovered_places", "supports": ["F-011", "F-012"] }
         ]
       },
       {
@@ -604,20 +524,14 @@
         "why": ["E-01"],
         "before_after": ["E-03", "E-08", "E-09"],
         "accessory": ["E-02", "E-05", "E-07", "E-10"]
-      },
-      "outcome_thresholds": [
-        { "tier": "case_closed",  "min": 0.90 },
-        { "tier": "plea_bargain", "min": 0.70 },
-        { "tier": "mistrial",     "min": 0.50 },
-        { "tier": "unsolved",     "min": 0.0 }
-      ]
+      }
     }
   },
 
   "outcome_tiers": [
-    { "tier": "case_closed",  "ink_file": "sawyer_ridge.ink", "knot": "outcome_case_closed" },
-    { "tier": "plea_bargain", "ink_file": "sawyer_ridge.ink", "knot": "outcome_plea_bargain" },
-    { "tier": "mistrial",     "ink_file": "sawyer_ridge.ink", "knot": "outcome_mistrial" },
-    { "tier": "unsolved",     "ink_file": "sawyer_ridge.ink", "knot": "outcome_unsolved" }
+    { "tier": "case_closed",  "min": 0.90, "knot": "outcome_case_closed" },
+    { "tier": "plea_bargain", "min": 0.70, "knot": "outcome_plea_bargain" },
+    { "tier": "mistrial",     "min": 0.50, "knot": "outcome_mistrial" },
+    { "tier": "unsolved",     "min": 0.00, "knot": "outcome_unsolved" }
   ]
 }

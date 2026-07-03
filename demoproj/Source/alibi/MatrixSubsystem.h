@@ -29,10 +29,6 @@ struct FDataKey {
 		struct {
 			EEntityType entity_type;
 			int32 entity_id;
-			union {
-				EPersonInfoType person_info_type;
-				ELocationInfoType location_info_type;
-			};
 			int16 pad0;
 		};
 		uint64 key;
@@ -84,8 +80,6 @@ struct FDataEntry {
 	TArray<FDataFork> forks;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMatrixCellUpdated, FDataPoint, new_point);
-
 /// <summary>
 /// Information matrix subsystem. This will keep track of the information that was found by investigation
 /// Each data point needs to have a possibility of multiple conflicting information
@@ -130,9 +124,6 @@ public:
 
 	UFUNCTION(Category = "Alibi|Matrix")
 	TArray<int32> Matrix_GetAllEntityIds(EEntityType entity_type);
-
-	UPROPERTY(BlueprintAssignable)
-	FOnMatrixCellUpdated OnMatrixCellUpdated;
 
 	UPROPERTY(Transient)
 	TArray<int32> discovered_clues;

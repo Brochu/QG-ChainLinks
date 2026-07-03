@@ -39,11 +39,11 @@ void UAlibiTxtBasedCheats::ExploreLocation() {
 	if (_chain_system) {
 		MessageConsole(TEXT(" VALID CHAIN SUBSYSTEM ! "));
 	}
-	FCaseLocation loc = _case_system->locations[_case_system->active_locid];
-	for (int32 i = 0; i < _case_system->actions.Num(); i++) {
-		FCaseAction &act = _case_system->actions[i];
+	FCaseLocation loc = _case_system->current_case.locations[_case_system->active_locid];
+	for (int32 i = 0; i < _case_system->current_case.actions.Num(); i++) {
+		FCaseAction &act = _case_system->current_case.actions[i];
 
-		if (act.loc_id == loc.id) {
+		if (act.location_id == loc.location_id) {
 			//TODO: Keep working here to list locations, move and list actions at active location IDX
 			MessageConsole(FString::Format(TEXT("%s"), { *act.label.ToString() }));
 		}

@@ -58,6 +58,7 @@ EXTERNAL spendBlock()
 # TODO: Boyd Reems — the alarmed in-law who kicks the case off.
 ~ discoverFact("F-040")   // Wade packed & armed; liar; raised on Ottis's guns
 ~ discoverFact("F-041")   // forged "gone to Arkansas —Dale" note
+~ discoverFact("F-005")   // the forged note is grounds for a farmhouse warrant (shared-fact idiom)
 -> DONE
 
 === interview_lorraine ===
@@ -71,6 +72,7 @@ EXTERNAL spendBlock()
 ~ discoverFact("F-051")   // "green Bronco doesn't run"
 ~ discoverFact("F-052")   // accuses Boyd
 ~ discoverFact("F-053")   // slip: refers to them as dead
+~ discoverFact("F-005")   // her slip is also grounds for a farmhouse warrant (shared-fact idiom)
 -> DONE
 
 === interview_wade_voluntary ===
