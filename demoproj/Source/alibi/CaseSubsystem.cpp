@@ -48,8 +48,18 @@ void UCaseSubsystem::load_case_file(FString case_path) {
 
 	// Always start at first location in the case file
 	active_locid = locations[0].location_id;
+	used_blocks = 0;
+	known_facts.Empty();
+	active_tags.Empty();
+	active_lab_requests.Empty();
+
 	UE_LOG(LogCase, Log, TEXT("load_case_file: loaded '%s' — case '%s' (%d facts, %d actions, %d locations)."),
-		*case_path, *meta.case_id.ToString(), facts.Num(), actions.Num(), locations.Num());
+		*case_path,
+		*meta.case_id.ToString(),
+		facts.Num(),
+		actions.Num(),
+		locations.Num()
+	);
 }
 
 FCaseLocation &UCaseSubsystem::get_active_location() {
@@ -95,5 +105,35 @@ bool UCaseSubsystem::move_location(FName new_loc_id) {
 }
 
 bool UCaseSubsystem::commit_action(FName action_id) {
-	return false;
+	FCaseAction *chosen_action = actions.FindByPredicate([action_id](const FCaseAction &other) { return other.action_id == action_id; });
+	if (chosen_action == nullptr) {
+		return false;
+	}
+
+	if ((used_blocks + chosen_action->cost) > (meta.deadline_days * meta.blocks_per_day)) {
+		return false;
+	}
+
+	if (chosen_action->delay > 0) {
+		// Lab request action; delayed results
+		if (active_lab_requests.Num() >= meta.lab_queue_capacity) {
+			return false;
+		}
+		active_lab_requests.Push({ action_id, used_blocks });
+		on_new_lab_request.Broadcast(active_lab_requests.Last());
+	}
+
+	spend_blocks(chosen_action->cost);
+	return true;
+}
+
+void UCaseSubsystem::spend_blocks(int32 quantity) {
+	int32 prev_blocks = used_blocks;
+	used_blocks += quantity;
+
+	//TODO: Handle time moving forward
+	// Handle lab requests ending
+	// Handle schedule entries
+
+	on_block_spent.Broadcast(prev_blocks, used_blocks);
 }
