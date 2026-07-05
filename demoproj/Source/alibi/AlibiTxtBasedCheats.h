@@ -26,6 +26,9 @@ public:
 	virtual void RemovedFromCheatManager_Implementation() override;
 
 	UFUNCTION(Exec)
+	void ListLocations();
+
+	UFUNCTION(Exec)
 	void ExploreLocation();
 
 	UFUNCTION(Exec)

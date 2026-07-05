@@ -158,7 +158,7 @@ struct FCaseLocationState {
 	TArray<FName> when;
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FCaseLocation {
 	GENERATED_BODY()
 
@@ -178,7 +178,7 @@ struct FCaseLocation {
 };
 
 // ---- actions (every interactable thing, INSPECT included) -------------------
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FCaseAction {
 	GENERATED_BODY()
 

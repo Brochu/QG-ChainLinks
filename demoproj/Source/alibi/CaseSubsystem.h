@@ -59,7 +59,7 @@ public:
 	// --------------------
 
 	UPROPERTY(SaveGame)
-	int32 active_locid = 0;
+	FName active_locid;
 
 	UPROPERTY(SaveGame)
 	int32 action_points = 0;
@@ -72,4 +72,19 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void load_case_file(FString case_path);
+
+	UFUNCTION(BlueprintCallable)
+	FCaseLocation &get_active_location();
+
+	UFUNCTION(BlueprintCallable)
+	TArray<int32> list_location_idx();
+
+	UFUNCTION(BlueprintCallable)
+	TArray<int32> list_action_idx(FName loc_id);
+
+	UFUNCTION(BlueprintCallable)
+	bool move_location(FName new_loc_id);
+
+	UFUNCTION(BlueprintCallable)
+	bool commit_action(FName action_id);
 };
