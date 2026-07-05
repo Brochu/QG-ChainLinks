@@ -26,15 +26,49 @@ class ALIBI_API UCaseSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	// The whole authored case, parsed from JSON.
+	// Current case data
 	UPROPERTY(Transient)
-	FCaseFile current_case;
+	FCaseMetadata meta;
+
+	UPROPERTY(Transient)
+	TArray<FCaseGlossaryEntry> glossary;
+
+	UPROPERTY(Transient)
+	TArray<FCaseFact> facts;
+
+	UPROPERTY(Transient)
+	TArray<FCaseContradiction> contradictions;
+
+	UPROPERTY(Transient)
+	TArray<FCaseLocation> locations;
+
+	UPROPERTY(Transient)
+	TArray<FCaseAction> actions;
+
+	UPROPERTY(Transient)
+	TArray<FCaseInterview> interviews;
+
+	UPROPERTY(Transient)
+	TArray<FCaseScheduleEntry> schedule;
+
+	UPROPERTY(Transient)
+	FCaseReconstruction reconstruction;
+
+	UPROPERTY(Transient)
+	TArray<FOutcomeTier> outcome_tiers;
+	// --------------------
+
+	UPROPERTY(SaveGame)
+	int32 active_locid = 0;
 
 	UPROPERTY(SaveGame)
 	int32 action_points = 0;
 
 	UPROPERTY(SaveGame)
-	int32 active_locid = 0;
+	TSet<FName> known_facts = {};
+
+	UPROPERTY(SaveGame)
+	TSet<FName> active_tags = {};
 
 	UFUNCTION(BlueprintCallable)
 	void load_case_file(FString case_path);

@@ -28,6 +28,12 @@ public:
 	UFUNCTION(Exec)
 	void ExploreLocation();
 
+	UFUNCTION(Exec)
+	void MoveToLocation(int32 new_location_idx);
+
+	UFUNCTION(Exec)
+	void ChooseAction(int32 action_idx);
+
 private:
 	void MessageConsole(FString message);
 
