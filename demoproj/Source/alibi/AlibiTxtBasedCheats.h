@@ -26,6 +26,12 @@ public:
 	virtual void RemovedFromCheatManager_Implementation() override;
 
 	UFUNCTION(Exec)
+	void CaseStatus();
+
+	UFUNCTION(Exec)
+	void ShowCaseMeta();
+
+	UFUNCTION(Exec)
 	void ListLocations();
 
 	UFUNCTION(Exec)
@@ -40,9 +46,11 @@ public:
 private:
 	void MessageConsole(FString message);
 
+	UPROPERTY(Transient)
 	APlayerController *_pc;
 
+	UPROPERTY(Transient)
 	UCaseSubsystem *_case_system;
+	UPROPERTY(Transient)
 	UChainSubsystem *_chain_system;
-	//UMatrixSubsystem *_matrix_system;
 };

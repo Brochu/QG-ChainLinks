@@ -22,8 +22,36 @@ struct FLabRequest {
 	int32 block_started;
 };
 
+/**
+ * The player's progress, kept as a diff against the authored case file
+ * (Case File Data Inventory §12). Resetting a case = resetting this struct.
+ */
+USTRUCT(BlueprintType)
+struct FCaseSaveState {
+	GENERATED_BODY()
+
+	UPROPERTY(SaveGame)
+	FName active_locid;
+
+	UPROPERTY(SaveGame)
+	int32 used_blocks = 0;
+
+	UPROPERTY(SaveGame)
+	TSet<FName> known_facts;
+
+	UPROPERTY(SaveGame)
+	TSet<FName> active_tags;
+
+	UPROPERTY(SaveGame)
+	TSet<FName> complete_actions;
+
+	UPROPERTY(SaveGame)
+	TArray<FLabRequest> active_lab_requests;
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNewLabRequest, FLabRequest&, request);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBlockSpent, int32, from, int32, to);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFactDiscovered, FName, fact_id, int32, when_block);
 
 /**
  * Outcome of attempting to commit an action. `Success` (0) means it went through;
@@ -35,7 +63,6 @@ UENUM(BlueprintType)
 enum class ECommitActionResult : uint8 {
 	Success                   UMETA(DisplayName = "Success"),                      // committed; block(s) spent
 	UnknownAction             UMETA(DisplayName = "Unknown Action"),               // no action with that id
-	NoActiveCase              UMETA(DisplayName = "No Active Case"),               // nothing loaded, or the case has ended
 	NotAtLocation             UMETA(DisplayName = "Not At Location"),              // action lives at a location the player isn't at
 	PrerequisitesNotMet       UMETA(DisplayName = "Prerequisites Not Met"),        // prereq facts not all discovered (locked / secret)
 	OutsideAvailabilityWindow UMETA(DisplayName = "Outside Availability Window"),  // current block outside the action's `available` range
@@ -61,52 +88,14 @@ class ALIBI_API UCaseSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	// Current case data
+	// The static authored universe, loaded verbatim from the case file.
+	// Never mutates during play — everything the player changes lives in `save`.
 	UPROPERTY(Transient)
-	FCaseMetadata meta;
+	FCaseFile file;
 
-	UPROPERTY(Transient)
-	TArray<FCaseGlossaryEntry> glossary;
-
-	UPROPERTY(Transient)
-	TArray<FCaseFact> facts;
-
-	UPROPERTY(Transient)
-	TArray<FCaseContradiction> contradictions;
-
-	UPROPERTY(Transient)
-	TArray<FCaseLocation> locations;
-
-	UPROPERTY(Transient)
-	TArray<FCaseAction> actions;
-
-	UPROPERTY(Transient)
-	TArray<FCaseInterview> interviews;
-
-	UPROPERTY(Transient)
-	TArray<FCaseScheduleEntry> schedule;
-
-	UPROPERTY(Transient)
-	FCaseReconstruction reconstruction;
-
-	UPROPERTY(Transient)
-	TArray<FOutcomeTier> outcome_tiers;
-	// --------------------
-
+	// The player's diff against `authored`.
 	UPROPERTY(SaveGame)
-	FName active_locid;
-
-	UPROPERTY(SaveGame)
-	int32 used_blocks;
-
-	UPROPERTY(SaveGame)
-	TSet<FName> known_facts = {};
-
-	UPROPERTY(SaveGame)
-	TSet<FName> active_tags = {};
-
-	UPROPERTY(SaveGame)
-	TArray<FLabRequest> active_lab_requests = {};
+	FCaseSaveState save;
 	// --------------------
 
 	UFUNCTION(BlueprintCallable)
@@ -125,7 +114,7 @@ public:
 	bool move_location(FName new_loc_id);
 
 	UFUNCTION(BlueprintCallable)
-	bool commit_action(FName action_id);
+	ECommitActionResult commit_action(FName action_id);
 	// --------------------
 
 	UPROPERTY(BlueprintAssignable)
@@ -134,6 +123,10 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnBlockSpent on_block_spent;
 
+	UPROPERTY(BlueprintAssignable)
+	FOnFactDiscovered on_fact_discovered;
+
 private:
 	void spend_blocks(int32 quantity);
+	void discover_facts(const TArray<FName> &facts);
 };

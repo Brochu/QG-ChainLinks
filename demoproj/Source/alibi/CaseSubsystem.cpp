@@ -30,47 +30,36 @@ void UCaseSubsystem::load_case_file(FString case_path) {
 		return;
 	}
 
-	meta = case_data.meta;
-	glossary = case_data.glossary;
-	facts = case_data.facts;
-	contradictions = case_data.contradictions;
-	locations = case_data.locations;
-	actions = case_data.actions;
-	interviews = case_data.interviews;
-	schedule = case_data.schedule;
-	reconstruction = case_data.reconstruction;
-	outcome_tiers = case_data.outcome_tiers;
-
-	if (locations.Num() == 0) {
+	if (case_data.locations.Num() == 0) {
 		UE_LOG(LogCase, Error, TEXT("load_case_file: '%s' parsed but contains no locations; cannot start the case."), *case_path);
 		return;
 	}
 
-	// Always start at first location in the case file
-	active_locid = locations[0].location_id;
-	used_blocks = 0;
-	known_facts.Empty();
-	active_tags.Empty();
-	active_lab_requests.Empty();
+	file = MoveTemp(case_data);
+	save = FCaseSaveState();
 
 	UE_LOG(LogCase, Log, TEXT("load_case_file: loaded '%s' — case '%s' (%d facts, %d actions, %d locations)."),
 		*case_path,
-		*meta.case_id.ToString(),
-		facts.Num(),
-		actions.Num(),
-		locations.Num()
+		*file.meta.case_id.ToString(),
+		file.facts.Num(),
+		file.actions.Num(),
+		file.locations.Num()
 	);
+
+	// Always start at first location in the case file
+	save.active_locid = file.locations[0].location_id;
+	discover_facts(file.meta.starting_facts);
 }
 
 FCaseLocation &UCaseSubsystem::get_active_location() {
-	FCaseLocation *active_loc = locations.FindByPredicate([this](const FCaseLocation &other) { return other.location_id == active_locid; });
+	FCaseLocation *active_loc = file.locations.FindByPredicate([this](const FCaseLocation &other) { return other.location_id == save.active_locid; });
 
 	if (active_loc == nullptr) {
 		// Invariant break: active_locid should always name a loaded location.
 		UE_LOG(LogCase, Error,
 			TEXT("get_active_location: active_locid '%s' is not a loaded location; falling back to the first."),
-			*active_locid.ToString());
-		active_loc = &locations[0];
+			*save.active_locid.ToString());
+		active_loc = &file.locations[0];
 	}
 	return *active_loc;
 }
@@ -78,7 +67,7 @@ FCaseLocation &UCaseSubsystem::get_active_location() {
 TArray<int32> UCaseSubsystem::list_location_idx() {
 	TArray<int32> results;
 
-	for (int32 i = 0; i < locations.Num(); i++) {
+	for (int32 i = 0; i < file.locations.Num(); i++) {
 		results.Add(i);
 	}
 
@@ -88,8 +77,8 @@ TArray<int32> UCaseSubsystem::list_location_idx() {
 TArray<int32> UCaseSubsystem::list_action_idx(FName loc_id) {
 	TArray<int32> results;
 
-	for (int32 i = 0; i < actions.Num(); i++) {
-		if (actions[i].location_id != loc_id) {
+	for (int32 i = 0; i < file.actions.Num(); i++) {
+		if (file.actions[i].location_id != loc_id) {
 			continue;
 		}
 		results.Add(i);
@@ -100,40 +89,69 @@ TArray<int32> UCaseSubsystem::list_action_idx(FName loc_id) {
 
 bool UCaseSubsystem::move_location(FName new_loc_id) {
 	//TODO: Overly simple for now, will need events and checks later to react to movement during a case
-	active_locid = new_loc_id;
+	save.active_locid = new_loc_id;
 	return true;
 }
 
-bool UCaseSubsystem::commit_action(FName action_id) {
-	FCaseAction *chosen_action = actions.FindByPredicate([action_id](const FCaseAction &other) { return other.action_id == action_id; });
+ECommitActionResult UCaseSubsystem::commit_action(FName action_id) {
+	/*
+enum class ECommitActionResult : uint8 {
+	Success                   UMETA(DisplayName = "Success"),                      // committed; block(s) spent
+	UnknownAction             UMETA(DisplayName = "Unknown Action"),               // no action with that id
+	NotAtLocation             UMETA(DisplayName = "Not At Location"),              // action lives at a location the player isn't at
+	PrerequisitesNotMet       UMETA(DisplayName = "Prerequisites Not Met"),        // prereq facts not all discovered (locked / secret)
+	OutsideAvailabilityWindow UMETA(DisplayName = "Outside Availability Window"),  // current block outside the action's `available` range
+	WrongBlockOfDay           UMETA(DisplayName = "Wrong Block Of Day"),           // current block-of-day not in `blocks_of_day`
+	WrongLocationState        UMETA(DisplayName = "Wrong Location State"),         // current diorama state not in `location_states`
+	NotEnoughBlocks           UMETA(DisplayName = "Not Enough Blocks"),            // cost would exceed the remaining deadline budget
+	LabQueueFull              UMETA(DisplayName = "Lab Queue Full"),               // delayed request, but the lab queue is at capacity
+	AlreadyCompleted          UMETA(DisplayName = "Already Completed"),            // non-repeatable action already taken
+};
+	*/
+	FCaseAction *chosen_action = file.actions.FindByPredicate([action_id](const FCaseAction &other) { return other.action_id == action_id; });
 	if (chosen_action == nullptr) {
-		return false;
+		return ECommitActionResult::UnknownAction;
 	}
 
-	if ((used_blocks + chosen_action->cost) > (meta.deadline_days * meta.blocks_per_day)) {
-		return false;
+	if ((save.used_blocks + chosen_action->cost) > (file.meta.deadline_days * file.meta.blocks_per_day)) {
+		return ECommitActionResult::NotEnoughBlocks;
 	}
 
 	if (chosen_action->delay > 0) {
 		// Lab request action; delayed results
-		if (active_lab_requests.Num() >= meta.lab_queue_capacity) {
-			return false;
+		if (save.active_lab_requests.Num() >= file.meta.lab_queue_capacity) {
+			return ECommitActionResult::LabQueueFull;
 		}
-		active_lab_requests.Push({ action_id, used_blocks });
-		on_new_lab_request.Broadcast(active_lab_requests.Last());
+		save.active_lab_requests.Push({ action_id, save.used_blocks });
+		on_new_lab_request.Broadcast(save.active_lab_requests.Last());
 	}
 
 	spend_blocks(chosen_action->cost);
-	return true;
+	if (chosen_action->delay <= 0) {
+		discover_facts(chosen_action->produces);
+	}
+	save.complete_actions.Add(chosen_action->action_id);
+	return ECommitActionResult::Success;
 }
 
 void UCaseSubsystem::spend_blocks(int32 quantity) {
-	int32 prev_blocks = used_blocks;
-	used_blocks += quantity;
+	int32 prev_blocks = save.used_blocks;
+	save.used_blocks += quantity;
 
 	//TODO: Handle time moving forward
 	// Handle lab requests ending
 	// Handle schedule entries
 
-	on_block_spent.Broadcast(prev_blocks, used_blocks);
+	on_block_spent.Broadcast(prev_blocks, save.used_blocks);
+}
+
+void UCaseSubsystem::discover_facts(const TArray<FName> &new_facts) {
+	for (auto &fact : new_facts) {
+		bool already_known = save.known_facts.Contains(fact);
+		save.known_facts.Add(fact);
+
+		if (!already_known) {
+			on_fact_discovered.Broadcast(fact, save.used_blocks);
+		}
+	}
 }
