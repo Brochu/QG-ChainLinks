@@ -96,12 +96,7 @@ bool UCaseSubsystem::move_location(FName new_loc_id) {
 ECommitActionResult UCaseSubsystem::commit_action(FName action_id) {
 	/*
 enum class ECommitActionResult : uint8 {
-	Success                   UMETA(DisplayName = "Success"),                      // committed; block(s) spent
-	UnknownAction             UMETA(DisplayName = "Unknown Action"),               // no action with that id
-	NotAtLocation             UMETA(DisplayName = "Not At Location"),              // action lives at a location the player isn't at
-	PrerequisitesNotMet       UMETA(DisplayName = "Prerequisites Not Met"),        // prereq facts not all discovered (locked / secret)
 	OutsideAvailabilityWindow UMETA(DisplayName = "Outside Availability Window"),  // current block outside the action's `available` range
-	WrongBlockOfDay           UMETA(DisplayName = "Wrong Block Of Day"),           // current block-of-day not in `blocks_of_day`
 	WrongLocationState        UMETA(DisplayName = "Wrong Location State"),         // current diorama state not in `location_states`
 	NotEnoughBlocks           UMETA(DisplayName = "Not Enough Blocks"),            // cost would exceed the remaining deadline budget
 	LabQueueFull              UMETA(DisplayName = "Lab Queue Full"),               // delayed request, but the lab queue is at capacity
@@ -111,6 +106,21 @@ enum class ECommitActionResult : uint8 {
 	FCaseAction *chosen_action = file.actions.FindByPredicate([action_id](const FCaseAction &other) { return other.action_id == action_id; });
 	if (chosen_action == nullptr) {
 		return ECommitActionResult::UnknownAction;
+	}
+
+	if (chosen_action->location_id != save.active_locid) {
+		return ECommitActionResult::NotAtLocation;
+	}
+
+	for (auto prereq : chosen_action->prerequisites) {
+		if (!save.known_facts.Contains(prereq)) {
+			return ECommitActionResult::PrerequisitesNotMet;
+		}
+	}
+
+	const int32 block_of_day = save.used_blocks % file.meta.blocks_per_day;
+	if (!chosen_action->blocks_of_day.Contains(block_of_day)) {
+		return ECommitActionResult::WrongBlockOfDay;
 	}
 
 	if ((save.used_blocks + chosen_action->cost) > (file.meta.deadline_days * file.meta.blocks_per_day)) {
