@@ -43,13 +43,13 @@ struct FCaseSaveState {
 	TSet<FName> active_tags;
 
 	UPROPERTY(SaveGame)
-	TSet<FName> complete_actions;
+	TSet<FName> completed_actions;
 
 	UPROPERTY(SaveGame)
 	TArray<FLabRequest> active_lab_requests;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNewLabRequest, FLabRequest&, request);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNewLabRequest, FLabRequest, request);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBlockSpent, int32, from, int32, to);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFactDiscovered, FName, fact_id, int32, when_block);
 
@@ -74,6 +74,17 @@ enum class ECommitActionResult : uint8 {
 };
 
 /**
+ * Player-facing presence of an action — the §5.3 tri-state plus Absent.
+ */
+UENUM(BlueprintType)
+enum class EActionVisibility : uint8 {
+	Absent,   // not part of the current diorama; never listed
+	Secret,   // prereqs unmet, invisible to player
+	Locked,   // prereqs unmet, shown as locked to player
+	Unlocked, // prereqs met, selectable but could still fail for other blockers (block-of-day, budget, lab queue, already completed)
+};
+
+/**
  * Subsystem that will keep track of the current case metadata, resources, player actions on the world.
  * Will store the current status of the case's world.
  * The actions the player take will be reported and handled here
@@ -88,12 +99,9 @@ class ALIBI_API UCaseSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	// The static authored universe, loaded verbatim from the case file.
-	// Never mutates during play — everything the player changes lives in `save`.
 	UPROPERTY(Transient)
 	FCaseFile file;
 
-	// The player's diff against `authored`.
 	UPROPERTY(SaveGame)
 	FCaseSaveState save;
 	// --------------------
@@ -102,13 +110,22 @@ public:
 	void load_case_file(FString case_path);
 
 	UFUNCTION(BlueprintCallable)
-	FCaseLocation &get_active_location();
+	const FCaseLocation &get_active_location() const;
 
 	UFUNCTION(BlueprintCallable)
-	TArray<int32> list_location_idx();
+	FName get_location_state(FName loc_id) const;
 
 	UFUNCTION(BlueprintCallable)
-	TArray<int32> list_action_idx(FName loc_id);
+	TArray<int32> list_location_idx() const;
+
+	UFUNCTION(BlueprintCallable)
+	TArray<int32> list_action_idx(FName loc_id) const;
+
+	UFUNCTION(BlueprintCallable)
+	EActionVisibility action_visibility(const FCaseAction &act) const;
+
+	UFUNCTION(BlueprintCallable)
+	ECommitActionResult can_commit(const FCaseAction &act) const;
 
 	UFUNCTION(BlueprintCallable)
 	bool move_location(FName new_loc_id);
@@ -127,6 +144,8 @@ public:
 	FOnFactDiscovered on_fact_discovered;
 
 private:
+	bool all_facts_known(const TArray<FName> &facts) const;
+
 	void spend_blocks(int32 quantity);
 	void discover_facts(const TArray<FName> &facts);
 };

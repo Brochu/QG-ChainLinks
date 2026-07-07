@@ -87,12 +87,23 @@ void UAlibiTxtBasedCheats::ListLocations() {
 }
 
 void UAlibiTxtBasedCheats::ExploreLocation() {
-	FCaseLocation &loc = _case_system->get_active_location();
+	const FCaseLocation &loc = _case_system->get_active_location();
 	MessageConsole(FString::Format(TEXT("All available actions at {0}"), { *loc.name.ToString() }));
 
 	TArray<int32> action_idx = _case_system->list_action_idx(loc.location_id);
 	for (int32 i = 0; i < action_idx.Num(); i++) {
 		FCaseAction &act = _case_system->file.actions[action_idx[i]];
+
+		if (_case_system->action_visibility(act) == EActionVisibility::Locked) {
+			// Shown but unselectable; the hint is the authored tease (design §5.3).
+			MessageConsole(FString::Format(TEXT(" - #{0} [{1}][{2}] LOCKED{3}"), {
+				i,
+				*act.action_id.ToString(),
+				*UEnum::GetValueAsString(act.verb),
+				act.locked_hint.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(" — %s"), *act.locked_hint.ToString())
+			}));
+			continue;
+		}
 
 		MessageConsole(FString::Format(TEXT(" - #{0} [{1}][{2}] {3} / cost: {4}"), {
 			i,
@@ -121,7 +132,7 @@ void UAlibiTxtBasedCheats::MoveToLocation(int32 new_location_idx) {
 
 void UAlibiTxtBasedCheats::ChooseAction(int32 action_idx) {
 	// Index-based because it's easier to type on cli. Will be ID-based in actual game with real UX
-	FCaseLocation &loc = _case_system->get_active_location();
+	const FCaseLocation &loc = _case_system->get_active_location();
 	TArray<int32> actions_at_location = _case_system->list_action_idx(loc.location_id);
 
 	if (action_idx < 0 || action_idx >= actions_at_location.Num()) {
@@ -136,8 +147,12 @@ void UAlibiTxtBasedCheats::ChooseAction(int32 action_idx) {
 		*act.label.ToString(),
 		act.cost
 	}));
-	if (_case_system->commit_action(act.action_id) != ECommitActionResult::Success) {
-		MessageConsole(FString::Format(TEXT("Action '{0}' could not be committed."), { *act.action_id.ToString() }));
+	const ECommitActionResult res = _case_system->commit_action(act.action_id);
+	if (res != ECommitActionResult::Success) {
+		MessageConsole(FString::Format(TEXT("Action '{0}' could not be committed: {1}"), {
+			*act.action_id.ToString(),
+			*UEnum::GetDisplayValueAsText(res).ToString()
+		}));
 	}
 }
 

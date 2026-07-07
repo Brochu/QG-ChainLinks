@@ -51,8 +51,8 @@ void UCaseSubsystem::load_case_file(FString case_path) {
 	discover_facts(file.meta.starting_facts);
 }
 
-FCaseLocation &UCaseSubsystem::get_active_location() {
-	FCaseLocation *active_loc = file.locations.FindByPredicate([this](const FCaseLocation &other) { return other.location_id == save.active_locid; });
+const FCaseLocation &UCaseSubsystem::get_active_location() const {
+	const FCaseLocation *active_loc = file.locations.FindByPredicate([this](const FCaseLocation &other) { return other.location_id == save.active_locid; });
 
 	if (active_loc == nullptr) {
 		// Invariant break: active_locid should always name a loaded location.
@@ -64,7 +64,24 @@ FCaseLocation &UCaseSubsystem::get_active_location() {
 	return *active_loc;
 }
 
-TArray<int32> UCaseSubsystem::list_location_idx() {
+FName UCaseSubsystem::get_location_state(FName loc_id) const {
+	const FCaseLocation *found_loc= file.locations.FindByPredicate([this](const FCaseLocation &other) { return other.location_id == save.active_locid; });
+	if (found_loc == nullptr) {
+		return NAME_None;
+	}
+
+	const FCaseLocation &loc = *found_loc;
+	FName state = loc.states[0].state_id;
+
+	for (int32 i = 1; i < loc.states.Num(); i++) {
+		if (all_facts_known(loc.states[i].when)) {
+			state = loc.states[i].state_id;
+		}
+	}
+	return state;
+}
+
+TArray<int32> UCaseSubsystem::list_location_idx() const {
 	TArray<int32> results;
 
 	for (int32 i = 0; i < file.locations.Num(); i++) {
@@ -74,17 +91,82 @@ TArray<int32> UCaseSubsystem::list_location_idx() {
 	return results;
 }
 
-TArray<int32> UCaseSubsystem::list_action_idx(FName loc_id) {
+TArray<int32> UCaseSubsystem::list_action_idx(FName loc_id) const {
 	TArray<int32> results;
 
 	for (int32 i = 0; i < file.actions.Num(); i++) {
 		if (file.actions[i].location_id != loc_id) {
 			continue;
 		}
+
+		const EActionVisibility vis = action_visibility(file.actions[i]);
+		if (vis == EActionVisibility::Absent || vis == EActionVisibility::Secret) {
+			continue;
+		}
 		results.Add(i);
 	}
 
 	return results;
+}
+
+EActionVisibility UCaseSubsystem::action_visibility(const FCaseAction &act) const {
+	const bool in_state =
+		act.location_states.Num() == 0 ||
+		act.location_states.Contains(get_location_state(act.location_id));
+
+	const int32 from = act.available[0];
+	const int32 to = act.available[1];
+	const bool in_window = save.used_blocks >= from && ( to == -1 || save.used_blocks <= to);
+
+	if (!in_state || !in_window) {
+		return EActionVisibility::Absent;
+	}
+
+	if (!all_facts_known(act.prerequisites)) {
+		return act.hidden ? EActionVisibility::Secret : EActionVisibility::Locked;
+	}
+
+	return EActionVisibility::Unlocked;
+}
+
+ECommitActionResult UCaseSubsystem::can_commit(const FCaseAction &act) const {
+	if (act.location_id != save.active_locid) {
+		return ECommitActionResult::NotAtLocation;
+	}
+
+	if (act.location_states.Num() > 0 && !act.location_states.Contains(get_location_state(act.location_id))) {
+		return ECommitActionResult::WrongLocationState;
+	}
+
+	const int32 from = act.available[0];
+	const int32 to = act.available[1];
+	const bool in_window = save.used_blocks >= from && (to == -1 || save.used_blocks <= to);
+	if (!in_window) {
+		return ECommitActionResult::OutsideAvailabilityWindow;
+	}
+
+	if (!all_facts_known(act.prerequisites)) {
+		return ECommitActionResult::PrerequisitesNotMet;
+	}
+
+	const int32 block_of_day = save.used_blocks % FMath::Max(1, file.meta.blocks_per_day);
+	if (act.blocks_of_day.Num() > 0 && !act.blocks_of_day.Contains(block_of_day)) {
+		return ECommitActionResult::WrongBlockOfDay;
+	}
+
+	if ((save.used_blocks + act.cost) > (file.meta.deadline_days * file.meta.blocks_per_day)) {
+		return ECommitActionResult::NotEnoughBlocks;
+	}
+
+	if (act.verb == ECaseVerb::COLLECT && save.active_lab_requests.Num() >= file.meta.lab_queue_capacity) {
+		return ECommitActionResult::LabQueueFull;
+	}
+
+	if (!act.repeatable && save.completed_actions.Contains(act.action_id)) {
+		return ECommitActionResult::AlreadyCompleted;
+	}
+
+	return ECommitActionResult::Success;
 }
 
 bool UCaseSubsystem::move_location(FName new_loc_id) {
@@ -94,53 +176,30 @@ bool UCaseSubsystem::move_location(FName new_loc_id) {
 }
 
 ECommitActionResult UCaseSubsystem::commit_action(FName action_id) {
-	/*
-enum class ECommitActionResult : uint8 {
-	OutsideAvailabilityWindow UMETA(DisplayName = "Outside Availability Window"),  // current block outside the action's `available` range
-	WrongLocationState        UMETA(DisplayName = "Wrong Location State"),         // current diorama state not in `location_states`
-	NotEnoughBlocks           UMETA(DisplayName = "Not Enough Blocks"),            // cost would exceed the remaining deadline budget
-	LabQueueFull              UMETA(DisplayName = "Lab Queue Full"),               // delayed request, but the lab queue is at capacity
-	AlreadyCompleted          UMETA(DisplayName = "Already Completed"),            // non-repeatable action already taken
-};
-	*/
-	FCaseAction *chosen_action = file.actions.FindByPredicate([action_id](const FCaseAction &other) { return other.action_id == action_id; });
+	const FCaseAction *chosen_action = file.actions.FindByPredicate([action_id](const FCaseAction &other) { return other.action_id == action_id; });
 	if (chosen_action == nullptr) {
 		return ECommitActionResult::UnknownAction;
 	}
 
-	if (chosen_action->location_id != save.active_locid) {
-		return ECommitActionResult::NotAtLocation;
+	const ECommitActionResult res = can_commit(*chosen_action);
+	if (res != ECommitActionResult::Success) {
+		return res;
 	}
 
-	for (auto prereq : chosen_action->prerequisites) {
-		if (!save.known_facts.Contains(prereq)) {
-			return ECommitActionResult::PrerequisitesNotMet;
-		}
-	}
-
-	const int32 block_of_day = save.used_blocks % file.meta.blocks_per_day;
-	if (!chosen_action->blocks_of_day.Contains(block_of_day)) {
-		return ECommitActionResult::WrongBlockOfDay;
-	}
-
-	if ((save.used_blocks + chosen_action->cost) > (file.meta.deadline_days * file.meta.blocks_per_day)) {
-		return ECommitActionResult::NotEnoughBlocks;
-	}
-
-	if (chosen_action->delay > 0) {
+	if (chosen_action->verb == ECaseVerb::COLLECT) {
 		// Lab request action; delayed results
-		if (save.active_lab_requests.Num() >= file.meta.lab_queue_capacity) {
-			return ECommitActionResult::LabQueueFull;
-		}
 		save.active_lab_requests.Push({ action_id, save.used_blocks });
 		on_new_lab_request.Broadcast(save.active_lab_requests.Last());
+		//TODO: Need to handle delayed action that are not lab requests as well
 	}
 
 	spend_blocks(chosen_action->cost);
 	if (chosen_action->delay <= 0) {
 		discover_facts(chosen_action->produces);
 	}
-	save.complete_actions.Add(chosen_action->action_id);
+	if (!chosen_action->repeatable) {
+		save.completed_actions.Add(chosen_action->action_id);
+	}
 	return ECommitActionResult::Success;
 }
 
@@ -164,4 +223,14 @@ void UCaseSubsystem::discover_facts(const TArray<FName> &new_facts) {
 			on_fact_discovered.Broadcast(fact, save.used_blocks);
 		}
 	}
+}
+
+bool UCaseSubsystem::all_facts_known(const TArray<FName> &facts_to_check) const {
+	for (auto &fact : facts_to_check) {
+		if (!save.known_facts.Contains(fact)) {
+			return false;
+		}
+	}
+
+	return true;
 }
