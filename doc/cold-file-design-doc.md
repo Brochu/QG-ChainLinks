@@ -1,6 +1,10 @@
 # COLD FILE — Game Design Document (Working Title)
-### A 1990s FBI deduction game · Vertical slice design · v2.0 — **LOCKED for slice implementation**
+### A 1990s FBI deduction game · Vertical slice design · v2.2 — **living document** (unlocked)
 
+> **v2.2 changes:** doc **unlocked** — after working inside the format during slice implementation, the doc now evolves alongside the code, with changes tracked in this changelog. Added §13 "Known Expressiveness Limits": a monotonicity stress-test of the v2.0 format, identifying `closes_on` and internal-fact pager/board exemptions as the shaped re-adds held in reserve.
+>
+> **v2.1 changes:** staging simplified — a staging file is a per-location scene description: each state carries its full prop list (no diffs between states) plus the 3D position of every action point (§2, §9.1; format sketch in Data Inventory v2.1 §15). Reveal angles cut: concealed action points rely on geometric occlusion, and `hidden_reveal` becomes a validator-only flag. Location states confirmed as speced.
+>
 > **v2.0 changes (format-sync with Case File Data Inventory v2.0, driven by first authoring experience):** hotspots dissolved — everything interactable is an action, inspectables are cost-0 INSPECT actions (§2, §6); prereq DSL replaced by flat fact lists + three conventions (§5.3); trigger system replaced by the `schedule` list — all other effects live at their effect site (§5.5); map zones & travel costs cut for the slice (§4.1, §12); availability expressed as an absolute block range + optional `blocks_of_day` (§5.3); one ink file per case, knot-only references; tuning targets moved to validator config.
 >
 > **v1.0 changes:** all costs are whole blocks — PHONE_FAX costs 1 block and covers up to two requests (§4.1, §6); STAKEOUT deferred from the slice verb set (§6, §12); manual board linking cut — player expression on the board is annotations + CLEARED/DOUBTED/KEY tags (§5.4, §12). Open questions pruned to post-slice topics. Changes past this point require unlocking the doc.
@@ -32,7 +36,7 @@ Each location is a **self-contained 3D diorama** on a neutral backdrop:
 
 - **Camera:** orbit around a fixed pivot, with zoom and limited vertical tilt. Optionally 2–3 preset "focus pivots" per diorama (e.g., the desk, the body, the doorway) the player can snap between.
 - **Interaction:** mouse raycast onto action points. Everything clickable is an **action** in the data — free inspectables are simply cost-0 INSPECT actions, so one record type, one visibility system, and one staging binding cover the whole game. The staging file maps each `action_id` to its 3D position in the diorama.
-- **Discovery through orbiting:** some action points are only visible from certain angles (a note taped under a drawer, a bullet hole visible only from the window side). The camera itself is an investigative verb. Use sparingly — 2–3 per diorama, never for critical-path evidence without a secondary route (validator-enforced via the action's `hidden_reveal` flag; the angle itself lives in staging).
+- **Discovery through orbiting:** some action points are only visible from certain angles (a note taped under a drawer, a bullet hole visible only from the window side). The camera itself is an investigative verb. Use sparingly — 2–3 per diorama, never for critical-path evidence without a secondary route (validator-enforced via the action's `hidden_reveal` flag). Concealment is physical, not authored: the action point is staged where geometry hides it until the camera orbits past — no angle data anywhere.
 - **Diorama state changes:** dioramas can change between visits (a cleaned-up crime scene, a suspect's packed suitcase) to telegraph the passage of time and the cost of delay.
 - **UI layer:** the case file, evidence board, map, and reconstruction board are full-screen 2D interfaces styled as period paperwork — manila folders, typewritten reports, fax printouts, Polaroids.
 
@@ -298,7 +302,7 @@ The case is fully authored on paper (every fact, action, prereq, contradiction, 
 
 1. **Case logic file (JSON)** — meta, glossary, facts, contradictions, locations, actions, interviews, schedule, reconstruction, outcome tiers. Field-level schema lives in the **Case File Data Inventory v2.0**, which is the format authority. JSON is the authoring source of truth *permanently*; a binary compile target ships later, produced by the build step, never hand-edited.
 2. **Ink files** — all long-form prose: briefing, interviews, document texts, outcome memos. Engine↔ink contract kept tiny and stable: `hasFact(id)`, `contradictionActive(id)`, `discoverFact(id)`, `day()`, `spendBlock()`. Each interview declares a **fact manifest** in the logic file; the validator cross-checks it against the ink source's `discoverFact` calls so reachability analysis survives scripting. (Inkpot for UE; ink runtimes exist for custom engines.)
-3. **Staging file (per engine)** — binds logic IDs to presentation: diorama assets per location state, action 3D positions and reveal angles, portraits, audio, block-of-day labels.
+3. **Staging file (per engine)** — one scene description per location: each state carries its full prop list (states fully define their scene — no diffs) and the 3D position of every action point, plus camera pivot and zoom limits. Portraits, audio, and block-of-day labels join it only when needed. Format sketch: Data Inventory §15.
 
 The runtime is: a diorama renderer (orbit camera + raycast picking), a rules evaluator (fact-list subset checks, clock, lab/pending queues, schedule), an ink runtime, and 2D UI screens. No character controller, no physics, no AI navigation, no scripting.
 
@@ -354,3 +358,22 @@ None of these block implementation:
 - STAKEOUT verb (the only verb that can *miss* — great texture, needs careful authoring; first candidate when the verb vocabulary grows with future cases)
 - Manual player-drawn board threads (auto-threads + annotations + judgment tags cover the slice)
 - Fractional block costs
+- Fact-based expiry / `closes_on` (lost in the v2.0 flattening; see §13 — likely the first item to come back)
+
+---
+
+## 13. Known Expressiveness Limits (monotonicity stress-test)
+
+An honest stress-test, thinking through cases one would actually want to author in this format: the **deduction side is fine** — layered truth, contradictions, recontextualization, red herrings, economy pressure are all fully expressible. The gaps are all on the **consequence side**, and they share one root cause: **the format is monotonic**. The discovered-fact set only grows, and every gate only opens. Concretely:
+
+1. **Nothing can close because of what the player did.** This is the big one. Time can close things (`available` ranges), but events can't — fact-based expiry was lost in the flattening (the old format's "voluntary interview expires once F-100 makes the arrest" is now inexpressible). That means no "you spooked him and he lawyered up," no "searching before the lab results contaminated the scene," no arrest that forecloses other approaches. Compelling cases get a lot of drama from irreversibility, and right now the only irreversible thing in the game is the clock. The fix, if playtesting demands it, is surgical and DSL-free: one optional field, `closes_on: [fact list]` — same subset check as everything else, just inverted in effect. Held in reserve rather than added now, but it's the most likely deferred item to come back first.
+
+2. **The world can only react instantly.** State changes and unlocks fire the moment their gating facts are discovered — there's no "two days after you rattled Boyd, he runs." Interestingly, the format can *almost* express delayed consequences by composition: a hidden side-effect fact on an action, delivered via `delay`, gating a state change when it matures. But that collides with two rules — delayed facts page the player, and marker facts appear on the board. If the `internal: true` flag (§5.3) is adopted, **exempt internal facts from the pager and the board**, and this pattern falls out for free. That's the actual recommendation: don't add a feature — document the pattern and add the two exemptions to the internal flag's definition.
+
+3. **One truth, one timeline.** The reconstruction grades against a single authored solution; alternates handle near-misses, not rival theories. A case whose point is choosing between two coherent readings of the evidence can't be built. Accepted — it's the genre standard (Obra Dinn and Golden Idol are single-truth too), and multi-truth grading is a swamp — but it does rule out one specific flavor of ambiguous, literary case.
+
+4. **No combinatorial presentation.** "Show any evidence to any witness" — the Ace Attorney verb — is inexpressible except by hand-authoring each meaningful pairing as an ink topic. This is less a format limit than an authored-content reality (the combinatorial verb is mostly noise even in games that have it), but be aware the format quietly commits to **curated confrontations**, which puts weight on authoring the right ones.
+
+5. **Everything conversational lives or dies in ink.** The five-function contract deliberately limits ink's influence on the world to producing facts — which keeps the validator honest, but means any interview consequence beyond information (a witness who stops cooperating, a suspect who flees) must route through the fact system, and therefore inherits limits 1 and 2. Once `closes_on` and internal facts exist, this resolves itself; until then, interviews can reveal but never change anything.
+
+The pattern across all five: the format kept **full expressiveness for the player learning about the world**, and traded away most of **the world responding to the player**. For a vertical slice whose question is "is the deduction loop fun," that's exactly the right trade — Golden Idol is essentially fully monotonic and it's brilliant. But a full game of these cases will eventually want consequence for texture, and when it does, the re-adds are small and already shaped: `closes_on`, `internal: true` with pager/board exemptions, and nothing else.

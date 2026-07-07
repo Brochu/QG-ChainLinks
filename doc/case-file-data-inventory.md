@@ -1,11 +1,15 @@
-# COLD FILE — Case File Data Inventory (v2.0)
+# COLD FILE — Case File Data Inventory (v2.1)
 ### The authoritative field-level schema for case logic files
 
-> **v2.0 (flattening pass, driven by first authoring experience):** hotspots dissolved into actions — inspectables are cost-0 INSPECT actions (§7); triggers replaced by the `schedule` list (§9); prereq DSL replaced by flat fact lists + three conventions (§4); map zones cut; `time_gate`/`expires` replaced by `available` block range + optional `blocks_of_day`; one ink file per case, knot-only references; tuning targets moved to validator config; every stored field now has its own table row.
+> **Updates** — this section is the only change record; the body describes current decisions only.
 >
-> Supersedes v1.0. **Where this document and design doc v1.0 disagree on data format, this document wins** (design doc pending sync).
+> **v2.1:** staging file format defined (§15) — one scene-description file per location; every state carries its full prop list (no diffs between states); action points are positions keyed by `action_id`. Reveal angles removed everywhere: concealed action points rely on geometric occlusion, and `hidden_reveal` is a validator-only flag (§7, §13). Inline change-history notes removed from the body.
+>
+> **v2.0 (flattening pass, driven by first authoring experience):** hotspots dissolved into actions — inspectables are cost-0 INSPECT actions (§7); triggers replaced by the `schedule` list (§9); prereq DSL replaced by flat fact lists + three conventions (§4); map zones cut; `time_gate`/`expires` replaced by `available` block range + optional `blocks_of_day`; one ink file per case, knot-only references; tuning targets moved to validator config; every stored field has its own table row.
+>
+> Supersedes v1.0. **Where this document and the design doc disagree on data format, this document wins.**
 
-**Principles.** The case file is a static authored universe; the save is a diff against it. Case logic is engine-agnostic and playable with zero art; the staging file (per engine) binds `action_id` → diorama position/reveal-angle and `location_id`/state → assets. Prose lives in one ink file per case. JSON is the authoring source of truth permanently; binary is a compile target. Keys starting with `_` are authoring notes, stripped by the compiler, ignored by the validator's reference checks.
+**Principles.** The case file is a static authored universe; the save is a diff against it. Case logic is engine-agnostic and playable with zero art; the staging file (per engine, §15) is a plain scene description per location — for each state, the props to draw and the positions of its action points. Prose lives in one ink file per case. JSON is the authoring source of truth permanently; binary is a compile target. Keys starting with `_` are authoring notes, stripped by the compiler, ignored by the validator's reference checks.
 
 **Field table legend:** R = required, O = optional.
 
@@ -42,8 +46,6 @@
 | `starting_facts` | string[] | R | Fact IDs discovered at start |
 | `starting_locations` | string[] | R | Location IDs unlocked at start |
 | `lab_queue_capacity` | int | R | Max concurrent lab (COLLECT) requests; further submissions queue, delay clock paused |
-
-*(Removed in v2.0: `starting_resources` wrapper, `tuning_targets` — targets live in the validator's own config, identical for every case; `block_labels` — presentation, staging file.)*
 
 ## 3. `glossary[]` — the noun universe
 
@@ -99,8 +101,6 @@ Dormant until both facts discovered; activation draws the board's red thread. **
 | `state_id` | string | R | Name referenced by actions' `location_states` and by staging |
 | `when` | string[] \| null | R | Fact list (AND) that switches the location to this state; `null` on the initial state. Later states win over earlier when multiple match |
 
-*(Removed in v2.0: `map_zone` and the root `map` object — no travel costs in the slice; `hotspots` — dissolved into actions, §7.)*
-
 ## 7. `actions[]` — every interactable thing in the game
 
 Inspectables are actions too: verb `INSPECT`, cost 0. One record type, one visibility system, one staging binding.
@@ -118,7 +118,7 @@ Inspectables are actions too: verb `INSPECT`, cost 0. One record type, one visib
 | `available` | int[2] | R | Absolute block range `[from, to]`, inclusive; `-1` = end of case; `[0,-1]` = always. Replaces day-gating and expiry. Validator checks expiring critical-path actions have alternates |
 | `blocks_of_day` | int[] | O | Periodic filter (e.g. `[2]` = evenings only); absent = all blocks. The one thing a contiguous range can't express |
 | `location_states` | string[] | O | Diorama states this action exists in; absent = all states |
-| `hidden_reveal` | bool | O | Default `false`. Marks angle-only discovery (staging holds the angle); validator law: never the sole route to a critical-path fact |
+| `hidden_reveal` | bool | O | Default `false`. Marks actions found only by orbiting — staging places the point where geometry conceals it (§15); no angle data exists. Validator-only flag: never the sole route to a critical-path fact |
 | `delay` | int | R | Blocks spent before results mature; `0` = immediate. Maturity = pager headline. COLLECT actions additionally occupy a lab queue slot for the delay (engine rule from verb — no per-action flag) |
 | `pending_label` | string | O | Required when `delay > 0`: in-fiction delay line + pager headline text |
 | `produces` | string[] | R (may be empty) | Flat fact ID list, unconditional. Variation = multiple actions. Empty for INTERVIEW (manifest owns it, §8) |
@@ -197,3 +197,35 @@ No dangling IDs anywhere · every fact producible (action, schedule, or starting
 ## 14. Deferred (kept on record)
 
 Map zones / travel costs (flatter re-add: single `travel_cost` int per location) · link types `CORROBORATES` `SUPERSEDES` `REINTERPRETS` · warrants; PD favor; lab credits · STAKEOUT verb · prereq expression DSL (`any`/`not` — superseded by the shared knowledge-fact idiom) · trigger effects DSL · conditional action outcomes · fractional block costs · authored epilogue lines · manual board threads · mid-case inference puzzles.
+
+## 15. Staging file (per engine; NOT part of the case file)
+
+The case file contains zero visual data. The staging file fills that gap: **one scene-description file per location**, sharing only the ID vocabulary (`location_id`, `state_id`, `action_id`) with the case file. Whether staging is hand-authored or emitted by a generator tool, the runtime cannot tell the difference.
+
+```json
+{
+  "location_id": "motel-unit",
+  "camera": { "pivot": [0, 1, 0], "zoom": [2.5, 6.0] },
+  "states": {
+    "burned": {
+      "props": [
+        { "asset": "bed_double_burned", "pos": [1.4, 0, 0.8], "rot": 90 },
+        { "asset": "nightstand",        "pos": [2.2, 0, 0.8] }
+      ],
+      "action_points": [
+        { "action_id": "A-07", "pos": [2.2, 0.5, 0.9] },
+        { "action_id": "A-12", "pos": [0.3, 0.1, 1.6] }
+      ]
+    },
+    "bulldozed": {
+      "props": [ { "asset": "rubble_pile", "pos": [1.0, 0, 1.0] } ],
+      "action_points": [ { "action_id": "A-19", "pos": [1.0, 0.4, 1.0] } ]
+    }
+  }
+}
+```
+
+- **`props` — full list per state.** Every state fully defines its scene; there is no diffing or inheritance between states. Redundant, trivially debuggable, and what a generator emits anyway.
+- **`action_points` — a position per action playable in that state.** The runtime spawns a clickable marker for each point whose action is currently visible per the logic rules; clicking hands the `action_id` to the rules engine — the same call the text prototype makes.
+- **Concealment is geometric.** A `hidden_reveal` action point is simply placed where geometry occludes it (under the drawer, behind the headboard) until the camera orbits past. No authored angles anywhere.
+- **Deferred bindings**, added only when they hurt: portraits, audio, block-of-day labels.
