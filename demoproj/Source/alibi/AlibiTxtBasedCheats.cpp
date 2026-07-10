@@ -58,9 +58,9 @@ void UAlibiTxtBasedCheats::CaseStatus() {
 		save.known_facts.Num(),
 		*FString::JoinBy(save.known_facts, TEXT(", "), [](const FName &f) { return f.ToString(); }));
 
-	output.Appendf(TEXT("\n\tActive tags (%d): %s"),
-		save.active_tags.Num(),
-		*FString::JoinBy(save.active_tags, TEXT(", "), [](const FName &t) { return t.ToString(); }));
+	output.Appendf(TEXT("\n\tKnown entities (%d): %s"),
+		save.known_tags.Num(),
+		*FString::JoinBy(save.known_tags, TEXT(", "), [](const FName &t) { return t.ToString(); }));
 
 	output.Appendf(TEXT("\n\tLab queue (%d/%d):"), save.active_lab_requests.Num(), meta.lab_queue_capacity);
 	for (const FLabRequest &req : save.active_lab_requests) {

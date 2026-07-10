@@ -22,6 +22,14 @@ struct FLabRequest {
 	int32 block_started;
 };
 
+UENUM(BlueprintType)
+enum class EPlayerTag : uint8 {
+	None,
+	Cleared,
+	Doubted,
+	Key,
+};
+
 /**
  * The player's progress, kept as a diff against the authored case file
  * (Case File Data Inventory §12). Resetting a case = resetting this struct.
@@ -39,8 +47,14 @@ struct FCaseSaveState {
 	UPROPERTY(SaveGame)
 	TSet<FName> known_facts;
 
+	// The derived noun universe: glossary tags of every discovered fact (design §5.1).
 	UPROPERTY(SaveGame)
-	TSet<FName> active_tags;
+	TSet<FName> known_tags;
+
+	// Player judgment per item; no entry = untagged. Keys are fact IDs or glossary
+	// tag IDs — CLEARED mostly targets entities, DOUBTED targets facts (design §5.4).
+	UPROPERTY(SaveGame)
+	TMap<FName, EPlayerTag> player_tags;
 
 	UPROPERTY(SaveGame)
 	TSet<FName> completed_actions;
@@ -50,7 +64,9 @@ struct FCaseSaveState {
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNewLabRequest, FLabRequest, request);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBlockSpent, int32, from, int32, to);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLabRequestComplete, FLabRequest, request);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimeAdvance, int32, new_time);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnScheduleComplete, FText, pager_text);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFactDiscovered, FName, fact_id, int32, when_block);
 
 /**
@@ -138,13 +154,20 @@ public:
 	FOnNewLabRequest on_new_lab_request;
 
 	UPROPERTY(BlueprintAssignable)
-	FOnBlockSpent on_block_spent;
+	FOnLabRequestComplete on_lab_request_complete;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnTimeAdvance on_time_advance;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnScheduleComplete on_schedule_complete;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnFactDiscovered on_fact_discovered;
 
 private:
 	bool all_facts_known(const TArray<FName> &facts) const;
+	bool is_in_window(const FCaseAction &act) const;
 
 	void spend_blocks(int32 quantity);
 	void discover_facts(const TArray<FName> &facts);

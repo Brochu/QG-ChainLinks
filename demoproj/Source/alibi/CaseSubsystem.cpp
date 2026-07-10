@@ -8,6 +8,10 @@
 
 DEFINE_LOG_CATEGORY(LogCase);
 
+/// <summary>
+/// Loads and parses the case found at case_path
+/// </summary>
+/// <param name="case_path">Filepath of the case to load and make active</param>
 void UCaseSubsystem::load_case_file(FString case_path) {
 	FString contents;
 	if (!FFileHelper::LoadFileToString(contents, *case_path)) {
@@ -51,6 +55,10 @@ void UCaseSubsystem::load_case_file(FString case_path) {
 	discover_facts(file.meta.starting_facts);
 }
 
+/// <summary>
+/// Gets a reference to the current active player's location
+/// </summary>
+/// <returns>reference to the player's active location</returns>
 const FCaseLocation &UCaseSubsystem::get_active_location() const {
 	const FCaseLocation *active_loc = file.locations.FindByPredicate([this](const FCaseLocation &other) { return other.location_id == save.active_locid; });
 
@@ -64,8 +72,13 @@ const FCaseLocation &UCaseSubsystem::get_active_location() const {
 	return *active_loc;
 }
 
+/// <summary>
+/// Gets the current state for a specific case location
+/// </summary>
+/// <param name="loc_id">Location id to check the state of</param>
+/// <returns>the current active state for the given location</returns>
 FName UCaseSubsystem::get_location_state(FName loc_id) const {
-	const FCaseLocation *found_loc= file.locations.FindByPredicate([this](const FCaseLocation &other) { return other.location_id == save.active_locid; });
+	const FCaseLocation *found_loc= file.locations.FindByPredicate([this, loc_id](const FCaseLocation &other) { return other.location_id == loc_id; });
 	if (found_loc == nullptr) {
 		return NAME_None;
 	}
@@ -81,6 +94,10 @@ FName UCaseSubsystem::get_location_state(FName loc_id) const {
 	return state;
 }
 
+/// <summary>
+/// Gets an array of all available location indices
+/// </summary>
+/// <returns>List of indices into the location array parsed from the case file</returns>
 TArray<int32> UCaseSubsystem::list_location_idx() const {
 	TArray<int32> results;
 
@@ -91,6 +108,11 @@ TArray<int32> UCaseSubsystem::list_location_idx() const {
 	return results;
 }
 
+/// <summary>
+/// Gets an array of all avaiable action indices for a given location
+/// </summary>
+/// <param name="loc_id">location to query actions for</param>
+/// <returns>List of all actions that are visible to the player at loc_id</returns>
 TArray<int32> UCaseSubsystem::list_action_idx(FName loc_id) const {
 	TArray<int32> results;
 
@@ -109,16 +131,17 @@ TArray<int32> UCaseSubsystem::list_action_idx(FName loc_id) const {
 	return results;
 }
 
+/// <summary>
+/// Check the visibility for a given action of the case
+/// </summary>
+/// <param name="act">Action to check</param>
+/// <returns>Visibility level</returns>
 EActionVisibility UCaseSubsystem::action_visibility(const FCaseAction &act) const {
 	const bool in_state =
 		act.location_states.Num() == 0 ||
 		act.location_states.Contains(get_location_state(act.location_id));
 
-	const int32 from = act.available[0];
-	const int32 to = act.available[1];
-	const bool in_window = save.used_blocks >= from && ( to == -1 || save.used_blocks <= to);
-
-	if (!in_state || !in_window) {
+	if (!in_state || !is_in_window(act)) {
 		return EActionVisibility::Absent;
 	}
 
@@ -129,6 +152,11 @@ EActionVisibility UCaseSubsystem::action_visibility(const FCaseAction &act) cons
 	return EActionVisibility::Unlocked;
 }
 
+/// <summary>
+/// Check if a given action of the case is possible to commit with the current player state
+/// </summary>
+/// <param name="act">Action to check</param>
+/// <returns>Potential rejection reason when trying to commit the action</returns>
 ECommitActionResult UCaseSubsystem::can_commit(const FCaseAction &act) const {
 	if (act.location_id != save.active_locid) {
 		return ECommitActionResult::NotAtLocation;
@@ -138,10 +166,7 @@ ECommitActionResult UCaseSubsystem::can_commit(const FCaseAction &act) const {
 		return ECommitActionResult::WrongLocationState;
 	}
 
-	const int32 from = act.available[0];
-	const int32 to = act.available[1];
-	const bool in_window = save.used_blocks >= from && (to == -1 || save.used_blocks <= to);
-	if (!in_window) {
+	if (!is_in_window(act)) {
 		return ECommitActionResult::OutsideAvailabilityWindow;
 	}
 
@@ -169,12 +194,22 @@ ECommitActionResult UCaseSubsystem::can_commit(const FCaseAction &act) const {
 	return ECommitActionResult::Success;
 }
 
+/// <summary>
+/// Moves the player to a new location
+/// </summary>
+/// <param name="new_loc_id">new location id to move to</param>
+/// <returns>If the move was successful or not</returns>
 bool UCaseSubsystem::move_location(FName new_loc_id) {
 	//TODO: Overly simple for now, will need events and checks later to react to movement during a case
 	save.active_locid = new_loc_id;
 	return true;
 }
 
+/// <summary>
+/// Commit action by the name of action_id
+/// </summary>
+/// <param name="action_id">name of the action to commit</param>
+/// <returns>Potential rejection reason when trying to commit this action</returns>
 ECommitActionResult UCaseSubsystem::commit_action(FName action_id) {
 	const FCaseAction *chosen_action = file.actions.FindByPredicate([action_id](const FCaseAction &other) { return other.action_id == action_id; });
 	if (chosen_action == nullptr) {
@@ -203,28 +238,7 @@ ECommitActionResult UCaseSubsystem::commit_action(FName action_id) {
 	return ECommitActionResult::Success;
 }
 
-void UCaseSubsystem::spend_blocks(int32 quantity) {
-	int32 prev_blocks = save.used_blocks;
-	save.used_blocks += quantity;
-
-	//TODO: Handle time moving forward
-	// Handle lab requests ending
-	// Handle schedule entries
-
-	on_block_spent.Broadcast(prev_blocks, save.used_blocks);
-}
-
-void UCaseSubsystem::discover_facts(const TArray<FName> &new_facts) {
-	for (auto &fact : new_facts) {
-		bool already_known = save.known_facts.Contains(fact);
-		save.known_facts.Add(fact);
-
-		if (!already_known) {
-			on_fact_discovered.Broadcast(fact, save.used_blocks);
-		}
-	}
-}
-
+// --------------------------------------------------
 bool UCaseSubsystem::all_facts_known(const TArray<FName> &facts_to_check) const {
 	for (auto &fact : facts_to_check) {
 		if (!save.known_facts.Contains(fact)) {
@@ -233,4 +247,56 @@ bool UCaseSubsystem::all_facts_known(const TArray<FName> &facts_to_check) const 
 	}
 
 	return true;
+}
+
+bool UCaseSubsystem::is_in_window(const FCaseAction &act) const {
+	const int32 from = act.available[0];
+	const int32 to = act.available[1];
+	return save.used_blocks >= from && ( to == -1 || save.used_blocks <= to);
+}
+
+void UCaseSubsystem::spend_blocks(int32 quantity) {
+	for (int32 time = 0; time < quantity; time++) {
+		save.used_blocks++;
+
+		for (int32 i = save.active_lab_requests.Num() - 1; i >= 0; i--) {
+			FLabRequest &request = save.active_lab_requests[i];
+			FCaseAction *action = file.actions.FindByPredicate([&request](const FCaseAction &a) {return a.action_id == request.action_id; });
+			checkf(action != nullptr, TEXT("Could not find lab request's action_id = %s!"), *request.action_id.ToString());
+
+			const int32 diff = save.used_blocks - request.block_started;
+			if (diff >= action->delay) {
+				discover_facts(action->produces);
+				on_lab_request_complete.Broadcast(request);
+
+				save.active_lab_requests.RemoveAt(i, EAllowShrinking::No);
+			}
+		}
+
+		for (const auto &schedule : file.schedule) {
+			if (schedule.at_block == save.used_blocks) {
+				discover_facts(schedule.delivers);
+				on_schedule_complete.Broadcast(schedule.pager);
+			}
+		}
+
+		on_time_advance.Broadcast(save.used_blocks);
+	}
+}
+
+void UCaseSubsystem::discover_facts(const TArray<FName> &new_facts) {
+	for (auto &fact_name : new_facts) {
+		bool already_known;
+		save.known_facts.Add(fact_name, &already_known);
+
+		if (!already_known) {
+			FCaseFact *fact = file.facts.FindByPredicate([fact_name](const FCaseFact &f) { return f.fact_id == fact_name; });
+			checkf(fact != nullptr, TEXT("Could not find discovered fact_name = %s!"), *fact_name.ToString());
+			for (auto &tag : fact->tags) {
+				save.known_tags.Add(tag);
+			}
+
+			on_fact_discovered.Broadcast(fact_name, save.used_blocks);
+		}
+	}
 }
