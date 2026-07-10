@@ -3,9 +3,9 @@
 
 > Scope: gameplay-time bookkeeping (stats) and the event surface other systems / the UI react to. Not part of the case file format — this is engine/runtime state (see Data Inventory §12 "Save state"). Nothing here is authored per-case; it's uniform across all cases.
 
-**Guiding constraint — pillar 4 ("the game never tells you if you're right").** Split stats by consumer, because the live HUD must never leak *correctness*, while the post-game review is exactly where correctness is revealed. Any stat that would tell the player whether a lead is right/wrong belongs in the post-game bucket, never the HUD.
+**Guiding constraint — pillar 4 ("the game never tells you if you're right").** Stats are split by consumer: the live HUD must never leak *correctness*; the post-game review is exactly where correctness is revealed. Any stat that would tell the player whether a lead is right/wrong belongs in the post-game bucket, never the HUD.
 
-Most stats are just accumulators fed by the events in §2 — so wire the events first and the stats fall out. The event is the source of truth; the stat is a running total.
+Most stats are accumulators fed by the events in §2 — wire the events first and the stats fall out.
 
 ---
 
@@ -41,7 +41,7 @@ Most stats are just accumulators fed by the events in §2 — so wire the events
 
 | Stat | Notes | ★ |
 |---|---|---|
-| Facts/day curve vs the ~4/day target; inert days (no unlock AND no contradiction activation) | Design says there should be zero inert days | ★ |
+| Facts/day curve vs the ~4/day target; inert days (no unlock AND no contradiction activation) | Target: zero inert days | ★ |
 | Affordability: fraction of costed actions affordable this run (~60% target) | | |
 | Critical-path timing: block at which each keystone fact landed; path completed before deadline? | | |
 | Time-to-resolve each contradiction (blocks between activation and resolving action) | | |
@@ -52,7 +52,7 @@ Most stats are just accumulators fed by the events in §2 — so wire the events
 
 ## 2. Case subsystem events
 
-The spine is **`OnFactDiscovered`** — per the runtime pipeline (design §5.5), almost everything else cascades from a fact entering the set. In UE these are `DECLARE_DYNAMIC_MULTICAST_DELEGATE`s on `UCaseSubsystem` (`BlueprintAssignable`) so UMG widgets and Blueprints bind directly; this game is ~50% UI.
+The spine is **`OnFactDiscovered`** — per the runtime pipeline (design §5.5), almost everything else cascades from a fact entering the set. In UE these are `DECLARE_DYNAMIC_MULTICAST_DELEGATE`s on `UCaseSubsystem` (`BlueprintAssignable`) so UMG widgets and Blueprints bind directly.
 
 | Event | Fires when | Reactors |
 |---|---|---|
@@ -66,7 +66,7 @@ The spine is **`OnFactDiscovered`** — per the runtime pipeline (design §5.5),
 | `OnLocationStateChanged(loc_id, state_id)` | a `states[].when` becomes satisfied | diorama swaps assets — telegraphs time passing |
 | ★ `OnResultsMatured(action_id, fact_ids)` | a delayed request's clock hits 0 | **pager buzz** with `pending_label`; pending panel update |
 | `OnLabQueueChanged` | submit / slot frees / reorder | pending panel refresh |
-| `OnBlockSpent(from, to)` | a block is spent (clock advances) | HUD; tick pending & lab clocks; check `schedule` |
+| `OnTimeAdvance(new_block)` | each spent block, after that block's maturations & schedule deliveries have fired (the clock only ever advances +1, so no from/to pair) | HUD clock; day-boundary detection (`new_block % blocks_per_day == 0`) |
 | `OnDayChanged(day)` | crossing a day boundary | day banner / flavor |
 | `OnDeadlineImminent` / `OnDeadlineReached` | last block / clock expires | warning; auto-open reconstruction |
 | `OnActionCommitted(action_id)` / `OnActionRejected(action_id, reason)` | player takes / is denied an action | animations; feedback (see reason enum below) |
@@ -76,9 +76,9 @@ The spine is **`OnFactDiscovered`** — per the runtime pipeline (design §5.5),
 
 ### 2.1 Rejection reasons (enum)
 
-`OnActionRejected` should carry a reason enum so the debug console and the real UI report failures consistently:
+`ECommitActionResult`, returned by `commit_action` / `can_commit` so the debug console and the real UI report failures consistently (an `OnActionRejected` event can wrap it later):
 
-`Locked` (prereqs unmet) · `NoBlocks` (would exceed the deadline budget) · `OutsideWindow` (`available` range) · `WrongBlockOfDay` (`blocks_of_day`) · `LabFull` (queue at capacity — if refusing rather than queuing) · `WrongState` (`location_states`) · `UnknownAction` (bad id).
+`UnknownAction` (bad id) · `NotAtLocation` · `PrerequisitesNotMet` (locked / secret) · `OutsideAvailabilityWindow` (`available` range) · `WrongBlockOfDay` (`blocks_of_day`) · `WrongLocationState` (`location_states`) · `NotEnoughBlocks` (would exceed the deadline budget) · `LabQueueFull` (queue at capacity — refuse-at-capacity, pending a queue-behind decision) · `AlreadyCompleted` (non-repeatable action already taken).
 
 ### 2.2 Correctness-blind rule
 
@@ -86,7 +86,11 @@ Keep the **live** events correctness-blind. `OnContradictionActivated` says "the
 
 ### 2.3 Implemented so far
 
-- `FOnBlockSpent(int32 from, int32 to)` → `on_block_spent` — broadcast from `commit_action`.
-- `FOnNewLabRequest(FLabRequest&)` → `on_new_lab_request` — broadcast when a COLLECT/delayed action is queued.
+- `FOnFactDiscovered(FName fact_id, int32 when_block)` → `on_fact_discovered` — first discovery only (re-discovery deduped); fires for starting facts, action `produces`, matured lab requests, and schedule deliveries, stamped with the exact block it landed on.
+- `FOnNewLabRequest(FLabRequest)` → `on_new_lab_request` — a COLLECT action was queued.
+- `FOnLabRequestComplete(FLabRequest)` → `on_lab_request_complete` — a request's delay elapsed; its `produces` discover in the same tick. (Covers the table's `OnResultsMatured`.)
+- `FOnScheduleComplete(FText pager_text)` → `on_schedule_complete` — a `schedule` entry fired at its `at_block`.
+- `FOnTimeAdvance(int32 new_time)` → `on_time_advance` — once per spent block, after that block's maturations and deliveries. (Covers the table's block/clock event.)
+- `commit_action` returns `ECommitActionResult` (§2.1) rather than firing an event.
 
-Next spine pieces: `OnFactDiscovered` (drives the whole §5.5 cascade) and `OnResultsMatured` (closes the delayed-result loop).
+Next spine pieces: contradiction activation (`OnContradictionActivated` + the `DOUBTED` payoff) and the unlock reactions (`OnLocationUnlocked`, `OnActionVisibilityChanged`, `OnLocationStateChanged`).

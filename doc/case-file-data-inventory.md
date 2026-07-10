@@ -1,15 +1,13 @@
 # COLD FILE — Case File Data Inventory (v2.1)
 ### The authoritative field-level schema for case logic files
 
-> **Updates** — this section is the only change record; the body describes current decisions only.
+> **Version history:** v2.0 flattening pass — hotspots dissolved into actions, triggers replaced by the `schedule` list, prereq DSL replaced by flat fact lists, `available` block ranges, one ink file per case, tuning targets moved to validator config · v2.1 staging file format defined (§14), reveal angles removed (`hidden_reveal` is validator-only).
 >
-> **v2.1:** staging file format defined (§15) — one scene-description file per location; every state carries its full prop list (no diffs between states); action points are positions keyed by `action_id`. Reveal angles removed everywhere: concealed action points rely on geometric occlusion, and `hidden_reveal` is a validator-only flag (§7, §13). Inline change-history notes removed from the body.
+> **Deferred (kept on record):** map zones / travel costs (re-add shape: single `travel_cost` int per location) · link types `CORROBORATES` `SUPERSEDES` `REINTERPRETS` · warrants; PD favor; lab credits · STAKEOUT verb · prereq expression DSL · trigger effects DSL · conditional action outcomes · fractional block costs · authored epilogue lines · manual board threads · mid-case inference puzzles.
 >
-> **v2.0 (flattening pass, driven by first authoring experience):** hotspots dissolved into actions — inspectables are cost-0 INSPECT actions (§7); triggers replaced by the `schedule` list (§9); prereq DSL replaced by flat fact lists + three conventions (§4); map zones cut; `time_gate`/`expires` replaced by `available` block range + optional `blocks_of_day`; one ink file per case, knot-only references; tuning targets moved to validator config; every stored field has its own table row.
->
-> Supersedes v1.0. **Where this document and the design doc disagree on data format, this document wins.**
+> **Where this document and the design doc disagree on data format, this document wins.**
 
-**Principles.** The case file is a static authored universe; the save is a diff against it. Case logic is engine-agnostic and playable with zero art; the staging file (per engine, §15) is a plain scene description per location — for each state, the props to draw and the positions of its action points. Prose lives in one ink file per case. JSON is the authoring source of truth permanently; binary is a compile target. Keys starting with `_` are authoring notes, stripped by the compiler, ignored by the validator's reference checks.
+**Principles.** The case file is a static authored universe; the save is a diff against it. Case logic is engine-agnostic and playable with zero art; the staging file (per engine, §14) is a plain scene description per location. Prose lives in one ink file per case. JSON is the authoring source of truth permanently; binary is a compile target. Keys starting with `_` are authoring notes, stripped by the compiler, ignored by the validator's reference checks.
 
 **Field table legend:** R = required, O = optional.
 
@@ -69,9 +67,9 @@ Facts are immutable and append-only.
 | `reliability` | enum | R | `TESTIMONY` `DOCUMENT` `FORENSIC` |
 | `conditions` | string[] | O | Observation metadata, TESTIMONY only (e.g. "dark", "~40m", "through window"); shown on the card; powers fair invalidation and rational `DOUBTED` tagging |
 
-**Prerequisite lists (used everywhere):** every `prerequisites` / `unlock_rule` / state-`when` field in this format is a **flat array of fact IDs, AND semantics** (`null` or `[]` = none). There is no expression DSL. Three conventions replace it:
+**Prerequisite lists (used everywhere):** every `prerequisites` / `unlock_rule` / state-`when` field in this format is a **flat array of fact IDs, AND semantics** (`null` or `[]` = none). There is no expression DSL. Three conventions cover the rest:
 
-1. **OR** → the *shared knowledge-fact idiom*: author every alternative route to produce the **same fact**, gate on that one fact. (Names the inference explicitly — a feature, not a workaround.)
+1. **OR** → the *shared knowledge-fact idiom*: author every alternative route to produce the **same fact**, gate on that one fact.
 2. **Time conditions** → the `available` block range on actions (§7), never a prereq.
 3. **"Contradiction active"** → list both of the contradiction's facts (active ≡ both discovered). Interview-side leverage uses ink's `contradictionActive()` instead.
 
@@ -115,10 +113,10 @@ Inspectables are actions too: verb `INSPECT`, cost 0. One record type, one visib
 | `prerequisites` | string[] \| null | R | Fact list (AND) |
 | `hidden` | bool | R | With prereqs, derives visibility: prereqs met → **unlocked**; unmet & `hidden:false` → **locked** (shown, unselectable); unmet & `hidden:true` → **secret** (invisible) |
 | `locked_hint` | string | O | Short tease shown on locked actions |
-| `available` | int[2] | R | Absolute block range `[from, to]`, inclusive; `-1` = end of case; `[0,-1]` = always. Replaces day-gating and expiry. Validator checks expiring critical-path actions have alternates |
-| `blocks_of_day` | int[] | O | Periodic filter (e.g. `[2]` = evenings only); absent = all blocks. The one thing a contiguous range can't express |
+| `available` | int[2] | R | Absolute block range `[from, to]`, inclusive; `-1` = end of case; `[0,-1]` = always. Validator checks expiring critical-path actions have alternates |
+| `blocks_of_day` | int[] | O | Periodic filter (e.g. `[2]` = evenings only); absent = all blocks |
 | `location_states` | string[] | O | Diorama states this action exists in; absent = all states |
-| `hidden_reveal` | bool | O | Default `false`. Marks actions found only by orbiting — staging places the point where geometry conceals it (§15); no angle data exists. Validator-only flag: never the sole route to a critical-path fact |
+| `hidden_reveal` | bool | O | Default `false`. Marks actions found only by orbiting — staging places the point where geometry conceals it (§14). Validator-only flag: never the sole route to a critical-path fact |
 | `delay` | int | R | Blocks spent before results mature; `0` = immediate. Maturity = pager headline. COLLECT actions additionally occupy a lab queue slot for the delay (engine rule from verb — no per-action flag) |
 | `pending_label` | string | O | Required when `delay > 0`: in-fiction delay line + pager headline text |
 | `produces` | string[] | R (may be empty) | Flat fact ID list, unconditional. Variation = multiple actions. Empty for INTERVIEW (manifest owns it, §8) |
@@ -139,11 +137,11 @@ Engine↔ink contract (stable, part of this format): `hasFact(id)`, `contradicti
 
 ## 9. `schedule[]` — timed unprompted delivery
 
-The sole survivor of the trigger system: things that happen at a *time* regardless of player activity. Everything else triggers used to do lives where its effect is (unlocks → `unlock_rule`s, enables → prereqs, state changes → `states[].when`, discovery pagers → `pending_label`).
+Things that happen at a *time* regardless of player activity. All other reactive behavior lives at its effect site: unlocks in `unlock_rule`s, enables in prereqs, state changes in `states[].when`, discovery pagers in `pending_label`.
 
 | Field | Type | R/O | Description |
 |---|---|---|---|
-| `at_block` | int | R | Absolute block index at which delivery fires |
+| `at_block` | int | R | Absolute block index at which delivery fires; **≥ 1** — the clock starts at 0 and delivery is checked as each spent block completes, so a block-0 entry can never fire. Block-0 content belongs in `starting_facts` or the briefing knot |
 | `delivers` | string[] | R | Fact IDs discovered unprompted (they then drive unlocks/states/prereqs like any fact) |
 | `pager` | string | R | Pager headline shown at delivery |
 
@@ -188,17 +186,15 @@ Validation on final submission only. Submission is ceremonial (signed memo), irr
 
 ## 12. Save state (NOT in the case file)
 
-Discovered fact set · active contradictions · player tags (`CLEARED` `DOUBTED` `KEY`), board layout, annotations · clock (absolute block index) · pending-results list & lab-queue occupancy/order · fired schedule entries · ink state blob · reconstruction draft · per-location current state.
+Discovered fact set · known entity tags (cache of discovered facts' tags — the derived noun universe) · active contradictions · player tags (`CLEARED` `DOUBTED` `KEY`; no entry = untagged), board layout, annotations · clock (absolute block index) · completed non-repeatable actions · pending-results list & lab-queue occupancy/order · ink state blob · reconstruction draft.
+
+**Not stored, derived on demand:** per-location current state (a pure function of the discovered-fact set) and fired schedule entries (the per-block tick passes each block index exactly once, so `at_block == clock` fires exactly once by construction).
 
 ## 13. Validator laws (run on JSON; config in the validator, not the case)
 
-No dangling IDs anywhere · every fact producible (action, schedule, or starting) · every glossary entry appears in ≥1 fact; every reconstruction answer/decoy introducible via some fact · fact connection-density ≥ 2 (shared tag / contradiction / prereq / supports) · every contradiction has ≥1 reachable resolution action · critical path reachable within the block budget · actions with bounded `available` on the critical path have alternates · `hidden_reveal` never the sole route to a critical fact · interview manifests ⊇ ink `discoverFact` calls · `pending_label` present wherever `delay > 0` · exactly one recontextualizing beat per case (checked by a human, flagged by convention) · economy targets (~60% affordability, ~4 facts/day) from validator config.
+No dangling IDs anywhere · every fact producible (action, schedule, or starting) · `schedule.at_block` ≥ 1 (§9) · every glossary entry appears in ≥1 fact; every reconstruction answer/decoy introducible via some fact · fact connection-density ≥ 2 (shared tag / contradiction / prereq / supports) · every contradiction has ≥1 reachable resolution action · critical path reachable within the block budget · actions with bounded `available` on the critical path have alternates · `hidden_reveal` never the sole route to a critical fact · interview manifests ⊇ ink `discoverFact` calls · `pending_label` present wherever `delay > 0` · exactly one recontextualizing beat per case (checked by a human, flagged by convention) · economy targets (~60% affordability, ~4 facts/day) from validator config.
 
-## 14. Deferred (kept on record)
-
-Map zones / travel costs (flatter re-add: single `travel_cost` int per location) · link types `CORROBORATES` `SUPERSEDES` `REINTERPRETS` · warrants; PD favor; lab credits · STAKEOUT verb · prereq expression DSL (`any`/`not` — superseded by the shared knowledge-fact idiom) · trigger effects DSL · conditional action outcomes · fractional block costs · authored epilogue lines · manual board threads · mid-case inference puzzles.
-
-## 15. Staging file (per engine; NOT part of the case file)
+## 14. Staging file (per engine; NOT part of the case file)
 
 The case file contains zero visual data. The staging file fills that gap: **one scene-description file per location**, sharing only the ID vocabulary (`location_id`, `state_id`, `action_id`) with the case file. Whether staging is hand-authored or emitted by a generator tool, the runtime cannot tell the difference.
 
@@ -225,7 +221,7 @@ The case file contains zero visual data. The staging file fills that gap: **one 
 }
 ```
 
-- **`props` — full list per state.** Every state fully defines its scene; there is no diffing or inheritance between states. Redundant, trivially debuggable, and what a generator emits anyway.
+- **`props` — full list per state.** Every state fully defines its scene; no diffing or inheritance between states. Redundant, trivially debuggable, and what a generator emits anyway.
 - **`action_points` — a position per action playable in that state.** The runtime spawns a clickable marker for each point whose action is currently visible per the logic rules; clicking hands the `action_id` to the rules engine — the same call the text prototype makes.
 - **Concealment is geometric.** A `hidden_reveal` action point is simply placed where geometry occludes it (under the drawer, behind the headboard) until the camera orbits past. No authored angles anywhere.
 - **Deferred bindings**, added only when they hurt: portraits, audio, block-of-day labels.
