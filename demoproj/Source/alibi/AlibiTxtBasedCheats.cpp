@@ -63,7 +63,7 @@ void UAlibiTxtBasedCheats::CaseStatus() {
 		*FString::JoinBy(save.known_tags, TEXT(", "), [](const FName &t) { return t.ToString(); }));
 
 	output.Appendf(TEXT("\n\tLab queue (%d/%d):"), save.active_lab_requests.Num(), meta.lab_queue_capacity);
-	for (const FLabRequest &req : save.active_lab_requests) {
+	for (const FPendingRequest &req : save.active_lab_requests) {
 
 		const FCaseAction *act = _case_system->file.actions.FindByPredicate(
 			[&req](const FCaseAction &a) { return a.action_id == req.action_id; });

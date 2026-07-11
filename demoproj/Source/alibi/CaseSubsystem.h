@@ -12,7 +12,7 @@
 DECLARE_LOG_CATEGORY_EXTERN(LogCase, Log, Log);
 
 USTRUCT(BlueprintType)
-struct FLabRequest {
+struct FPendingRequest {
 	GENERATED_BODY()
 
 	UPROPERTY()
@@ -60,11 +60,14 @@ struct FCaseSaveState {
 	TSet<FName> completed_actions;
 
 	UPROPERTY(SaveGame)
-	TArray<FLabRequest> active_lab_requests;
+	TArray<FPendingRequest> active_office_requests;
+
+	UPROPERTY(SaveGame)
+	TArray<FPendingRequest> active_lab_requests;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNewLabRequest, FLabRequest, request);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLabRequestComplete, FLabRequest, request);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnNewPendingRequest, FPendingRequest, request);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPendingRequestComplete, FPendingRequest, request);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimeAdvance, int32, new_time);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnScheduleComplete, FText, pager_text);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFactDiscovered, FName, fact_id, int32, when_block);
@@ -151,10 +154,10 @@ public:
 	// --------------------
 
 	UPROPERTY(BlueprintAssignable)
-	FOnNewLabRequest on_new_lab_request;
+	FOnNewPendingRequest on_new_pending_request;
 
 	UPROPERTY(BlueprintAssignable)
-	FOnLabRequestComplete on_lab_request_complete;
+	FOnPendingRequestComplete on_pending_request_complete;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnTimeAdvance on_time_advance;

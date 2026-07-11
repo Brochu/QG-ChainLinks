@@ -224,7 +224,7 @@ ECommitActionResult UCaseSubsystem::commit_action(FName action_id) {
 	if (chosen_action->verb == ECaseVerb::COLLECT) {
 		// Lab request action; delayed results
 		save.active_lab_requests.Push({ action_id, save.used_blocks });
-		on_new_lab_request.Broadcast(save.active_lab_requests.Last());
+		on_new_pending_request.Broadcast(save.active_lab_requests.Last());
 		//TODO: Need to handle delayed action that are not lab requests as well
 	}
 
@@ -260,14 +260,14 @@ void UCaseSubsystem::spend_blocks(int32 quantity) {
 		save.used_blocks++;
 
 		for (int32 i = save.active_lab_requests.Num() - 1; i >= 0; i--) {
-			FLabRequest &request = save.active_lab_requests[i];
+			FPendingRequest &request = save.active_lab_requests[i];
 			FCaseAction *action = file.actions.FindByPredicate([&request](const FCaseAction &a) {return a.action_id == request.action_id; });
 			checkf(action != nullptr, TEXT("Could not find lab request's action_id = %s!"), *request.action_id.ToString());
 
 			const int32 diff = save.used_blocks - request.block_started;
 			if (diff >= action->delay) {
 				discover_facts(action->produces);
-				on_lab_request_complete.Broadcast(request);
+				on_pending_request_complete.Broadcast(request);
 
 				save.active_lab_requests.RemoveAt(i, EAllowShrinking::No);
 			}
