@@ -72,6 +72,16 @@ void UAlibiTxtBasedCheats::CaseStatus() {
 		output.Appendf(TEXT("\n\t\t- %s (started block %d, %d/%d blocks)"), *req.action_id.ToString(), req.block_started, elapsed, act ? act->delay : -1);
 	}
 
+	output.Appendf(TEXT("\n\tOffice requests (%d):"), save.active_office_requests.Num());
+	for (const FPendingRequest &req : save.active_office_requests) {
+
+		const FCaseAction *act = _case_system->file.actions.FindByPredicate(
+			[&req](const FCaseAction &a) { return a.action_id == req.action_id; });
+
+		const int32 elapsed = save.used_blocks - req.block_started;
+		output.Appendf(TEXT("\n\t\t- %s (started block %d, %d/%d blocks)"), *req.action_id.ToString(), req.block_started, elapsed, act ? act->delay : -1);
+	}
+
 	MessageConsole(output);
 }
 

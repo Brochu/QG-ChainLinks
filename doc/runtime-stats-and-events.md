@@ -86,9 +86,9 @@ Keep the **live** events correctness-blind. `OnContradictionActivated` says "the
 
 ### 2.3 Implemented so far
 
-- `FOnFactDiscovered(FName fact_id, int32 when_block)` → `on_fact_discovered` — first discovery only (re-discovery deduped); fires for starting facts, action `produces`, matured lab requests, and schedule deliveries, stamped with the exact block it landed on.
-- `FOnNewLabRequest(FLabRequest)` → `on_new_lab_request` — a COLLECT action was queued.
-- `FOnLabRequestComplete(FLabRequest)` → `on_lab_request_complete` — a request's delay elapsed; its `produces` discover in the same tick. (Covers the table's `OnResultsMatured`.)
+- `FOnFactDiscovered(FName fact_id, int32 when_block)` → `on_fact_discovered` — first discovery only (re-discovery deduped); fires for starting facts, action `produces`, matured pending requests (lab or office), and schedule deliveries, stamped with the exact block it landed on.
+- `FOnNewPendingRequest(FPendingRequest)` → `on_new_pending_request` — a delayed request was queued: COLLECT into the lab queue (capped at `lab_queue_capacity`), any other delayed verb into the unbounded office (records) queue. Requests are stamped `block_started = used_blocks + 1`, so the submission block never counts toward the delay.
+- `FOnPendingRequestComplete(FPendingRequest)` → `on_pending_request_complete` — a request's delay elapsed (either queue); its `produces` discover in the same tick. (Covers the table's `OnResultsMatured`.)
 - `FOnScheduleComplete(FText pager_text)` → `on_schedule_complete` — a `schedule` entry fired at its `at_block`.
 - `FOnTimeAdvance(int32 new_time)` → `on_time_advance` — once per spent block, after that block's maturations and deliveries. (Covers the table's block/clock event.)
 - `commit_action` returns `ECommitActionResult` (§2.1) rather than firing an event.
