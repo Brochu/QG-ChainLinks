@@ -5,8 +5,9 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "AlibiEntityDefinitions.h"
-#include "ChainSubsystem.h"
 #include "MatrixSubsystem.h"
+#include "InterviewManager.h"
+#include "ChainManager.h"
 #include "CaseSubsystem.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCase, Log, Log);
@@ -118,11 +119,37 @@ class ALIBI_API UCaseSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase &Collection) override;
+	// --------------------
+
 	UPROPERTY(Transient)
 	FCaseFile file;
 
 	UPROPERTY(SaveGame)
 	FCaseSaveState save;
+	// --------------------
+
+	UPROPERTY()
+	TObjectPtr<UInterviewManager> interviews;
+
+	UPROPERTY()
+	TObjectPtr<UChainManager> chainlinks;
+	// --------------------
+
+	UPROPERTY(BlueprintAssignable)
+	FOnNewPendingRequest on_new_pending_request;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnPendingRequestComplete on_pending_request_complete;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnTimeAdvance on_time_advance;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnScheduleComplete on_schedule_complete;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnFactDiscovered on_fact_discovered;
 	// --------------------
 
 	UFUNCTION(BlueprintCallable)
@@ -151,22 +178,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	ECommitActionResult commit_action(FName action_id);
-	// --------------------
-
-	UPROPERTY(BlueprintAssignable)
-	FOnNewPendingRequest on_new_pending_request;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnPendingRequestComplete on_pending_request_complete;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnTimeAdvance on_time_advance;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnScheduleComplete on_schedule_complete;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnFactDiscovered on_fact_discovered;
 
 private:
 	bool all_facts_known(const TArray<FName> &facts) const;

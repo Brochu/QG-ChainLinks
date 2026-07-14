@@ -7,7 +7,6 @@
 #include "AlibiTxtBasedCheats.generated.h"
 
 class UCaseSubsystem;
-class UChainSubsystem;
 //class UMatrixSubsystem;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTxtCheats, Log, All);
@@ -47,10 +46,5 @@ private:
 	void MessageConsole(FString message);
 
 	UPROPERTY(Transient)
-	APlayerController *_pc;
-
-	UPROPERTY(Transient)
-	UCaseSubsystem *_case_system;
-	UPROPERTY(Transient)
-	UChainSubsystem *_chain_system;
+	TObjectPtr<UCaseSubsystem> case_system;
 };

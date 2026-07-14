@@ -8,6 +8,11 @@
 
 DEFINE_LOG_CATEGORY(LogCase);
 
+void UCaseSubsystem::Initialize(FSubsystemCollectionBase &Collection) {
+	interviews = NewObject<UInterviewManager>();
+	chainlinks = NewObject<UChainManager>();
+}
+
 /// <summary>
 /// Loads and parses the case found at case_path
 /// </summary>
